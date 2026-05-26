@@ -1,14 +1,12 @@
-package de.seuhd.campuscoffee.tests.system;
+package de.seuhd.campuscoffee.tests.acceptance;
 
-import de.seuhd.campuscoffee.api.mapper.PosDtoMapper;
-import de.seuhd.campuscoffee.api.mapper.ReviewDtoMapper;
-import de.seuhd.campuscoffee.api.mapper.UserDtoMapper;
 import de.seuhd.campuscoffee.domain.ports.api.PosService;
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService;
 import de.seuhd.campuscoffee.domain.ports.api.UserService;
+import io.cucumber.java.After;
+import io.cucumber.java.Before;
+import io.cucumber.spring.CucumberContextConfiguration;
 import io.restassured.RestAssured;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -20,18 +18,18 @@ import static de.seuhd.campuscoffee.tests.SystemTestUtils.configurePostgresConta
 import static de.seuhd.campuscoffee.tests.SystemTestUtils.getPostgresContainer;
 
 /**
- * Abstract base class for system tests.
- * Sets up the Spring Boot test context, manages the PostgreSQL testcontainer, and configures REST Assured.
+ * Single Spring and Cucumber configuration shared by all acceptance step definitions.
+ * Cucumber allows only one {@link CucumberContextConfiguration}, so the step classes
+ * ({@link CucumberPosSteps}, {@link CucumberReviewSteps}) hold step definitions only and rely on
+ * the context, container, and cleanup hooks defined here.
  */
-@SpringBootTest(
-        classes = de.seuhd.campuscoffee.Application.class,
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
-public abstract class AbstractSysTest {
-    protected static final PostgreSQLContainer<?> postgresContainer;
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@CucumberContextConfiguration
+public class CucumberSpringConfiguration {
+    static final PostgreSQLContainer<?> postgresContainer;
 
     static {
-        // share the same testcontainers instance across all system tests
+        // share one testcontainers instance across all acceptance tests
         postgresContainer = getPostgresContainer();
         postgresContainer.start();
     }
@@ -50,20 +48,11 @@ public abstract class AbstractSysTest {
     @Autowired
     protected ReviewService reviewService;
 
-    @Autowired
-    protected PosDtoMapper posDtoMapper;
-
-    @Autowired
-    protected UserDtoMapper userDtoMapper;
-
-    @Autowired
-    protected ReviewDtoMapper reviewDtoMapper;
-
     @LocalServerPort
     private Integer port;
 
-    @BeforeEach
-    void beforeEach() {
+    @Before
+    public void beforeEach() {
         // reviews reference POS and users via foreign keys, so they must be cleared first
         reviewService.clear();
         posService.clear();
@@ -71,8 +60,8 @@ public abstract class AbstractSysTest {
         RestAssured.baseURI = "http://localhost:" + port;
     }
 
-    @AfterEach
-    void afterEach() {
+    @After
+    public void afterEach() {
         reviewService.clear();
         posService.clear();
         userService.clear();

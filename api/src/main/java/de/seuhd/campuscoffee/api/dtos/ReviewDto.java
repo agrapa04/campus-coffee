@@ -25,12 +25,21 @@ public record ReviewDto (
     @NonNull Long authorId,
 
     @NotBlank(message = "Review text cannot be empty.")
-    @Size(min = 10, max = 5000, message = "Review must be between 10 and 5000 characters long.")
+    @Size(min = MIN_REVIEW_LENGTH, max = MAX_REVIEW_LENGTH,
+            message = "Review must be between {min} and {max} characters long.")
 
     @NonNull String review,
 
     @Nullable Boolean approved // missing when creating a new review
 ) implements Dto<Long> {
+    /**
+     * Inclusive bounds on the review text length, used by the {@code @Size} constraint above. They are
+     * part of the API contract: bean validation enforces them and springdoc surfaces them as
+     * {@code minLength}/{@code maxLength} in the OpenAPI schema.
+     */
+    private static final int MIN_REVIEW_LENGTH = 10;
+    private static final int MAX_REVIEW_LENGTH = 5000;
+
     @Override
     public @Nullable Long getId() {
         return id;

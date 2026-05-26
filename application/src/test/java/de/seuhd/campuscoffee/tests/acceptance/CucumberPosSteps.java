@@ -3,63 +3,22 @@ package de.seuhd.campuscoffee.tests.acceptance;
 import de.seuhd.campuscoffee.api.dtos.PosDto;
 import de.seuhd.campuscoffee.domain.model.enums.CampusType;
 import de.seuhd.campuscoffee.domain.model.enums.PosType;
-import de.seuhd.campuscoffee.domain.ports.api.PosService;
-import io.cucumber.java.*;
+import io.cucumber.java.DataTableType;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.spring.CucumberContextConfiguration;
-import io.restassured.RestAssured;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.List;
 import java.util.Map;
 
-import static de.seuhd.campuscoffee.tests.SystemTestUtils.*;
 import static de.seuhd.campuscoffee.tests.SystemTestUtils.Requests.posRequests;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Step definitions for the POS Cucumber tests.
+ * Step definitions for the POS Cucumber tests. The Spring context, container, and cleanup hooks
+ * live in {@link CucumberSpringConfiguration}.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@CucumberContextConfiguration
 public class CucumberPosSteps {
-    static final PostgreSQLContainer<?> postgresContainer;
-
-    static {
-        // share the same testcontainers instance across all Cucumber tests
-        postgresContainer = getPostgresContainer();
-        postgresContainer.start();
-        // testcontainers are automatically stopped when the JVM exits
-    }
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        configurePostgresContainers(registry, postgresContainer);
-    }
-
-    @Autowired
-    protected PosService posService;
-
-    @LocalServerPort
-    private Integer port;
-
-    @Before
-    public void beforeEach() {
-        posService.clear();
-        RestAssured.baseURI = "http://localhost:" + port;
-    }
-
-    @After
-    public void afterEach() {
-        posService.clear();
-    }
 
     private List<PosDto> createdPosList;
     private PosDto updatedPos;

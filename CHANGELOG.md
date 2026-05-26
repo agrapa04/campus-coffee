@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Update `README.md` to explain deployment to Google Cloud Run.
 - Add JaCoCo code coverage with a new `coverage` module that aggregates execution data across modules, so coverage from the integration and system tests in `application` is attributed to the `domain`, `api`, and `data` classes they test.
 - Enforce a line and branch coverage gate during `mvn verify`, run it in CI, and upload the coverage reports as a build artifact.
-- Add opt-in PITest mutation testing via the `mutation` profile (`mvn -P mutation clean test`): each class is mutated once (`domain.*` by the domain unit tests; `api.*`/`data.*` by the application system tests via `crossModule`) and the `coverage` module aggregates the per-module reports into a combined report. The mutator group is selectable with `-Dpitest.mutators=DEFAULTS|STRONGER|ALL`.
+- Add opt-in PITest mutation testing via the `mutation` profile (`mvn -P mutation clean test`): each module mutates its own classes against its own tests (`domain.*`, `api.*`, `data.*`), and `application` additionally mutates `api.*`/`data.*` via `crossModule` against the system and acceptance tests. Each module writes its own report; the reports are not merged, because PITest's `report-aggregate` overwrites rather than unions overlapping mutations. Generated `*MapperImpl` classes are excluded. The mutator group is selectable with `-Dpitest.mutators=DEFAULTS|STRONGER|ALL`.
+- Strengthen the unit tests using surviving mutants as a worklist: add `OsmAmenityTest`, `CrudDataServiceImplTest`, `UserServiceTest`, an OSM-node-to-POS field-mapping assertion, and a filter-miss 404 system test. Derive test boundary values from the `Pos` postal-code bounds and the OSM default description instead of duplicating literals.
 
 ## [0.0.5] - 2025-12-09
 

@@ -52,25 +52,31 @@ the bar follows the suite. The CI workflow runs `mvn verify` and uploads the rep
 
 Mutation testing reports whether the tests actually detect changed behavior. It is opt-in via the
 `mutation` profile and meant to be run locally, since it re-runs the tests for every mutant and the
-system tests run against a PostgreSQL database in a container managed by Testcontainers. Each class is mutated in exactly one module so the per-module
-reports do not overlap: the `domain` module mutates `domain.*` (killed by its unit tests), and the
-`application` module mutates `api.*` and `data.*` via `crossModule` (killed by the system,
-acceptance, and architecture tests). The `coverage` module then aggregates the two into one report.
+data and system tests run against a PostgreSQL database in a container managed by Testcontainers. Each
+module runs PITest against its own tests and writes its own report: `domain` mutates `domain.*`, `api`
+mutates `api.*`, and `data` mutates `data.*`, each against that module's own unit and integration tests;
+the `application` module additionally mutates `api.*` and `data.*` via `crossModule` against the system
+and acceptance tests. The api and data classes therefore appear in two reports (the module's own and
+application's). The reports are not merged, because PITest's `report-aggregate` overwrites rather than
+unions duplicate mutations, so a merge would discard one side. Read a module's report for what its own
+tests catch and the application report for what the system tests catch (the controllers, for example,
+have no api-local tests and are killed only there). The generated `*MapperImpl` classes are excluded
+from mutation, mirroring the JaCoCo gate.
 
 ```shell
-# Full run. Use clean so stale per-module reports do not corrupt the aggregate.
+# Full run. Use clean so stale reports are not reused.
 mvn -P mutation clean test
 
 # Stronger or exhaustive mutator groups produce more, harder-to-kill mutants:
 mvn -P mutation clean test -Dpitest.mutators=STRONGER
 mvn -P mutation clean test -Dpitest.mutators=ALL
 
-# Scope to one class while iterating (skips the slow system-test modules):
+# Scope to one module while iterating (runs only domain, skipping the slow Testcontainers modules):
 mvn -P mutation test -pl domain -DtargetClasses=de.seuhd.campuscoffee.domain.implementation.ReviewServiceImpl
 ```
 
-- Combined report: `coverage/target/pit-reports/index.html`
-- Per-module reports: `domain/target/pit-reports/`, `application/target/pit-reports/`
+Reports are written per module at `<module>/target/pit-reports/index.html` (`domain`, `api`, `data`, and
+`application`).
 
 Surviving mutants point to behavior the tests run but do not assert; add assertions until they are
 killed.

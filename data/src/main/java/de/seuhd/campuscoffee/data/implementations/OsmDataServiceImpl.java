@@ -25,6 +25,9 @@ import java.util.Optional;
 @Slf4j
 @RequiredArgsConstructor
 class OsmDataServiceImpl implements OsmDataService {
+    /** Description applied when an OSM node carries no {@code description} tag. */
+    static final String DEFAULT_DESCRIPTION = "n/a";
+
     private final OsmFeignClient osmFeignClient;
 
     @Override
@@ -101,7 +104,7 @@ class OsmDataServiceImpl implements OsmDataService {
                 .street(street)
                 .houseNumber(houseNumber)
                 .postcode(postcode)
-                .description(description.orElse("n/a"))
+                .description(description.orElse(DEFAULT_DESCRIPTION))
                 .build();
     }
 

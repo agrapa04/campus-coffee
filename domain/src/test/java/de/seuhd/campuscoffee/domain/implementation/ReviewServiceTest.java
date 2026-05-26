@@ -80,8 +80,9 @@ public class ReviewServiceTest {
     @Test
     void approvalSuccessfulIfUserIsNotAuthor() {
         // given
+        // one short of the quorum, so the single approval below pushes it to exactly the quorum
         Review review = TestFixtures.getReviewFixtures().getFirst().toBuilder()
-                .approvalCount(2)
+                .approvalCount(approvalConfiguration.minCount() - 1)
                 .approved(false)
                 .build();
         User user = TestFixtures.getUserFixtures().getLast();
@@ -115,7 +116,7 @@ public class ReviewServiceTest {
         List<Review> reviews = TestFixtures.getReviewFixtures().stream()
                 .map(review -> review.toBuilder()
                         .pos(pos)
-                        .approvalCount(3)
+                        .approvalCount(approvalConfiguration.minCount())
                         .approved(true)
                         .build())
                 .toList();
@@ -156,8 +157,8 @@ public class ReviewServiceTest {
      */
     @Test
     void userCannotCreateMoreThanOneReviewPerPos() {
-        // given
-        Review review = TestFixtures.getReviewFixtures().getFirst();
+        // given a new review (id is null), since the duplicate check runs only on creation
+        Review review = TestFixtures.getReviewFeaturesForInsertion().getFirst();
         Pos pos = review.pos();
         User author = review.author();
         assertNotNull(pos.getId());
@@ -253,6 +254,32 @@ public class ReviewServiceTest {
         // then
         verify(posDataService).getById(pos.getId());
         verify(reviewDataService).filter(pos, review.author());
+        verify(reviewDataService).upsert(review);
+        assertThat(result.getId()).isEqualTo(review.getId());
+    }
+
+    /**
+     * Verifies that updating an existing review skips the check that runs on creation, which rejects
+     * a second review by the same author for the same POS. On update that filter would match the
+     * review being updated and previously made every update fail with a validation error.
+     */
+    @Test
+    void updatingExistingReviewSkipsDuplicateCheck() {
+        // given an existing review with a non-null id
+        Review review = TestFixtures.getReviewFixtures().getFirst();
+        Pos pos = review.pos();
+        assertNotNull(review.getId());
+        assertNotNull(pos.getId());
+
+        when(posDataService.getById(pos.getId())).thenReturn(pos);
+        when(reviewDataService.getById(review.getId())).thenReturn(review); // entity exists for the update
+        when(reviewDataService.upsert(review)).thenReturn(review);
+
+        // when
+        Review result = reviewService.upsert(review);
+
+        // then the per-author filter is never consulted on update
+        verify(reviewDataService, never()).filter(any(Pos.class), any(User.class));
         verify(reviewDataService).upsert(review);
         assertThat(result.getId()).isEqualTo(review.getId());
     }

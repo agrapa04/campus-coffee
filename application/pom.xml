@@ -105,6 +105,14 @@
             <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- stubs the external OpenStreetMap HTTP API in the OSM import system test;
+             the standalone (shaded) jar avoids Jetty and Jackson version clashes on the test classpath -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -121,8 +129,12 @@
 
     <profiles>
         <profile>
-            <!-- By default PIT only mutates this module's own compiled classes. api and data reach it
-                 as dependency jars, so crossModule is required to mutate them from here. -->
+            <!-- The system and acceptance tests in this module exercise the whole stack, so this run
+                 mutates api.* and data.* against them. The api and data modules also mutate their own
+                 classes against their unit and integration tests (see their poms); this run adds what the
+                 end-to-end tests catch, such as the controllers and the exception handler, which have no
+                 module-local tests. crossModule is required because api and data reach this module only as
+                 dependency jars. -->
             <id>mutation</id>
             <build>
                 <plugins>

@@ -1,14 +1,17 @@
 package de.seuhd.campuscoffee.tests;
 
 import de.seuhd.campuscoffee.api.dtos.PosDto;
+import de.seuhd.campuscoffee.api.dtos.ReviewDto;
 import de.seuhd.campuscoffee.api.dtos.UserDto;
 import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static io.restassured.RestAssured.given;
@@ -171,6 +174,24 @@ public class SystemTestUtils {
         }
 
         /**
+         * Filters by a parameter and returns the raw HTTP status code instead of asserting 200. A test
+         * uses this to assert a 404 when no entity matches the filter value.
+         *
+         * @param filterParameter the filter query parameter name
+         * @param filterValue     the value to filter by
+         * @return the HTTP status code of the response
+         */
+        public int retrieveByFilterStatusCode(String filterParameter, String filterValue) {
+            return given()
+                    .contentType(ContentType.JSON)
+                    .queryParam(filterParameter, filterValue)
+                    .when()
+                    .get(basePath + "/filter")
+                    .then()
+                    .extract().statusCode();
+        }
+
+        /**
          * Creates multiple entities via the API and returns their DTOs.
          *
          * @param entityList List of DTOs to create
@@ -250,6 +271,118 @@ public class SystemTestUtils {
                     .toList();
         }
 
+        /**
+         * Retrieves entities matching several filter query parameters via the API.
+         * Unlike {@link #retrieveByFilter(String, String)}, this returns a list (the reviews
+         * filter endpoint returns all matching reviews rather than a single entity).
+         *
+         * @param params query parameter name/value pairs to filter by
+         * @return list of DTOs matching the filter criteria
+         */
+        public List<T> retrieveByFilter(Map<String, Object> params) {
+            RequestSpecification request = given().contentType(ContentType.JSON);
+            for (Map.Entry<String, Object> param : params.entrySet()) {
+                request = request.queryParam(param.getKey(), param.getValue());
+            }
+            return request
+                    .when()
+                    .get(basePath + "/filter")
+                    .then()
+                    .statusCode(HttpStatus.OK.value())
+                    .extract().jsonPath().getList("$", dtoClass)
+                    .stream()
+                    .toList();
+        }
+
+        /**
+         * Retrieves an entity by its ID and returns the raw status code, so a test can assert a 404.
+         *
+         * @param id ID of the entity to retrieve
+         * @return the HTTP status code of the response
+         */
+        public int retrieveByIdStatusCode(Long id) {
+            return given()
+                    .contentType(ContentType.JSON)
+                    .when()
+                    .get(basePath + "/{id}", id)
+                    .then()
+                    .extract().statusCode();
+        }
+
+        /**
+         * Updates an entity using an explicit path ID that may differ from the body ID, returning the
+         * raw status code. A test uses this to assert a 400 when the path and body IDs disagree.
+         *
+         * @param pathId the ID to put in the request path
+         * @param dto    the entity body to send
+         * @return the HTTP status code of the response
+         */
+        public int updateWithPathIdAndReturnStatusCode(Long pathId, T dto) {
+            return given()
+                    .contentType(ContentType.JSON)
+                    .body(dto)
+                    .when()
+                    .put(basePath + "/{id}", pathId)
+                    .then()
+                    .extract().statusCode();
+        }
+
+        /**
+         * Updates multiple entities via the API and returns the resulting status codes, so a test can
+         * assert a 404 when updating an entity that does not exist.
+         *
+         * @param entityList List of DTOs to update
+         * @return List of HTTP status codes resulting from each update operation
+         */
+        public List<Integer> updateAndReturnStatusCodes(List<T> entityList) {
+            return entityList.stream()
+                    .map(dto -> given()
+                            .contentType(ContentType.JSON)
+                            .body(dto)
+                            .when()
+                            .put(basePath + "/{id}", idGetter.apply(dto))
+                            .then()
+                            .extract().statusCode()
+                    )
+                    .toList();
+        }
+
+        /**
+         * Approves an entity on behalf of a user via {@code PUT /{id}/approve?user_id=...} (reviews).
+         *
+         * @param id     ID of the entity to approve
+         * @param userId ID of the user performing the approval
+         * @return the updated DTO
+         */
+        public T approve(Long id, Long userId) {
+            return given()
+                    .contentType(ContentType.JSON)
+                    .queryParam("user_id", userId)
+                    .when()
+                    .put(basePath + "/{id}/approve", id)
+                    .then()
+                    .statusCode(HttpStatus.OK.value())
+                    .extract().as(dtoClass);
+        }
+
+        /**
+         * Approves an entity and returns the raw status code, so a test can assert a 400 when a user
+         * approves their own review or a 404 when the review does not exist.
+         *
+         * @param id     ID of the entity to approve
+         * @param userId ID of the user performing the approval
+         * @return the HTTP status code of the response
+         */
+        public int approveAndReturnStatusCode(Long id, Long userId) {
+            return given()
+                    .contentType(ContentType.JSON)
+                    .queryParam("user_id", userId)
+                    .when()
+                    .put(basePath + "/{id}/approve", id)
+                    .then()
+                    .extract().statusCode();
+        }
+
         public static SystemTestUtils.Requests<PosDto> posRequests = new SystemTestUtils.Requests<>(
                 "/api/pos",
                 PosDto.class,
@@ -260,6 +393,12 @@ public class SystemTestUtils {
                 "/api/users",
                 UserDto.class,
                 UserDto::getId
+        );
+
+        public static SystemTestUtils.Requests<ReviewDto> reviewRequests = new SystemTestUtils.Requests<>(
+                "/api/reviews",
+                ReviewDto.class,
+                ReviewDto::getId
         );
     }
 }

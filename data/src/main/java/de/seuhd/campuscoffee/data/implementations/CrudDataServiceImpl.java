@@ -172,7 +172,9 @@ public abstract class CrudDataServiceImpl<
      * @param constraintName the database constraint name to look for
      * @return true if the exception is due to the specified constraint violation
      */
-    private static boolean isConstraintViolation(DataIntegrityViolationException exception, String constraintName) {
+    // package-private so CrudDataServiceImplTest can drive the message- and root-cause-matching branches
+    // directly with crafted exceptions, which a black-box test cannot distinguish
+    static boolean isConstraintViolation(DataIntegrityViolationException exception, String constraintName) {
         // check the exception message for the constraint name
         String message = exception.getMessage();
         if (message != null && message.contains(constraintName)) {

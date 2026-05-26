@@ -106,15 +106,20 @@ mvn test -Dtest=PosServiceTest#testMethodName
   coverage is below its configured minimums. The minimums track current coverage; raise them
   when adding tests, never lower them to make a build pass.
 - **Mutation testing (PITest)**: opt-in and local via the `mutation` profile: `mvn -P mutation clean test`
-  (use `clean` so stale per-module reports do not corrupt the aggregate). Each class is mutated in
-  exactly one module so the reports do not overlap: `domain` mutates `domain.*` (its unit tests) and
-  `application` mutates `api.*`/`data.*` via `crossModule` (system/acceptance/architecture tests). The
-  `coverage` module aggregates both into `coverage/target/pit-reports/index.html`. The per-module
-  targets live in `domain/pom.xml` and `application/pom.xml`; shared config is in the root `mutation`
-  profile's `pluginManagement`. Select the mutator group with `-Dpitest.mutators=DEFAULTS|STRONGER|ALL`.
+  (use `clean` so stale reports are not reused). Each module runs PIT against its own tests and writes its
+  own report under `<module>/target/pit-reports/index.html`: `domain` mutates `domain.*`, `api` mutates
+  `api.*`, and `data` mutates `data.*`, each against that module's own tests; `application` mutates
+  `api.*`/`data.*` via `crossModule` against the system and acceptance tests. The api/data classes
+  therefore appear in two reports (a module's own run and application's system run), which are not merged:
+  PIT's `report-aggregate` overwrites rather than unions duplicate mutations, so a merge would discard one
+  side. Read a module's report for what its own tests catch and `application`'s for the system tests; the
+  controllers, which have no api-local tests, are killed only in the application report. The generated
+  `*MapperImpl` classes are excluded from mutation, mirroring the JaCoCo gate. Per-module targets live in
+  each module's pom; shared config is in the root `mutation` profile's `pluginManagement`. Select the
+  mutator group with `-Dpitest.mutators=DEFAULTS|STRONGER|ALL`.
 - When adding a feature, also add tests; use surviving mutants to find missing assertions. The
-  MapStruct mappers `PosEntityMapper` (house-number parsing) and `ReviewDtoMapper` (expression
-  mappings) contain real logic and are kept in scope for both tools.
+  hand-written mapping logic in `PosEntityMapper` (house-number parsing), `ReviewDtoMapper` (expression
+  mappings), and `HouseNumberConverter` contains real logic and is kept in scope for both tools.
 
 ### Docker
 
@@ -157,7 +162,7 @@ Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql
 - **Spring Boot 3.5.8** with Spring Cloud 2025.0.0.
 - **Java 21** with JSpecify annotations for nullability.
 - **Lombok** for boilerplate reduction.
-- **MapStruct** for object mapping (DTOs ↔ domain models ↔ entities).
+- **MapStruct** for object mapping (DTOs <-> domain models <-> entities).
 - **Bean Validation** (Jakarta Validation) for input validation (validation happens in the controllers based on the DTOs, before mapping them to domain models).
 - **OpenAPI/Swagger** (SpringDoc) for API documentation.
 - **Feign** for REST client (OpenStreetMap API integration).

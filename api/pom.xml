@@ -45,4 +45,26 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <!-- Mutates this module's own classes against its own unit tests. Only targetClasses is set;
+                 the plugin, its JUnit 5 dependency, and the mutationCoverage execution are inherited from
+                 the parent mutation profile (which also excludes the generated *MapperImpl). -->
+            <id>mutation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <configuration>
+                            <targetClasses>
+                                <param>de.seuhd.campuscoffee.api.*</param>
+                            </targetClasses>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

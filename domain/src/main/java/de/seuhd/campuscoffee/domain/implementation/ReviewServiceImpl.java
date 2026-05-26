@@ -48,12 +48,13 @@ public class ReviewServiceImpl extends CrudServiceImpl<Review, Long> implements 
     @Override
     @Transactional
     public @NonNull Review upsert(@NonNull Review review) {
-        // validate that the POS exists before creating/updating the review
+        // validate that the POS exists before creating or updating the review
         Objects.requireNonNull(review.pos().getId());
         Pos pos = posDataService.getById(review.pos().getId());
 
-        // validate that this is the first review of the author for this POS
-        if (!reviewDataService.filter(pos, review.author()).isEmpty()) {
+        // on creation, validate that this is the author's first review for this POS;
+        // on update the filter would match the review being updated, so skip the check
+        if (review.getId() == null && !reviewDataService.filter(pos, review.author()).isEmpty()) {
             throw new ValidationException("Author with ID '" + review.author().getId()
                     + " has already reviewed POS with ID '" + pos.getId() + "'.");
         }

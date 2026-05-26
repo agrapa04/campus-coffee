@@ -13,10 +13,10 @@
          modules' execution data and enforces the coverage gate. -->
     <packaging>pom</packaging>
 
-    <!-- The JaCoCo report-aggregate goal (configured below) reads each module's classes, sources,
-         and execution data (the target/jacoco.exec file the JaCoCo agent writes during tests)
-         through these dependencies. Declaring them as dependencies also makes Maven build this
-         module after the others, so their data already exists when this module runs. -->
+    <!-- The jacoco:report-aggregate goal (configured below) builds one combined coverage report across
+         the modules. It reads the compiled classes, source files, and jacoco.exec data from each module
+         listed as a dependency below. Declaring those modules as dependencies also makes the Maven reactor
+         build this module after them, so their jacoco.exec files already exist when the report runs. -->
     <dependencies>
         <dependency>
             <groupId>de.seuhd.campuscoffee</groupId>
@@ -128,6 +128,10 @@
                                 <!-- Startup wiring and the dev profile's data load; no logic to test. -->
                                 <exclude>**/Application.*</exclude>
                                 <exclude>**/LoadInitialData.*</exclude>
+                                <!-- MapStruct-generated mapper implementations: field copying and null
+                                     guards. The hand-written mapping logic lives in the mapper interfaces
+                                     (kept in scope) per the refactoring plan in doc/. -->
+                                <exclude>**/*MapperImpl.*</exclude>
                             </excludes>
                             <rules>
                                 <rule>
@@ -136,12 +140,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.62</minimum>
+                                            <minimum>0.90</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.36</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -155,8 +159,17 @@
 
     <profiles>
         <profile>
-            <!-- This module has no production code, so PIT has nothing to mutate here. The
-                 report-aggregate goal below merges the other modules' PIT reports into one combined report. -->
+            <!-- This module has no production code, so PIT has nothing to mutate here, and it does NOT
+                 aggregate the mutation reports. Each module writes its own report under its
+                 target/pit-reports: domain, api, and data against their own tests, and application against
+                 the system and acceptance tests (crossModule over api.*/data.*). These are kept separate
+                 on purpose. They overlap on api.*/data.* (covered by both a module's own tests and the
+                 system tests), and PIT's report-aggregate overwrites rather than unions duplicates, so a
+                 merged report would discard one side's results. Read each module's report for what its
+                 own tests catch, and application's for what the system tests catch. (JaCoCo line/branch
+                 coverage IS aggregated above: those classes are covered by several modules too, but
+                 merging exec data unions it, so a line covered by any module counts. PIT's
+                 report-aggregate has no such union, hence the per-module reports here.) -->
             <id>mutation</id>
             <build>
                 <plugins>
@@ -168,16 +181,6 @@
                             <execution>
                                 <id>pitest-mutation-coverage</id>
                                 <phase>none</phase>
-                            </execution>
-                            <!-- Merge the other modules' PIT mutation reports (the mutations.xml files PIT
-                                 writes under target/pit-reports) into one combined report. Bound to the test
-                                 phase so it runs under `mvn -P mutation test`, after the other modules' runs. -->
-                            <execution>
-                                <id>pitest-report-aggregate</id>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>report-aggregate</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>

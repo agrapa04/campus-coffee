@@ -91,6 +91,8 @@
         <cucumber.version>7.31.0</cucumber.version>
         <!-- https://mvnrepository.com/artifact/com.tngtech.archunit/archunit -->
         <archunit.version>1.4.1</archunit.version>
+        <!-- https://mvnrepository.com/artifact/org.wiremock/wiremock-standalone -->
+        <wiremock.version>3.13.1</wiremock.version>
     </properties>
 
     <pluginRepositories>
@@ -312,15 +314,19 @@
     <profiles>
         <profile>
             <!-- Opt-in mutation testing, meant to be run locally with `mvn -P mutation test`. A full run
-                 is slow because PIT re-runs the covering tests for every mutant, and the application's
-                 tests run against a PostgreSQL database in a container managed by Testcontainers. Each class
-                 is mutated in only one module so the
-                 reports do not overlap and the coverage module can combine them correctly:
-                   - domain mutates de.seuhd.campuscoffee.domain.*, run against the domain unit tests;
-                   - application mutates de.seuhd.campuscoffee.api.* and .data.* via crossModule, run
-                     against the system, acceptance, and architecture tests;
-                   - api and data run no mutation of their own (the application run covers their classes).
-                 This profile only configures the plugin; each module turns it on by declaring it. -->
+                 is slow because PIT re-runs the covering tests for every mutant, and the data and
+                 application tests run against a PostgreSQL database in a container managed by
+                 Testcontainers. Each module runs PIT against its own tests and writes its own report; the
+                 reports are NOT merged (see the coverage module for why):
+                   - domain mutates domain.* against the domain unit tests;
+                   - api mutates api.* against the api unit tests (controllers and the exception handler
+                     have no api-local tests, so they show as not killed in this report);
+                   - data mutates data.* against the data unit and integration tests;
+                   - application mutates api.* and data.* via crossModule against the system and acceptance
+                     tests (this is the report that shows what the end-to-end tests catch, e.g. the
+                     controllers). crossModule is needed because api and data reach it as dependency jars.
+                 Read each module's report for what its own tests catch and application's for the system
+                 tests. This profile only configures the plugin; each module turns it on by declaring it. -->
             <id>mutation</id>
             <build>
                 <pluginManagement>
@@ -355,20 +361,23 @@
                                     <param>de.seuhd.campuscoffee.domain.tests.*</param>
                                     <param>de.seuhd.campuscoffee.Application</param>
                                     <param>de.seuhd.campuscoffee.LoadInitialData</param>
+                                    <!-- MapStruct-generated mappers hold only field copying and null
+                                         guards; the hand-written mapping logic lives in PosEntityMapper,
+                                         ReviewDtoMapper, and HouseNumberConverter, which stay in scope.
+                                         This mirrors the *MapperImpl exclusion in the JaCoCo gate. -->
+                                    <param>de.seuhd.campuscoffee.*.*MapperImpl</param>
                                 </excludedClasses>
                                 <mutators>
                                     <mutator>${pitest.mutators}</mutator>
                                 </mutators>
+                                <!-- HTML for humans; XML so each module's report can be inspected
+                                     programmatically (e.g. in CI). The reports are not aggregated. -->
                                 <outputFormats>
                                     <param>HTML</param>
                                     <param>XML</param>
                                 </outputFormats>
-                                <!-- The coverage module's report-aggregate goal reads each module's XML
-                                     report and its exported line coverage, so enable both. -->
-                                <exportLineCoverage>true</exportLineCoverage>
-                                <!-- By default PIT writes each run into a new subfolder named with a
-                                     timestamp; false keeps a fixed target/pit-reports path so the coverage
-                                     module can find the reports. -->
+                                <!-- By default PIT writes each run into a new timestamped subfolder; false
+                                     keeps a fixed target/pit-reports path per module for a predictable location. -->
                                 <timestampedReports>false</timestampedReports>
                                 <withHistory>true</withHistory>
                                 <failWhenNoMutations>false</failWhenNoMutations>

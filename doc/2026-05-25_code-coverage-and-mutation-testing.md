@@ -9,7 +9,7 @@ to (1) measure line/branch **code coverage** and (2) measure **mutation score**.
 The hard part is the test topology:
 
 - `domain` has fast Mockito unit tests; `api` has one DTO test.
-- **`data` has *zero* tests** — its production code is tested only indirectly.
+- **`data` has *zero* tests**: its production code is tested only indirectly.
 - The **system tests** (Testcontainers + RestAssured, `*SystemTests`) and **acceptance tests**
   (Cucumber) live in the **`application`** module but run production code in
   `domain`/`api`/`data` through the full Spring context.
@@ -24,8 +24,8 @@ A JaCoCo agent attached to the test JVM therefore already records coverage of
 
 ### Primary goal
 This tooling exists to **improve and expand the test suite going forward** (this is a teaching
-repo). It is not a one-off measurement: coverage and mutation reports are the work backlog —
-uncovered lines and surviving mutants are the concrete "write a test for this next" list. The
+repo). It is not a one-off measurement: coverage and mutation reports are the work backlog.
+Uncovered lines and surviving mutants are the concrete "write a test for this next" list. The
 coverage gate is a JaCoCo `check` rule that fails the build when measured coverage is **below a
 fixed configured minimum**. It compares only against that static number and keeps no history, so
 it does not by itself detect regressions; you raise the configured minimum manually as coverage
@@ -35,24 +35,25 @@ bar that blocks contributions on day one.
 
 ### Decisions captured from the user
 - **Coverage gate:** strict line + branch quality gate that **fails the build**, enforced **in CI**.
-- **Mutation testing:** **opt-in Maven profile only**, kept **local** (not in CI). Mutate each
-  class once and aggregate the per-module reports: `domain.*` by the `domain` Mockito unit tests,
-  and `api.*`/`data.*` by the `application` system, acceptance, and architecture tests (via
-  `crossModule`). Each surviving mutant re-runs the test suite, and the system tests use a
-  PostgreSQL database in a container managed by Testcontainers, so a full run is slow.
+- **Mutation testing:** **opt-in Maven profile only**, kept **local** (not in CI). Each module
+  mutates its own classes against its own tests (`domain.*`, `api.*`, `data.*`), and `application`
+  additionally mutates `api.*`/`data.*` via `crossModule` against the system and acceptance tests.
+  The per-module reports are not merged (see C2). Each surviving mutant re-runs the test suite, and
+  the data and system tests use a PostgreSQL database in a container managed by Testcontainers, so a
+  full run is slow.
 
 ### Verified latest versions (Maven Central `latestVersion`, May 2026)
-- `org.jacoco:jacoco-maven-plugin` → **0.8.13** (GitHub tags hint at 0.8.14; at implementation use the newest version that resolves from Central).
-- `org.pitest:pitest-maven` → **1.19.1**
-- `org.pitest:pitest-junit5-plugin` → **1.2.2**
+- `org.jacoco:jacoco-maven-plugin` -> **0.8.13** (GitHub tags hint at 0.8.14; at implementation use the newest version that resolves from Central).
+- `org.pitest:pitest-maven` -> **1.19.1**
+- `org.pitest:pitest-junit5-plugin` -> **1.2.2**
 
 All support Java 21. Pin these as properties so they are easy to bump.
 
 ---
 
-## Part A — Code coverage with JaCoCo (incl. integration & system tests)
+## Part A: Code coverage with JaCoCo (incl. integration & system tests)
 
-### A1. Critical prerequisite — fix the hardcoded surefire `argLine`
+### A1. Critical prerequisite: fix the hardcoded surefire `argLine`
 The root `pom.xml` hardcodes the surefire `<argLine>`. JaCoCo's `prepare-agent` injects its
 agent via the `argLine` *property*; a hardcoded `<argLine>` silently drops it, so **no coverage
 would be collected**. Change the surefire config to use late property substitution by
@@ -74,11 +75,11 @@ Because `prepare-agent` (added below) runs in every module via `pluginManagement
 - Add property `<jacoco.version>0.8.13</jacoco.version>` near the other plugin versions.
 - Add `jacoco-maven-plugin` to the root `<build><plugins>` so it applies to all modules, with
   two executions:
-  - `prepare-agent` (default phase `initialize`) — sets the `argLine` property used in A1.
-  - `report` (phase `test`) — writes a per-module HTML/XML report to `target/site/jacoco/`.
+  - `prepare-agent` (default phase `initialize`): sets the `argLine` property used in A1.
+  - `report` (phase `test`): writes a per-module HTML/XML report to `target/site/jacoco/`.
 
 This gives each module its own report (useful for `domain`/`api`); `data`/`application` reports
-will be sparse on their own — the aggregate (A4) is the real deliverable.
+will be sparse on their own. The aggregate (A4) is the real deliverable.
 
 ### A3. Make Lombok-generated code invisible to coverage
 Append to `lombok.config` (currently lacks it):
@@ -98,17 +99,17 @@ combined report **and** the cross-module gate.
 `coverage/pom.xml`:
 - Parent = `de.seuhd.campuscoffee:parent`, `artifactId` = `coverage`.
 - compile-scope dependencies on `domain`, `api`, `data`, `application` (so `report-aggregate` can
-  see every module's classes, sources, and exec data — it ignores test-scope dependencies).
+  see every module's classes, sources, and exec data; it ignores test-scope dependencies).
   Declaring them as dependencies also makes Maven build this module after the others.
 - JaCoCo executions:
-  - **`report-aggregate`** (phase `verify`) → single combined report at
+  - **`report-aggregate`** (phase `verify`) -> single combined report at
     `coverage/target/site/jacoco-aggregate/` (HTML + XML). `report-aggregate` auto-collects
     `target/jacoco.exec` from all depended modules and attributes the system/acceptance-test
     coverage back onto `domain`/`api`/`data` classes. **This is the "coverage including
     integration and system tests" deliverable.**
-  - **`merge`** (phase `verify`, before check) → merge every module's
+  - **`merge`** (phase `verify`, before check) -> merge every module's
     `../*/target/jacoco.exec` into `coverage/target/jacoco-aggregate.exec` (single exec for the gate).
-  - **`check`** (phase `verify`) → the strict gate (Part B).
+  - **`check`** (phase `verify`) -> the strict gate (Part B).
 
 ### A5. Enabling `jacoco:check` to see cross-module classes
 `jacoco:check` only analyzes the *current* module's `target/classes` (confirmed against the
@@ -127,7 +128,7 @@ build-ordering problems.)
 
 ---
 
-## Part B — Strict coverage quality gate (enforced in CI)
+## Part B: Strict coverage quality gate (enforced in CI)
 
 ### B1. The `check` rule (in `coverage/pom.xml`)
 A `BUNDLE`-level rule over the copied classes and merged exec, `haltOnFailure=true`:
@@ -157,17 +158,17 @@ of scope here.
 
 ### B2. Exclude non-meaningful classes from the gate
 Apply `<excludes>` on the `check` (and ideally the reports) for code that shouldn't count:
-- `de/seuhd/campuscoffee/domain/tests/**` — `TestFixtures` lives in `domain/src/main` (production source).
-- `**/Application.*`, `**/LoadInitialData.*` — bootstrap/dev-only wiring.
+- `de/seuhd/campuscoffee/domain/tests/**`: `TestFixtures` lives in `domain/src/main` (production source).
+- `**/Application.*`, `**/LoadInitialData.*`: bootstrap/dev-only wiring.
 - Optionally OpenAPI customizers under `api/.../openapi/**`.
 
 **Do not blanket-exclude `**/*MapperImpl.*`.** Two mappers carry real logic that such a pattern
 would hide from coverage and mutation testing:
 - `data/.../mapper/PosEntityMapper.java` has `default` methods `splitHouseNumber` and
-  `mergeHouseNumber`: regex parsing of a house number, `String`→`int` conversion, an
+  `mergeHouseNumber`: regex parsing of a house number, `String`->`int` conversion, an
   `IllegalArgumentException` branch when the number contains no digit, and null handling. (This
   logic compiles into the `PosEntityMapper` interface bytecode, not the `*Impl`, so it is measured
-  even if the impl were excluded — but it must be tested, see Part D.)
+  even if the impl were excluded, but it must be tested, see Part D.)
 - `api/.../mapper/ReviewDtoMapper.java` is an abstract class whose `@Mapping(expression = "java(...)")`
   navigates objects (`source.pos().getId()`) and calls `posService.getById(...)` / `userService.getById(...)`,
   and sets the `approved=false` / `approvalCount=0` defaults. MapStruct inlines these expressions
@@ -191,7 +192,7 @@ run: mvn -B verify --file pom.xml
 `verify` runs after `package` and triggers the `coverage` module's `report-aggregate` + `check`.
 Notes:
 - System tests already run in the `test` phase under surefire (`*SystemTests` matches the
-  default `*Tests` pattern), so Docker is already used in CI today — no new CI infra needed.
+  default `*Tests` pattern), so Docker is already used in CI today, and no new CI infra is needed.
 - `verify` will also start running the existing PMD `check`/`cpd-check` (they are
   `failOnViolation=false`, so they won't break the build).
 - Modify the workflow so the coverage reports are available after the CI run: add a step that
@@ -201,7 +202,7 @@ Notes:
 
 ---
 
-## Part C — Mutation testing with PITest (opt-in profile, cross-module, local)
+## Part C: Mutation testing with PITest (opt-in profile, local)
 
 ### C1. Versions + properties (root `pom.xml`)
 Add properties:
@@ -217,72 +218,74 @@ to `STRONGER` or `ALL` produces more and harder-to-kill mutants, which is the po
 is being expanded: more surviving mutants means more missing-assertion gaps to close. The override
 is a single flag, so no config change is needed to move between groups.
 
-### C2. A `mutation` profile (root `pom.xml`) — one non-overlapping run per class
+### C2. The `mutation` profile (root `pom.xml`): per-module runs plus an application run
 Add a `<profile><id>mutation</id>` (not active by default, so normal and CI builds are
-unaffected). PITest is a per-module tool: each invocation mutates code and runs only that module's
-own tests, and `crossModule=true` additionally mutates the classes of the modules it depends on.
+unaffected). PITest is a per-module tool: each invocation mutates code and runs that module's own
+tests, and `crossModule=true` additionally mutates the classes of the modules it depends on.
 
-PIT's `report-aggregate` does **not** take "killed if killed in any run": when the same class is
-mutated in several modules' runs (which `crossModule` causes), a *survived* result overwrites a
-*killed* one and the combined score is badly understated. So mutate each class in exactly one
-module to keep the per-module reports non-overlapping:
-- **`domain`** (`domain/pom.xml`): `targetClasses = de.seuhd.campuscoffee.domain.*`, killed by the
+Each module mutates its own classes against its own tests, and `application` adds a cross-module
+run for the system tests:
+- **`domain`** (`domain/pom.xml`): `targetClasses = de.seuhd.campuscoffee.domain.*`, killed by its
   Mockito unit tests. No `crossModule` (domain depends on no other module).
+- **`api`** (`api/pom.xml`): `targetClasses = de.seuhd.campuscoffee.api.*`, killed by its unit
+  tests. Controllers and the exception handler have no api-local tests, so they show as not killed
+  in this report; the application run below covers them.
+- **`data`** (`data/pom.xml`): `targetClasses = de.seuhd.campuscoffee.data.*`, killed by its unit
+  and integration tests.
 - **`application`** (`application/pom.xml`, `crossModule=true`): `targetClasses =
-  de.seuhd.campuscoffee.api.*` and `.data.*`, killed by the system, acceptance, and architecture
-  tests. `domain` is left out here so it is not mutated twice.
-- **`api`** and **`data`**: no mutation run of their own; their classes are covered by the
-  application run above.
+  de.seuhd.campuscoffee.api.*` and `.data.*`, killed by the system and acceptance tests.
+  `crossModule` is required because api and data reach it as dependency jars.
+
+The reports are not merged. The api and data classes appear in two reports (a module's own and
+application's), and PIT's `report-aggregate` overwrites rather than unions duplicate mutations: a
+*survived* result overwrites a *killed* one, so a merged score would be badly understated. The
+`coverage` module therefore disables the inherited `mutationCoverage` (it has no code of its own)
+and does not aggregate mutation; it aggregates only JaCoCo coverage. Read each module's report for
+what its own tests catch and the application report for what the system tests catch.
 
 The shared plugin config and the `mutationCoverage` execution live in the profile's
-`<pluginManagement>`; `domain` and `application` opt in by declaring the plugin with their
-`targetClasses`. The **`coverage`** module disables the inherited `mutationCoverage` (no code of
-its own) and runs **`report-aggregate`** (bound to `test`) to merge the two non-overlapping reports
-into one combined report. A `domain` mutant is scored by the domain unit tests and an `api`/`data`
-mutant by the system tests; the aggregate is their union. (Trade-off: domain mutants are scored by
-the unit tests only, so a few that only the system tests would kill are not credited — the price of
-a non-overlapping, correctly-aggregated report.)
+`<pluginManagement>`; each module opts in by declaring the plugin with its `targetClasses`.
 
 Shared PITest configuration (in `pluginManagement`):
-- `<mutators><mutator>${pitest.mutators}</mutator></mutators>` — selects the group from C1
+- `<mutators><mutator>${pitest.mutators}</mutator></mutators>`: selects the group from C1
   (`DEFAULTS` by default; override with `-Dpitest.mutators=STRONGER` or `=ALL`).
 - `<targetTests>` = `de.seuhd.campuscoffee.*`; `<targetClasses>` is set per module (above).
-- `<excludedClasses>` mirroring B2 (`*.tests.*` fixtures, `Application`, `LoadInitialData`). Do
-  **not** exclude the mappers: `PosEntityMapper`'s house-number parsing (with its
-  `IllegalArgumentException` branch) and `ReviewDtoMapper`'s expression mappings are high-value targets.
-- `<exportLineCoverage>true</exportLineCoverage>`, `<outputFormats>HTML,XML</outputFormats>`, and
-  `<timestampedReports>false</timestampedReports>` — the XML in a fixed `target/pit-reports` is what
-  `report-aggregate` reads.
+- `<excludedClasses>` mirroring B2 (`*.tests.*` fixtures, `Application`, `LoadInitialData`), plus
+  the generated `de.seuhd.campuscoffee.*.*MapperImpl` classes, which hold only field copying and
+  null guards. The hand-written mapper logic stays in scope: `PosEntityMapper`'s house-number
+  parsing (with its `IllegalArgumentException` branch), `ReviewDtoMapper`'s expression mappings,
+  and `HouseNumberConverter` are high-value targets.
+- `<outputFormats>HTML,XML</outputFormats>` and `<timestampedReports>false</timestampedReports>`:
+  HTML for humans, XML for programmatic inspection, at a fixed `target/pit-reports` path per module.
 - `<parseSurefireArgLine>false</parseSurefireArgLine>` plus an explicit `<argLine>`
   (`-XX:+EnableDynamicAgentLoading -Xshare:off` and the Mockito `-javaagent`). surefire's argLine
-  begins with `@{argLine}`, which PIT cannot resolve and would otherwise pass it literally to the
+  begins with `@{argLine}`, which PIT cannot resolve and would otherwise pass literally to the
   JVMs it launches.
-- `<threads>1</threads>` — the system tests share a single static Postgres container
+- `<threads>1</threads>`: the system tests share a single static Postgres container
   (`AbstractSysTest`), so concurrent test processes would collide on it.
-- `<timeoutConstant>30000</timeoutConstant>` — the application's tests are slow to start (Spring
+- `<timeoutConstant>30000</timeoutConstant>`: the application's tests are slow to start (Spring
   context and Testcontainers); without extra time PIT would treat a still-running test as hung and
   miscount the mutant.
 - `<failWhenNoMutations>false</failWhenNoMutations>` and `<withHistory>true</withHistory>`.
 
-### C3. How it's run (document in README/CLAUDE.md)
+### C3. How it is run (documented in README/CLAUDE.md)
 ```shell
-# Full run. Clean first so stale reports do not corrupt the aggregate. Slow, because PIT re-runs the full suite, including the system tests that start a Postgres container, for every mutant.
+# Full run. Clean first so stale reports are not reused. Slow, because PIT re-runs the full suite, including the data and system tests that start a Postgres container, for every mutant.
 mvn -P mutation clean test
 
 # Stronger or exhaustive mutator groups (more, harder-to-kill mutants):
 mvn -P mutation clean test -Dpitest.mutators=STRONGER
 mvn -P mutation clean test -Dpitest.mutators=ALL
 
-# Practical: scope to one class/module while iterating (skips the slow system-test modules)
+# Scope to one module while iterating (runs only domain, skipping the slow Testcontainers modules):
 mvn -P mutation test -pl domain -DtargetClasses=de.seuhd.campuscoffee.domain.implementation.ReviewServiceImpl
 ```
-Reports: per-module under `domain/target/pit-reports/` and `application/target/pit-reports/`;
-combined under `coverage/target/pit-reports/index.html`. A full run is expensive and is intended to
-be run on demand, locally.
+Reports are per module at `<module>/target/pit-reports/index.html` (`domain`, `api`, `data`, and
+`application`). A full run is expensive and is intended to be run on demand, locally.
 
 ---
 
-## Part D — Workflow for growing the test suite (the point of all this)
+## Part D: Workflow for growing the test suite (the point of all this)
 
 Document a short loop in `CLAUDE.md`/`README.md` so contributors (and students) use the tooling
 to drive new tests:
@@ -292,10 +295,10 @@ to drive new tests:
    known gaps to start with: `PosEntityMapper.splitHouseNumber` (the no-digit
    `IllegalArgumentException` branch and the suffix-parsing path) and the review approval rules in
    `ReviewServiceImpl`.
-2. **Write tests** for the uncovered lines/branches — unit tests in `domain`/`api` where logic is
+2. **Write tests** for the uncovered lines/branches: unit tests in `domain`/`api` where logic is
    isolable, system/acceptance tests in `application` for end-to-end paths.
 3. **Check effectiveness with mutation testing:** run PITest (scoped with `-DtargetClasses=...`
-   while iterating) on the class you just tested. **Surviving mutants are the to-do list** — they
+   while iterating) on the class you just tested. **Surviving mutants are the to-do list:** they
    reveal assertions that are missing even though the line is "covered." Add assertions until they
    die. This is what pushes the suite from "executes the code" to "actually verifies behavior."
 4. **Raise the minimum:** once coverage rises, manually increase the configured gate minimums
@@ -315,20 +318,20 @@ of AI-slop patterns (guidelines: https://gist.github.com/ossa-ma/f3baa9d25154c33
 - **What to document** (in `README.md` and/or `CLAUDE.md`):
   - How to generate the per-module and aggregate coverage reports, and where they are written.
   - How the CI coverage gate works, what the current line/branch minimums are, and how to raise them.
-  - How to run mutation testing: the `mutation` profile, the per-module + aggregate model, and
-    scoping a run with `-DtargetClasses=...`; note that it is local and slow.
+  - How to run mutation testing: the `mutation` profile, the per-module and application runs (which
+    are not merged), and scoping a run with `-DtargetClasses=...`; note that it is local and slow.
   - The Part D workflow for turning report gaps into new tests.
 - **Where to comment in the config**: add a comment only where it gives a reader information the
-  code cannot — the non-obvious reason a setting exists. Each comment must describe the code
+  code cannot: the non-obvious reason a setting exists. Each comment must describe the code
   as it currently is, not how it got there. Good targets: why the surefire `argLine` starts with
   `@{argLine}` (the JaCoCo agent is injected through that property and is otherwise dropped); why
   the `coverage` module copies the modules' classes before `jacoco:check` (`check` only analyzes the
   current module's classes); why `application` sets `crossModule=true` (api and data are
   dependencies, not its own code);
   why the mappers stay in scope (their inlined logic is real behavior). Do not write change-history
-  comments ("changed from `package` to `verify`", "previously excluded", "now uses `crossModule`")
-  — the git log covers that. Never restate what a declaration plainly says.
-- **Comment style** — plain, factual technical prose. Avoid: filler transitions ("It's worth
+  comments ("changed from `package` to `verify`", "previously excluded", "now uses `crossModule`").
+  The git log covers that. Never restate what a declaration plainly says.
+- **Comment style:** plain, factual technical prose. Avoid: filler transitions ("It's worth
   noting", "Importantly", "Notably"); gravitas words ("crucial", "essential", "robust"); the
   verbs "leverage", "utilize", "streamline", "harness"; "not X but Y" parallelism; rhetorical
   questions ("The result? ..."); rule-of-three padding; em-dash overuse; decorative arrows/unicode;
@@ -340,18 +343,17 @@ of AI-slop patterns (guidelines: https://gist.github.com/ossa-ma/f3baa9d25154c33
 ## Files to create / modify
 
 **Create**
-- `coverage/pom.xml` — aggregator module (merge + report-aggregate + class copy + check gate, plus
-  the PIT `report-aggregate`).
+- `coverage/pom.xml`: aggregator module (merge + report-aggregate + class copy + check gate).
 
 **Modify**
 - `pom.xml` (root): add `jacoco.version`, `pitest.version`, `pitest.junit5.version` properties;
   add `coverage` to `<modules>` (last); add `jacoco-maven-plugin` to `<build><plugins>`;
   prepend `@{argLine}` to the surefire `<argLine>` (A1); add the `mutation` `<profile>` (shared PIT
   config in its `<pluginManagement>`).
-- `domain/pom.xml` and `application/pom.xml`: add the per-module `mutation` profile that sets each
-  module's `targetClasses` (and `crossModule` for application) (C2).
+- `domain/pom.xml`, `api/pom.xml`, `data/pom.xml`, and `application/pom.xml`: add the per-module
+  `mutation` profile that sets each module's `targetClasses` (and `crossModule` for application) (C2).
 - `lombok.config`: add `lombok.addLombokGeneratedAnnotation = true`.
-- `.github/workflows/build.yml`: `mvn -B package` → `mvn -B verify`, plus an `actions/upload-artifact`
+- `.github/workflows/build.yml`: `mvn -B package` to `mvn -B verify`, plus an `actions/upload-artifact`
   step that publishes the coverage reports so they are available after the CI run (B3).
 - `README.md` / `CLAUDE.md`: document the coverage reports, the CI gate and how to adjust its
   minimums, the mutation-testing workflow, and the Part D loop (see Documentation & comment quality).
@@ -363,7 +365,7 @@ of AI-slop patterns (guidelines: https://gist.github.com/ossa-ma/f3baa9d25154c33
 1. **Coverage collects integration/system coverage**
    - `mvn clean verify`
    - Open `coverage/target/site/jacoco-aggregate/index.html`. Confirm the **`data`** package
-     (which has no unit tests) shows substantial line/branch coverage — proof that the
+     (which has no unit tests) shows substantial line/branch coverage, proof that the
      `application` system/acceptance tests are being attributed correctly. If `data` shows ~0%,
      the `@{argLine}` fix (A1) or the aggregation is misconfigured.
 2. **Gate fails when it should**
@@ -375,17 +377,16 @@ of AI-slop patterns (guidelines: https://gist.github.com/ossa-ma/f3baa9d25154c33
    - Push a branch; confirm the `Build CampusCoffee` workflow runs `verify`, generates the
      aggregate report, and that the gate participates in the build status.
 5. **Mutation (local, opt-in)**
-   - Quick check: `mvn -P mutation test -pl domain` → open `domain/target/pit-reports/index.html`
+   - Quick check: `mvn -P mutation test -pl domain`, then open `domain/target/pit-reports/index.html`
      and confirm domain mutants killed by the Mockito unit tests.
-   - Full run: `mvn -P mutation clean test` → open `coverage/target/pit-reports/index.html`. Confirm
-     `domain.*` shows the kills from the domain unit tests and `api.*`/`data.*` show kills from the
-     `application` system tests, and that no class appears in both per-module reports (so the
-     aggregate is a clean union). Confirm a normal `mvn verify` (no `-P mutation`) does **not**
-     trigger PITest.
+   - Full run: `mvn -P mutation clean test`, then open the per-module reports. Confirm `domain`,
+     `api`, and `data` show kills from their own tests, and `application/target/pit-reports` shows
+     kills from the system tests across `api.*`/`data.*`. Confirm a normal `mvn verify` (no
+     `-P mutation`) does **not** trigger PITest.
 
 ## Risks / notes
 - **`@{argLine}` is load-bearing**: without it JaCoCo records nothing. This is the most common
-  failure mode — verify step 1 specifically guards it.
+  failure mode; verify step 1 specifically guards it.
 - **Calibrate thresholds before enabling the hard gate** so CI doesn't go red on day one
   (set them from the first measured aggregate run).
 - **Mutation runtime**: a full mutation run re-runs the tests for every mutant, including the

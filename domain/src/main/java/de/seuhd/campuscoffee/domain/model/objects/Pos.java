@@ -45,8 +45,9 @@ public record Pos (
         @NonNull String city
 ) implements DomainModel<Long> {
     // see https://github.com/zauberware/postal-codes-json-xml-csv/blob/master/data/DE.zip
-    private static final int MIN_POSTAL_CODE = 1067;
-    private static final int MAX_POSTAL_CODE = 99998;
+    // package-private so tests derive their boundary inputs from these bounds instead of duplicating them
+    static final int MIN_POSTAL_CODE = 1067;
+    static final int MAX_POSTAL_CODE = 99998;
     // https://de.wikipedia.org/wiki/Hausnummer#Hausnummernerg%C3%A4nzungen
     private static final Pattern HOUSE_NUMBER_PATTERN = Pattern.compile("\\d+[ \\-]?[a-zA-Z]?");
 
