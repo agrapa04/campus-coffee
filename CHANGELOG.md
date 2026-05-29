@@ -5,13 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-- Extend `Dockerfile` to build the application with Maven and then copy the created JAR file to the image.
+- Migrate the build from Maven to Gradle (Kotlin DSL): a `gradle/libs.versions.toml` version catalog and `build-logic` convention plugins replace the parent POM; the `coverage` module becomes a Gradle subproject using `jacoco-report-aggregation` with a `JacocoCoverageVerification` gate (unchanged 90% line / 80% branch). Gradle is provisioned via `mise` (no wrapper) and the `pom.xml` files are removed.
+- Bump the JDK from 21 to 25 (current LTS).
+- Scope `spring-boot-starter-web` to `api`/`application` and `commons-lang3` to `domain` rather than every module, build subprojects in parallel, and drop the redundant plain application jar.
+- Extend `Dockerfile` to build the application with Gradle and then copy the created JAR file to the image.
 - Modify `compose.yaml` to work with Google Cloud Build and Could Run.
 - Extend `mise.toml` to include dependencies for Google Cloud.
 - Update `README.md` to explain deployment to Google Cloud Run.
 - Add JaCoCo code coverage with a new `coverage` module that aggregates execution data across modules, so coverage from the integration and system tests in `application` is attributed to the `domain`, `api`, and `data` classes they test.
-- Enforce a line and branch coverage gate during `mvn verify`, run it in CI, and upload the coverage reports as a build artifact.
-- Add opt-in PITest mutation testing via the `mutation` profile (`mvn -P mutation clean test`): each module mutates its own classes against its own tests (`domain.*`, `api.*`, `data.*`), and `application` additionally mutates `api.*`/`data.*` via `crossModule` against the system and acceptance tests. Each module writes its own report; the reports are not merged, because PITest's `report-aggregate` overwrites rather than unions overlapping mutations. Generated `*MapperImpl` classes are excluded. The mutator group is selectable with `-Dpitest.mutators=DEFAULTS|STRONGER|ALL`.
+- Enforce a line and branch coverage gate during `gradle build` (the `check` task), run it in CI, and upload the coverage reports as a build artifact.
+- Add opt-in PITest mutation testing (`gradle :<module>:pitest -Pmutation`): each module mutates its own classes against its own tests (`domain.*`, `api.*`, `data.*`), and `application` additionally mutates `api.*`/`data.*` against the system and acceptance tests via additional mutable code paths (the Gradle equivalent of Maven's `crossModule`). Each module writes its own report under `build/reports/pitest`. Generated `*MapperImpl` classes are excluded. The mutator group is selectable with `-Ppitest.mutators=DEFAULTS|STRONGER|ALL`.
 - Strengthen the unit tests using surviving mutants as a worklist: add `OsmAmenityTest`, `CrudDataServiceImplTest`, `UserServiceTest`, an OSM-node-to-POS field-mapping assertion, and a filter-miss 404 system test. Derive test boundary values from the `Pos` postal-code bounds and the OSM default description instead of duplicating literals.
 
 ## [0.0.5] - 2025-12-09

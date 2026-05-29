@@ -1,5 +1,5 @@
 [tools]
-java = 'temurin-21'
-"asdf:maven" = '3.9' # https://github.com/jdx/mise/discussions/7016, https://github.com/jdx/mise/discussions/6983
+java = 'temurin-25'
+gradle = '9.5'
 gcloud = 'latest'
 python = '3.13' # required by some gcloud components

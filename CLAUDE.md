@@ -8,7 +8,7 @@ CampusCoffee is a Spring Boot application for managing Points of Sale (POS) like
 
 ## Architecture
 
-The project uses a **multi-module Maven structure** with four modules:
+The project uses a **multi-module Gradle structure** (Kotlin DSL) with four modules:
 
 ### Module Dependencies
 - **domain**: Core business logic, domain models, and port interfaces (no external dependencies except validation).
@@ -50,12 +50,15 @@ Domain-specific controllers/services extend these base classes (e.g., `PosContro
 
 ### Prerequisites
 - Docker daemon must be running to use a database in the `dev` profile or to run the tests that use *Testcontainers*.
-- Java 21 and Maven 3.9 (configured via `mise.toml`)
+- Java 25 and Gradle 9.5, provisioned via `mise.toml` (no Gradle wrapper). Run Gradle through mise
+  (CI uses `jdx/mise-action`). The build pins a **Java 25 toolchain with no auto-download**, so a
+  JDK 25 must be present on the machine — mise supplies it; without it the build fails with "no
+  matching toolchains".
 
 ### Build
 
 ```shell
-mvn clean install
+gradle build
 ```
 
 ### Start PostgreSQL Database
@@ -67,8 +70,7 @@ docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres 
 ### Run Application (dev profile)
 
 ```shell
-cd application
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+gradle :application:bootRun --args='--spring.profiles.active=dev'
 ```
 
 The `dev` profile:
@@ -81,42 +83,40 @@ The `dev` profile:
 All tests:
 
 ```shell
-mvn test
+gradle test
 ```
 
 Single test class:
 
 ```shell
-mvn test -Dtest=PosServiceTest
+gradle test --tests PosServiceTest
 ```
 
 Single test method:
 
 ```shell
-mvn test -Dtest=PosServiceTest#testMethodName
+gradle test --tests "PosServiceTest.testMethodName"
 ```
 
 ### Code Coverage and Mutation Testing
 
-- **Coverage (JaCoCo)**: the `coverage` module aggregates execution data from all modules into one
-  report at `coverage/target/site/jacoco-aggregate/index.html`. Aggregation is required because
+- **Coverage (JaCoCo)**: the `coverage` subproject (the `jacoco-report-aggregation` plugin) aggregates
+  execution data from all modules into one report at
+  `coverage/build/reports/jacoco/testCodeCoverageReport/`. Aggregation is required because
   `domain`/`api`/`data` are largely covered by the `application` system and acceptance tests, not by
-  their own tests (`data` has none). `mvn verify` builds the report and enforces the gate: the
-  `check-aggregate` execution in `coverage/pom.xml` fails the build when aggregated line or branch
-  coverage is below its configured minimums. The minimums track current coverage; raise them
-  when adding tests, never lower them to make a build pass.
-- **Mutation testing (PITest)**: opt-in and local via the `mutation` profile: `mvn -P mutation clean test`
-  (use `clean` so stale reports are not reused). Each module runs PIT against its own tests and writes its
-  own report under `<module>/target/pit-reports/index.html`: `domain` mutates `domain.*`, `api` mutates
-  `api.*`, and `data` mutates `data.*`, each against that module's own tests; `application` mutates
-  `api.*`/`data.*` via `crossModule` against the system and acceptance tests. The api/data classes
-  therefore appear in two reports (a module's own run and application's system run), which are not merged:
-  PIT's `report-aggregate` overwrites rather than unions duplicate mutations, so a merge would discard one
-  side. Read a module's report for what its own tests catch and `application`'s for the system tests; the
-  controllers, which have no api-local tests, are killed only in the application report. The generated
-  `*MapperImpl` classes are excluded from mutation, mirroring the JaCoCo gate. Per-module targets live in
-  each module's pom; shared config is in the root `mutation` profile's `pluginManagement`. Select the
-  mutator group with `-Dpitest.mutators=DEFAULTS|STRONGER|ALL`.
+  their own tests. `gradle build` (or `gradle check`) builds the report and enforces the gate: the
+  `coverageGate` task (a `JacocoCoverageVerification` in `coverage/build.gradle.kts`, wired into `check`)
+  fails the build when aggregated line or branch coverage is below its minimums (90% line, 80% branch).
+  The minimums track current coverage; raise them when adding tests, never lower them to make a build pass.
+- **Mutation testing (PITest)**: opt-in and local via the `-Pmutation` property and the per-module
+  `pitest` task (e.g. `gradle :domain:pitest -Pmutation`). Each module runs PIT against its own tests and
+  writes its own report under `<module>/build/reports/pitest/index.html`: `domain` mutates `domain.*`,
+  `api` mutates `api.*`, and `data` mutates `data.*`. The application cross-module run (mutating
+  `api.*`/`data.*` against the system and acceptance tests, as the Maven build did) is a pending
+  follow-up. The generated `*MapperImpl` classes are excluded from mutation, mirroring the JaCoCo gate.
+  Per-module `targetClasses` live in each module's `build.gradle.kts`; shared config is in the
+  `campuscoffee.pitest-conventions` convention plugin. Select the mutator group with
+  `-Ppitest.mutators=DEFAULTS|STRONGER|ALL`.
 - When adding a feature, also add tests; use surviving mutants to find missing assertions. The
   hand-written mapping logic in `PosEntityMapper` (house-number parsing), `ReviewDtoMapper` (expression
   mappings), and `HouseNumberConverter` contains real logic and is kept in scope for both tools.
@@ -160,7 +160,7 @@ Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql
 ## Key Technologies
 
 - **Spring Boot 3.5.8** with Spring Cloud 2025.0.0.
-- **Java 21** with JSpecify annotations for nullability.
+- **Java 25** with JSpecify annotations for nullability.
 - **Lombok** for boilerplate reduction.
 - **MapStruct** for object mapping (DTOs <-> domain models <-> entities).
 - **Bean Validation** (Jakarta Validation) for input validation (validation happens in the controllers based on the DTOs, before mapping them to domain models).
@@ -184,7 +184,7 @@ Global exception handler: `api/src/main/java/de/seuhd/campuscoffee/api/exception
 
 ### MapStruct Configuration
 
-The project uses Lombok with MapStruct. Annotation processor configuration is in the root `pom.xml` with `lombok-mapstruct-binding` to ensure correct ordering.
+The project uses Lombok with MapStruct. The annotation processor configuration lives in the `campuscoffee.java-conventions` convention plugin (`build-logic/`), with `lombok-mapstruct-binding` to ensure correct ordering.
 
 ### Custom Sequence Generation
 
