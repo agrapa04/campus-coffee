@@ -16,8 +16,9 @@ configure<PitestPluginExtension> {
     excludedClasses.set(
         listOf(
             "de.seuhd.campuscoffee.domain.tests.*",
-            "de.seuhd.campuscoffee.Application",
-            "de.seuhd.campuscoffee.LoadInitialData",
+            // glob covers the Kotlin file class (ApplicationKt) and companions
+            "de.seuhd.campuscoffee.Application*",
+            "de.seuhd.campuscoffee.LoadInitialData*",
             "de.seuhd.campuscoffee.*.*MapperImpl",
         )
     )

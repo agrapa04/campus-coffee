@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.domain.implementation;
 
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException;
 import de.seuhd.campuscoffee.domain.model.objects.Pos;
+import de.seuhd.campuscoffee.domain.ports.data.OsmDataService;
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService;
 import de.seuhd.campuscoffee.domain.tests.TestFixtures;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ import static org.mockito.Mockito.*;
 public class PosServiceTest {
     @Mock
     private PosDataService posDataService;
+
+    @Mock
+    private OsmDataService osmDataService;
 
     @InjectMocks
     private PosServiceImpl posService;

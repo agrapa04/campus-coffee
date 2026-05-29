@@ -2,6 +2,7 @@ import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
     id("campuscoffee.java-conventions")
+    id("campuscoffee.kotlin-conventions")
     id("campuscoffee.jacoco-conventions")
     id("campuscoffee.pitest-conventions")
 }

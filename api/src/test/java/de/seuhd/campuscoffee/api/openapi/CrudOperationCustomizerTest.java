@@ -3,6 +3,12 @@ package de.seuhd.campuscoffee.api.openapi;
 import de.seuhd.campuscoffee.api.controller.PosController;
 import de.seuhd.campuscoffee.api.controller.ReviewController;
 import de.seuhd.campuscoffee.api.controller.UserController;
+import de.seuhd.campuscoffee.api.mapper.PosDtoMapper;
+import de.seuhd.campuscoffee.api.mapper.ReviewDtoMapper;
+import de.seuhd.campuscoffee.api.mapper.UserDtoMapper;
+import de.seuhd.campuscoffee.domain.ports.api.PosService;
+import de.seuhd.campuscoffee.domain.ports.api.ReviewService;
+import de.seuhd.campuscoffee.domain.ports.api.UserService;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.Schema;
@@ -23,6 +29,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests how {@link CrudOperationCustomizer} builds the OpenAPI responses for a controller method from its
@@ -37,9 +44,9 @@ class CrudOperationCustomizerTest {
 
     /** Every {@code @CrudOperation}-annotated handler method on the real controllers. */
     static Stream<Arguments> crudOperationMethods() {
-        return Stream.of(new PosController(null, null),
-                        new UserController(null, null),
-                        new ReviewController(null, null))
+        return Stream.of(new PosController(mock(PosService.class), mock(PosDtoMapper.class)),
+                        new UserController(mock(UserService.class), mock(UserDtoMapper.class)),
+                        new ReviewController(mock(ReviewService.class), mock(ReviewDtoMapper.class)))
                 .flatMap(controller -> Arrays.stream(controller.getClass().getDeclaredMethods())
                         // skip the synthetic bridge methods the generic CrudController overrides generate;
                         // they carry the annotation but a raw return type, which springdoc never passes
@@ -78,7 +85,9 @@ class CrudOperationCustomizerTest {
     @Test
     void leavesOperationsWithoutCrudAnnotationUnchanged() throws NoSuchMethodException {
         // Object#toString carries no @CrudOperation, so the operation must pass through untouched
-        HandlerMethod plain = new HandlerMethod(new PosController(null, null), Object.class.getMethod("toString"));
+        HandlerMethod plain = new HandlerMethod(
+                new PosController(mock(PosService.class), mock(PosDtoMapper.class)),
+                Object.class.getMethod("toString"));
 
         Operation operation = customizer.customize(new Operation(), plain);
 

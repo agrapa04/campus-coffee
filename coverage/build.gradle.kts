@@ -50,8 +50,9 @@ val aggregateReport = tasks.named<JacocoReport>("testCodeCoverageReport") {
 //   and the generated MapStruct *MapperImpl classes.
 val gateExclusions = listOf(
     "de/seuhd/campuscoffee/domain/tests/**",
-    "**/Application.*",
-    "**/LoadInitialData.*",
+    // glob (not `.*`) so the Kotlin file class (ApplicationKt) and companion ($Companion) are excluded too
+    "**/Application*",
+    "**/LoadInitialData*",
     "**/*MapperImpl.*",
 )
 

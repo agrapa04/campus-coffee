@@ -1,0 +1,40 @@
+package de.seuhd.campuscoffee.data.implementations
+
+import de.seuhd.campuscoffee.data.constraints.ConstraintMapping
+import de.seuhd.campuscoffee.data.mapper.UserEntityMapper
+import de.seuhd.campuscoffee.data.persistence.entities.UserEntity
+import de.seuhd.campuscoffee.data.persistence.repositories.UserRepository
+import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
+import de.seuhd.campuscoffee.domain.model.objects.User
+import de.seuhd.campuscoffee.domain.ports.data.UserDataService
+import org.springframework.stereotype.Service
+
+/**
+ * Data-layer adapter implementing the user data service port. Responsible for persistence;
+ * business logic lives in the domain service layer.
+ */
+@Service
+class UserDataServiceImpl(
+    repository: UserRepository,
+    entityMapper: UserEntityMapper,
+) : CrudDataServiceImpl<User, UserEntity, UserRepository, Long>(
+    repository,
+    entityMapper,
+    User::class.java,
+    // unique constraints on login name and email, reported as a DuplicationException on the offending field
+    setOf(
+        ConstraintMapping({ it.loginName }, UserEntity.LOGIN_NAME_COLUMN, UserEntity.LOGIN_NAME_UNIQUE_CONSTRAINT),
+        ConstraintMapping(
+            { it.emailAddress }, UserEntity.EMAIL_ADDRESS_COLUMN, UserEntity.EMAIL_ADDRESS_UNIQUE_CONSTRAINT,
+        ),
+    ),
+), UserDataService {
+
+    /**
+     * Retrieves a user by their unique login name.
+     *
+     * @throws NotFoundException if no user exists with the given login name
+     */
+    override fun getByLoginName(loginName: String): User =
+        findByFieldOrThrow({ repository.findByLoginName(loginName) }, UserEntity.LOGIN_NAME_COLUMN, loginName)
+}

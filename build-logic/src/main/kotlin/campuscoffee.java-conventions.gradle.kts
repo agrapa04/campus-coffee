@@ -14,6 +14,10 @@ val libs = the<VersionCatalogsExtension>().named("libs")
 group = "de.seuhd.campuscoffee"
 version = "0.0.5"
 
+// Align the Kotlin stdlib/reflect with the Kotlin plugin version (Boot 4 manages an older stdlib;
+// the plugin needs >= 2.3 for jvmTarget 25).
+extra["kotlin.version"] = libs.findVersion("kotlin").get().requiredVersion
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))

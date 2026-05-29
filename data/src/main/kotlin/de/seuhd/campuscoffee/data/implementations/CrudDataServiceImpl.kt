@@ -1,0 +1,139 @@
+package de.seuhd.campuscoffee.data.implementations
+
+import de.seuhd.campuscoffee.data.constraints.ConstraintMapping
+import de.seuhd.campuscoffee.data.mapper.EntityMapper
+import de.seuhd.campuscoffee.data.persistence.entities.Entity
+import de.seuhd.campuscoffee.data.persistence.repositories.ResettableSequenceRepository
+import de.seuhd.campuscoffee.domain.exceptions.ConcurrentUpdateException
+import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
+import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
+import de.seuhd.campuscoffee.domain.model.objects.DomainModel
+import de.seuhd.campuscoffee.domain.ports.data.CrudDataService
+import org.hibernate.exception.ConstraintViolationException
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.data.jpa.repository.JpaRepository
+import java.util.Optional
+
+/**
+ * Base implementation of CRUD data service operations, providing common functionality reused across
+ * entity types. Subclasses supply the repository, mapper, domain class, and unique-constraint
+ * mappings via the constructor; this is the data-layer adapter for the domain's port interface.
+ *
+ * @param DOMAIN     the domain model type
+ * @param ENTITY     the JPA entity type
+ * @param REPOSITORY the repository type (extends both JpaRepository and ResettableSequenceRepository)
+ * @param ID         the type of the unique identifier (e.g., Long, UUID, String)
+ */
+abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, REPOSITORY, ID : Any>(
+    protected val repository: REPOSITORY,
+    protected val mapper: EntityMapper<DOMAIN, ENTITY>,
+    protected val domainClass: Class<DOMAIN>,
+    /**
+     * The entity's unique constraints, declared by the subclass. Each maps a database constraint name
+     * to the domain field it guards, so a uniqueness violation is reported as a [DuplicationException]
+     * on that field.
+     */
+    protected val uniqueConstraints: Set<ConstraintMapping<DOMAIN>>,
+) : CrudDataService<DOMAIN, ID>
+    where REPOSITORY : JpaRepository<ENTITY, ID>, REPOSITORY : ResettableSequenceRepository {
+
+    override fun clear() {
+        repository.deleteAllInBatch()
+        repository.flush()
+        repository.resetSequence() // ensure consistent IDs after clearing (for local testing)
+    }
+
+    override fun getAll(): List<DOMAIN> =
+        repository.findAll().map { mapper.fromEntity(it) }
+
+    override fun getById(id: ID): DOMAIN =
+        repository.findById(id)
+            .map { mapper.fromEntity(it) }
+            .orElseThrow { NotFoundException(domainClass, id) }
+
+    /**
+     * Upserts a domain object, converting database uniqueness violations into [DuplicationException]
+     * via the subclass-declared constraint mappings. Timestamps are managed by the JPA lifecycle
+     * callbacks.
+     *
+     * @throws DuplicationException if a declared uniqueness constraint is violated
+     * @throws DataIntegrityViolationException if an unhandled constraint violation occurs
+     */
+    override fun upsert(domain: DOMAIN): DOMAIN {
+        try {
+            val id = domain.id
+            if (id == null) {
+                // create new entity
+                return mapper.fromEntity(repository.saveAndFlush(mapper.toEntity(domain)))
+            }
+
+            // update existing entity (timestamps are set by the @PreUpdate callback)
+            val entity = repository.findById(id)
+                .orElseThrow { NotFoundException(domainClass, id) }
+            mapper.updateEntity(domain, entity)
+            return mapper.fromEntity(repository.saveAndFlush(entity))
+        } catch (e: OptimisticLockingFailureException) {
+            // the row changed between the read above and this write; surface it as a domain conflict
+            throw ConcurrentUpdateException(domainClass, domain.id)
+        } catch (e: DataIntegrityViolationException) {
+            // the database reports which named constraint was violated; map it to the declared domain field
+            val violated = constraintNameOf(e)
+            if (violated != null) {
+                for (constraint in uniqueConstraints) {
+                    if (violated.equals(constraint.constraintName, ignoreCase = true)) {
+                        throw DuplicationException(
+                            domainClass,
+                            constraint.columnName,
+                            "${constraint.extractValue(domain)}",
+                        )
+                    }
+                }
+            }
+            // no declared unique constraint matched (e.g. a CHECK or foreign-key violation) -> rethrow
+            throw e
+        }
+    }
+
+    override fun delete(id: ID) {
+        if (!repository.existsById(id)) {
+            throw NotFoundException(domainClass, id)
+        }
+        repository.deleteById(id)
+    }
+
+    /**
+     * Queries by a unique field following the common pattern: query -> map -> orElseThrow. Reduces
+     * duplication across data services that look up entities by a unique field other than the id.
+     *
+     * @throws NotFoundException if no entity matches the query
+     */
+    protected fun findByFieldOrThrow(
+        queryFunction: () -> Optional<ENTITY>,
+        fieldName: String,
+        fieldValue: String,
+    ): DOMAIN =
+        queryFunction()
+            .map { mapper.fromEntity(it) }
+            .orElseThrow { NotFoundException(domainClass, fieldName, fieldValue) }
+
+    companion object {
+        /**
+         * Returns the name of the database constraint reported by a data-integrity violation, or null
+         * when the cause chain contains no Hibernate [ConstraintViolationException]. Reading the name
+         * the driver reported avoids matching on database-specific error-message text.
+         */
+        // exposed (not private) so it can be unit-tested directly with a crafted exception
+        @JvmStatic
+        fun constraintNameOf(exception: DataIntegrityViolationException): String? {
+            var cause: Throwable? = exception
+            while (cause != null) {
+                if (cause is ConstraintViolationException) {
+                    return cause.constraintName
+                }
+                cause = cause.cause
+            }
+            return null
+        }
+    }
+}

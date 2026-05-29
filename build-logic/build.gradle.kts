@@ -13,4 +13,8 @@ dependencies {
     implementation(libs.spring.boot.gradle.plugin)
     implementation(libs.dependency.management.plugin)
     implementation(libs.pitest.gradle.plugin)
+    implementation(libs.kotlin.gradle.plugin)
+    implementation(libs.kotlin.allopen)
+    implementation(libs.kotlin.noarg)
+    implementation(libs.kotlin.lombok)
 }

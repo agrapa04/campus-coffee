@@ -2,6 +2,9 @@ import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
     id("campuscoffee.java-conventions")
+    id("campuscoffee.kotlin-conventions")
+    id("campuscoffee.kotlin-jpa-conventions")
+    id("campuscoffee.kotlin-kapt-conventions")
     id("campuscoffee.jacoco-conventions")
     id("campuscoffee.pitest-conventions")
 }
@@ -18,11 +21,10 @@ dependencies {
     runtimeOnly(libs.flyway.database.postgresql)
     implementation(libs.jackson.dataformat.xml)
 
-    // MapStruct is compile-only for main code; tests reference it directly.
+    // MapStruct is compile-only for the Kotlin mappers; kapt runs the processor that generates the impls.
     compileOnly(libs.mapstruct)
     testImplementation(libs.mapstruct)
-    annotationProcessor(libs.mapstruct.processor)
-    annotationProcessor(libs.lombok.mapstruct.binding)
+    kapt(libs.mapstruct.processor)
 
     testImplementation(libs.testcontainers.postgresql)
 }

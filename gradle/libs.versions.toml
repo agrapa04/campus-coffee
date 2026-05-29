@@ -14,6 +14,8 @@ testcontainers = "1.21.4"
 jacoco = "0.8.13"
 pitest-tool = "1.25.1"
 pitest-junit5 = "1.2.3"
+# Kotlin: >= 2.3.0 is required for jvmTarget 25; overrides the Boot 4 BOM's managed Kotlin stdlib.
+kotlin = "2.3.20"
 # Gradle plugins
 dependency-management = "1.1.7"
 pitest-plugin = "1.19.0"
@@ -41,6 +43,7 @@ postgresql = { module = "org.postgresql:postgresql" }
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 jackson-dataformat-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml" }
+jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 assertj-core = { module = "org.assertj:assertj-core" }
 junit-platform-suite = { module = "org.junit.platform:junit-platform-suite" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
@@ -63,6 +66,10 @@ testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "dependency-management" }
 pitest-gradle-plugin = { module = "info.solidsoft.gradle.pitest:gradle-pitest-plugin", version.ref = "pitest-plugin" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-allopen = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+kotlin-noarg = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
+kotlin-lombok = { module = "org.jetbrains.kotlin:kotlin-lombok", version.ref = "kotlin" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
