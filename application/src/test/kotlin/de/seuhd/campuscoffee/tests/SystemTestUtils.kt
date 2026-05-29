@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.web.servlet.client.RestTestClient
+import org.springframework.test.web.servlet.client.returnResult
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.lang.reflect.Array as ReflectArray
@@ -106,7 +107,7 @@ object SystemTestUtils {
 
         /** The raw status code of a response, without asserting it. */
         private fun status(response: RestTestClient.ResponseSpec): Int =
-            response.returnResult(ByteArray::class.java).status.value()
+            response.returnResult<ByteArray>().status.value()
 
         /** The list body of a response, deserialized via the DTO array type, after asserting 200. */
         @Suppress("UNCHECKED_CAST")

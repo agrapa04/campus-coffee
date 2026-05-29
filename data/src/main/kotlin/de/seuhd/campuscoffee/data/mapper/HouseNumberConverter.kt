@@ -3,7 +3,7 @@ package de.seuhd.campuscoffee.data.mapper
 import org.springframework.stereotype.Component
 
 /**
- * Converts a house number string used in the domain (e.g. "21a") to and from the numeric and suffix
+ * Converts a house number string used in the domain (e.g., "21a") to and from the numeric and suffix
  * parts stored on the entity (21, 'a'). Kept separate from the mapper so the parsing is independently
  * unit-testable, including the empty and no-digit inputs that a validated domain object never produces.
  */

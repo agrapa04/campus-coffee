@@ -22,7 +22,7 @@ class OptimisticLockingIntegrationTest : AbstractDataIntegrationTest() {
     private lateinit var userEntityMapper: UserEntityMapper
 
     @Test
-    fun staleReviewUpdateIsRejected() {
+    fun `saving a review with a stale version throws ObjectOptimisticLockingFailureException`() {
         val savedAuthor =
             userRepository.saveAndFlush(
                 userEntityMapper.toEntity(TestFixtures.getUserFixturesForInsertion().first())

@@ -27,7 +27,7 @@ import org.testcontainers.containers.PostgreSQLContainer
     classes = [Application::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-abstract class AbstractSysTest {
+abstract class AbstractSystemTest {
     @Autowired
     protected lateinit var posService: PosService
 

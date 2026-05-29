@@ -140,39 +140,29 @@ object TestFixtures {
             )
         )
 
-    @JvmStatic
     fun getUserFixtures(): List<User> = USER_LIST
 
-    @JvmStatic
     fun getUserFixturesForInsertion(): List<User> =
         getUserFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
-    @JvmStatic
     fun getPosFixtures(): List<Pos> = POS_LIST
 
-    @JvmStatic
     fun getPosFixturesForInsertion(): List<Pos> =
         getPosFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
-    @JvmStatic
     fun getReviewFixtures(): List<Review> = REVIEW_LIST
 
-    @JvmStatic
     fun getReviewFixturesForInsertion(): List<Review> =
         getReviewFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
-    @JvmStatic
     fun createUserFixtures(userService: UserService): List<User> =
         getUserFixturesForInsertion().map { userService.upsert(it) }
 
-    @JvmStatic
     fun createPosFixtures(posService: PosService): List<Pos> =
         getPosFixturesForInsertion().map { posService.upsert(it) }
 
-    @JvmStatic
     fun createReviewFixtures(reviewService: ReviewService): List<Review> =
         getReviewFixturesForInsertion().map { reviewService.upsert(it) }
 
-    @JvmStatic
     fun getApprovalConfiguration(): ApprovalConfiguration = ApprovalConfiguration(MIN_APPROVAL_COUNT)
 }

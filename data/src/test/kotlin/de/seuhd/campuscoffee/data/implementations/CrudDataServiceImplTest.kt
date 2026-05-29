@@ -13,7 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException
  */
 class CrudDataServiceImplTest {
     @Test
-    fun readsConstraintNameFromHibernateCause() {
+    fun `constraintNameOf reads the constraint name from the Hibernate cause`() {
         val reportedName = "some_unique_constraint"
         val hibernateViolation = mock<ConstraintViolationException>()
         whenever(hibernateViolation.constraintName).thenReturn(reportedName)
@@ -23,7 +23,7 @@ class CrudDataServiceImplTest {
     }
 
     @Test
-    fun returnsNullWhenNoHibernateConstraintViolationInChain() {
+    fun `constraintNameOf returns null when the cause chain has no Hibernate violation`() {
         val exception =
             DataIntegrityViolationException(
                 "could not execute statement",

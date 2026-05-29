@@ -9,7 +9,6 @@ import de.seuhd.campuscoffee.tests.SystemTestUtils.getPostgresContainer
 import io.cucumber.java.After
 import io.cucumber.java.Before
 import io.cucumber.spring.CucumberContextConfiguration
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -23,16 +22,11 @@ import org.testcontainers.containers.PostgreSQLContainer
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @CucumberContextConfiguration
-class CucumberSpringConfiguration {
-    @Autowired
-    protected lateinit var posService: PosService
-
-    @Autowired
-    protected lateinit var userService: UserService
-
-    @Autowired
-    protected lateinit var reviewService: ReviewService
-
+class CucumberSpringConfiguration(
+    private val posService: PosService,
+    private val userService: UserService,
+    private val reviewService: ReviewService
+) {
     @LocalServerPort
     private var port: Int = 0
 

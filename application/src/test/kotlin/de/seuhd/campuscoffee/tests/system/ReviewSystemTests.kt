@@ -14,9 +14,9 @@ import org.springframework.http.HttpStatus
  * The default approval quorum is `campus-coffee.approval.min-count = 3`, so a review needs three
  * approvals from users other than the author to become approved.
  */
-class ReviewSystemTests : AbstractSysTest() {
+class ReviewSystemTests : AbstractSystemTest() {
     @Test
-    fun createReviewStartsUnapproved() {
+    fun `creating a review returns it unapproved`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
 
@@ -29,7 +29,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun retrieveAllAndById() {
+    fun `listing reviews and fetching one by id return the created review`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         val created =
@@ -44,7 +44,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun updateReviewChangesText() {
+    fun `updating a review changes its text`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         val created =
@@ -65,7 +65,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun deleteReview() {
+    fun `deleting a review twice returns 204 No Content then 404 Not Found`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         val created =
@@ -81,7 +81,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun approvalBelowQuorumDoesNotApprove() {
+    fun `approving a review below the quorum leaves it unapproved`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         val firstApprover = createUser("approver_one", "approver.one@uni-heidelberg.de")
@@ -98,7 +98,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun approvalReachingQuorumApprovesReview() {
+    fun `approving a review up to the quorum marks it approved`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         val firstApprover = createUser("approver_one", "approver.one@uni-heidelberg.de")
@@ -117,7 +117,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun selfApprovalIsRejected() {
+    fun `approving your own review returns 400 Bad Request`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         val review =
@@ -131,7 +131,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun duplicateReviewBySameAuthorForSamePosRejected() {
+    fun `creating a second review by the same author for a POS returns 400 Bad Request`() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
         reviewRequests.create(listOf(reviewFor(pos, author, "First review by this author.")))
@@ -145,7 +145,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun approveMissingReviewReturnsNotFound() {
+    fun `approving a missing review returns 404 Not Found`() {
         val approver = createUser("approver", "approver@uni-heidelberg.de")
 
         val statusCode = reviewRequests.approveAndReturnStatusCode(9999L, approver.id!!)
@@ -154,7 +154,7 @@ class ReviewSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun filterByApprovalStatusPartitionsReviews() {
+    fun `filtering reviews by approval status returns only the matching reviews`() {
         val pos = createPos()
         val approvedAuthor = createUser("approved_author", "approved.author@uni-heidelberg.de")
         val pendingAuthor = createUser("pending_author", "pending.author@uni-heidelberg.de")

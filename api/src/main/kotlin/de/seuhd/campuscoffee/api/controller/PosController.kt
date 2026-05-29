@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Tag(name = "Points of Sale (POS)", description = "Operations for managing coffee points of sale.")
 @Controller
-@RequestMapping("/api/pos")
+@RequestMapping("/pos")
 class PosController(
     private val posService: PosService,
     private val posDtoMapper: PosDtoMapper

@@ -44,7 +44,7 @@ class PosTypeMappingTest {
 
     @ParameterizedTest
     @MethodSource("amenityToPosType")
-    fun mapsAmenityToPosType(
+    fun `importFromOsmNode maps each OSM amenity to its POS type`(
         amenity: OsmAmenity,
         expectedType: PosType
     ) {
@@ -57,7 +57,7 @@ class PosTypeMappingTest {
     }
 
     @Test
-    fun importMapsAllOsmNodeFieldsToPos() {
+    fun `importFromOsmNode copies every OSM node field onto the POS`() {
         val node = nodeWith(OsmAmenity.CAFE, "69117")
         whenever(osmDataService.fetchNode(NODE_ID)).thenReturn(node)
         whenever(posDataService.upsert(any<Pos>())).thenAnswer { it.getArgument<Pos>(0) }
@@ -75,7 +75,7 @@ class PosTypeMappingTest {
     }
 
     @Test
-    fun unparsablePostcodeIsReportedAsMissingField() {
+    fun `importFromOsmNode throws MissingFieldException for an unparsable postcode`() {
         whenever(osmDataService.fetchNode(NODE_ID)).thenReturn(nodeWith(OsmAmenity.CAFE, "not-a-number"))
 
         assertThatThrownBy { posService.importFromOsmNode(NODE_ID, CampusType.INF) }

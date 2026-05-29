@@ -1,7 +1,9 @@
+package de.seuhd.campuscoffee
+
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
-// Opt-in, local mutation testing (run with `-Pmutation`, e.g. `gradle :domain:pitest -Pmutation`).
+// Opt-in, local mutation testing (run with `-Pmutation`, e.g., `gradle :domain:pitest -Pmutation`).
 // Not run by `build` or CI. Shared config lives here; each module sets its own targetClasses.
 plugins {
     id("info.solidsoft.pitest")

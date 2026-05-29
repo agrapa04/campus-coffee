@@ -132,7 +132,7 @@ JSpecify, and the Java `-parameters`/annotation-processor config; rely on `kapt`
   suite after the application-test conversion.
 - **Coverage**: data-class `equals`/`hashCode`/`toString`/`componentN`/`copy` are synthetic; rely on
   JaCoCo's Kotlin filtering and, if needed, exclusion config — not source changes — and add tests for
-  any genuine logic gap (e.g. `Pos` validation).
+  any genuine logic gap (e.g., `Pos` validation).
 
 ## Risks and mitigations
 

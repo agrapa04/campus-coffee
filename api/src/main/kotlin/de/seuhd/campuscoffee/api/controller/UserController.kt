@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 @Tag(name = "Users", description = "Operations related to user management.")
 @Controller
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 class UserController(
     private val userService: UserService,
     private val userDtoMapper: UserDtoMapper

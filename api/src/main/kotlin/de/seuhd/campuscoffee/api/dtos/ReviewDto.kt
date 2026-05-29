@@ -13,8 +13,9 @@ private const val MIN_REVIEW_LENGTH = 10
 private const val MAX_REVIEW_LENGTH = 5000
 
 /**
- * DTO for a review. Properties are nullable so a request body that omits a field deserializes and is
- * then rejected by bean validation; the controller validates the DTO before it is mapped to a [Review].
+ * DTO for a review. Properties are nullable, so a request body that omits a field deserializes and is
+ * then rejected by bean validation; the controller validates the DTO before it is mapped to a
+ * [de.seuhd.campuscoffee.domain.model.objects.Review].
  */
 data class ReviewDto(
     override val id: Long? = null,

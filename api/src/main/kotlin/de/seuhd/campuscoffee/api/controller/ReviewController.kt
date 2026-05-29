@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Tag(name = "Reviews", description = "Operations for managing reviews for points of sale.")
 @Controller
-@RequestMapping("/api/reviews")
+@RequestMapping("/reviews")
 class ReviewController(
     private val reviewService: ReviewService,
     private val reviewDtoMapper: ReviewDtoMapper

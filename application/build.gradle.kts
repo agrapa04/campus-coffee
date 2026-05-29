@@ -2,10 +2,10 @@ import info.solidsoft.gradle.pitest.PitestPluginExtension
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
-    id("campuscoffee.java-conventions")
-    id("campuscoffee.kotlin-conventions")
-    id("campuscoffee.jacoco-conventions")
-    id("campuscoffee.pitest-conventions")
+    id("de.seuhd.campuscoffee.java-conventions")
+    id("de.seuhd.campuscoffee.kotlin-conventions")
+    id("de.seuhd.campuscoffee.jacoco-conventions")
+    id("de.seuhd.campuscoffee.pitest-conventions")
     alias(libs.plugins.spring.boot)
 }
 

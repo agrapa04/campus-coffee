@@ -157,7 +157,7 @@ duplicate mutations (last module in reactor order wins) rather than unioning the
 would silently discard one side (verified: `api.openapi` shows 12 of 31 killed in the api report, but the
 merge showed the application run's 1/31). The coverage module therefore aggregates only JaCoCo line/branch
 coverage, not mutation. To read mutation results: a module's own `target/pit-reports` shows what its
-tests catch; `application/target/pit-reports` shows what the system tests catch (e.g. the controllers,
+tests catch; `application/target/pit-reports` shows what the system tests catch (e.g., the controllers,
 which have no api-local tests, are killed only there). An earlier attempt to get one unified report by
 copying the api/data test classes onto the application classpath worked but was discarded as too hacky;
 a single correct *and complete* number is only possible that way, because `report-aggregate` cannot union.

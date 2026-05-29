@@ -23,7 +23,7 @@ class ReviewRepositoryIntegrationTest : AbstractDataIntegrationTest() {
     private lateinit var userEntityMapper: UserEntityMapper
 
     @Test
-    fun findAllByPosAndApprovedPartitionsByStatus() {
+    fun `findAllByPosAndApproved returns reviews matching the approval status`() {
         val pos = persistFirstPos()
         val users = TestFixtures.getUserFixturesForInsertion()
         val approved = persistReview(pos, persistUser(users[0]), true)
@@ -36,7 +36,7 @@ class ReviewRepositoryIntegrationTest : AbstractDataIntegrationTest() {
     }
 
     @Test
-    fun findAllByPosAndAuthorReturnsOnlyThatAuthorsReviews() {
+    fun `findAllByPosAndAuthor returns only reviews by that author`() {
         val pos = persistFirstPos()
         val users = TestFixtures.getUserFixturesForInsertion()
         val author = persistUser(users[0])

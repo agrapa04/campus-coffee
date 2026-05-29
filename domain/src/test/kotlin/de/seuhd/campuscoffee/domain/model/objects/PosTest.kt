@@ -14,26 +14,26 @@ class PosTest {
     @ParameterizedTest
     // the inclusive bounds and a regular code in between; bounds come from Pos, not hard-coded here
     @ValueSource(ints = [Pos.MIN_POSTAL_CODE, Pos.MAX_POSTAL_CODE, 69117])
-    fun validPostalCodesAreAccepted(postalCode: Int) {
+    fun `the Pos constructor accepts valid postal codes`(postalCode: Int) {
         assertDoesNotThrow { posWithPostalCode(postalCode) }
     }
 
     @ParameterizedTest
     // just below the lower bound, just above the upper bound, and zero
     @ValueSource(ints = [Pos.MIN_POSTAL_CODE - 1, Pos.MAX_POSTAL_CODE + 1, 0])
-    fun postalCodesOutsideTheRangeAreRejected(postalCode: Int) {
+    fun `the Pos constructor rejects postal codes outside the range with ValidationException`(postalCode: Int) {
         assertThrows<ValidationException> { posWithPostalCode(postalCode) }
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["1", "100", "21a", "21-a", "21 a"])
-    fun validHouseNumbersAreAccepted(houseNumber: String) {
+    fun `the Pos constructor accepts valid house numbers`(houseNumber: String) {
         assertDoesNotThrow { posWithHouseNumber(houseNumber) }
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["a", "abc", "21ab", "-"]) // no digit, no digit, two suffix letters, no digit
-    fun invalidHouseNumbersAreRejected(houseNumber: String) {
+    fun `the Pos constructor rejects invalid house numbers with ValidationException`(houseNumber: String) {
         assertThrows<ValidationException> { posWithHouseNumber(houseNumber) }
     }
 

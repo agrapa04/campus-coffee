@@ -42,18 +42,18 @@ Two hard constraints shape everything below:
 
 ### Decisions (confirmed with the user)
 
-| Topic | Decision |
-|---|---|
-| Gradle DSL & structure | Kotlin DSL (`build.gradle.kts`) + `gradle/libs.versions.toml` version catalog + `build-logic/` convention plugins |
-| Target JDK | **Java 25** (current LTS), bumped after the Gradle equivalence check |
-| Target framework | **Spring Boot 4.0.6** (latest stable; major upgrade), done while still in Java, before Kotlin |
-| OSM client | Migrate `@FeignClient` → Spring `@HttpExchange`; drop Spring Cloud OpenFeign |
-| MapStruct under Kotlin | **kapt** (full support for the abstract mappers with `@Mapping(expression=...)` and `@Autowired`) |
-| Test code during Kotlin phase | Keep tests in **Java**; convert later as a separate pass |
-| Cutover sequencing | **Fully replace Maven first** (verify equivalent), delete poms, then JDK, framework, Kotlin |
-| Module isolation | Keep the existing compile-time submodule graph **and** test-time ArchUnit; **add** Kotlin `internal` for intra-module type hiding |
-| Public surface | Ports, domain model, DTOs, **DTO mappers** (decision), and `TestFixtures` stay `public`; impls/entities/repositories/controllers go `internal`; `explicitApi()` on the library modules |
-| JPMS | Non-goal (Spring reflection + fat-jar/classpath launcher friction outweighs the runtime-encapsulation benefit) |
+| Topic                         | Decision                                                                                                                                                                               |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Gradle DSL & structure        | Kotlin DSL (`build.gradle.kts`) + `gradle/libs.versions.toml` version catalog + `build-logic/` convention plugins                                                                      |
+| Target JDK                    | **Java 25** (current LTS), bumped after the Gradle equivalence check                                                                                                                   |
+| Target framework              | **Spring Boot 4.0.6** (latest stable; major upgrade), done while still in Java, before Kotlin                                                                                          |
+| OSM client                    | Migrate `@FeignClient` → Spring `@HttpExchange`; drop Spring Cloud OpenFeign                                                                                                           |
+| MapStruct under Kotlin        | **kapt** (full support for the abstract mappers with `@Mapping(expression=...)` and `@Autowired`)                                                                                      |
+| Test code during Kotlin phase | Keep tests in **Java**; convert later as a separate pass                                                                                                                               |
+| Cutover sequencing            | **Fully replace Maven first** (verify equivalent), delete poms, then JDK, framework, Kotlin                                                                                            |
+| Module isolation              | Keep the existing compile-time submodule graph **and** test-time ArchUnit; **add** Kotlin `internal` for intra-module type hiding                                                      |
+| Public surface                | Ports, domain model, DTOs, **DTO mappers** (decision), and `TestFixtures` stay `public`; impls/entities/repositories/controllers go `internal`; `explicitApi()` on the library modules |
+| JPMS                          | Non-goal (Spring reflection + fat-jar/classpath launcher friction outweighs the runtime-encapsulation benefit)                                                                         |
 
 > Provenance: working plan stored at
 > `docs/2026-05-27_maven-to-gradle-and-java-to-kotlin-migration.md`.
@@ -86,7 +86,7 @@ modules so the public surface is declared deliberately.
 
 **Dependency scoping (build hygiene, not layer enforcement).** With the `java-library` plugin,
 declare a module's dependencies as `api(...)` when their types appear in that module's *public
-signatures* (e.g. `api` re-exposes `domain` types in `PosController extends CrudController<PosDto,
+signatures* (e.g., `api` re-exposes `domain` types in `PosController extends CrudController<PosDto,
 Pos, Long>`, so `api(project(":domain"))`), and `implementation(...)` for dependencies used only
 internally (Flyway, postgresql, jackson, springdoc) so they do not leak onto consumers' compile
 classpaths or trigger their recompilation. Per-dependency decision; reduces accidental coupling and
@@ -176,7 +176,7 @@ Included build `build-logic` (`pluginManagement { includeBuild("build-logic") }`
 - Library modules (`domain`/`api`/`data`) apply `io.spring.dependency-management` for the BOM but
   **not** the Spring Boot plugin, so they emit plain jars (equivalent to today's `skipIfEmpty`).
 - Scope dependencies per *Module isolation and encapsulation*: `api(...)` only where a module
-  re-exposes the dependency's types in its public signatures (e.g. `api(project(":domain"))`),
+  re-exposes the dependency's types in its public signatures (e.g., `api(project(":domain"))`),
   `implementation(...)` for internal-only deps (Flyway, postgresql, jackson, springdoc). Behavior
   is identical to Maven's transitive `compile` either way; the difference is preventing accidental
   compile-time coupling, so it is fine to land this in Phase 1 and refine when types move.

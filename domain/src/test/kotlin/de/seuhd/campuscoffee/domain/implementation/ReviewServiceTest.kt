@@ -47,7 +47,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun approvalFailsIfUserIsAuthor() {
+    fun `approve throws ValidationException when the user is the author`() {
         val review = TestFixtures.getReviewFixtures().first()
         val authorId = requireNotNull(review.author.id)
         whenever(userDataService.getById(authorId)).thenReturn(review.author)
@@ -60,7 +60,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun approvalSuccessfulIfUserIsNotAuthor() {
+    fun `approve marks the review approved when the user is not the author`() {
         // one short of the quorum, so the single approval below pushes it to exactly the quorum
         val review =
             TestFixtures
@@ -84,7 +84,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun retrieveAllApprovedPos() {
+    fun `filter returns the approved reviews for a POS`() {
         val pos = TestFixtures.getPosFixtures().first()
         val posId = requireNotNull(pos.id)
         val reviews =
@@ -102,7 +102,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun createReviewPosDoesNotExistException() {
+    fun `upsert throws NotFoundException when the POS does not exist`() {
         val review = TestFixtures.getReviewFixtures().first()
         val posId = requireNotNull(review.pos.id)
         whenever(posDataService.getById(posId)).thenThrow(NotFoundException(review.pos.javaClass, posId))
@@ -112,7 +112,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun userCannotCreateMoreThanOneReviewPerPos() {
+    fun `upsert throws ValidationException for a duplicate review by the same author and POS`() {
         // given a new review (id is null), since the duplicate check runs only on creation
         val review = TestFixtures.getReviewFixturesForInsertion().first()
         val pos = review.pos
@@ -127,7 +127,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun approvalApprovesReviewWhenThresholdIsReached() {
+    fun `updateApprovalStatus approves a review once the threshold is reached`() {
         val quorum = approvalConfiguration.minCount!!
         val unapprovedReview =
             TestFixtures
@@ -144,7 +144,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun approvalDoesNotApproveReviewWhenThresholdIsNotReached() {
+    fun `approve increments the count but leaves the review unapproved below the threshold`() {
         val review = TestFixtures.getReviewFixtures().first().copy(approvalCount = 0, approved = false)
         val reviewId = requireNotNull(review.id)
         val user = TestFixtures.getUserFixtures().last()
@@ -163,7 +163,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun reviewCreationSuccessfulForExistingPosAndAuthorWithoutPreviousReview() {
+    fun `upsert saves a first review for an existing POS and author`() {
         val review = TestFixtures.getReviewFixturesForInsertion().first()
         val pos = review.pos
         val posId = requireNotNull(pos.id)
@@ -180,7 +180,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun updatingExistingReviewSkipsDuplicateCheck() {
+    fun `upsert skips the duplicate check when updating an existing review`() {
         // given an existing review with a non-null id
         val review = TestFixtures.getReviewFixtures().first()
         val pos = review.pos

@@ -37,7 +37,7 @@ class CrudOperationCustomizerTest {
 
     @ParameterizedTest
     @MethodSource("crudOperationMethods")
-    fun buildsSummaryAndResponsesMatchingTheOperationAndReturnType(handlerMethod: HandlerMethod) {
+    fun `customize builds the responses for the CrudOperation and return type`(handlerMethod: HandlerMethod) {
         val crudOperation = handlerMethod.getMethodAnnotation(CrudOperation::class.java)!!
         val specs = crudOperation.operation.responseSpecifications
 
@@ -62,7 +62,7 @@ class CrudOperationCustomizerTest {
     }
 
     @Test
-    fun leavesOperationsWithoutCrudAnnotationUnchanged() {
+    fun `customize leaves a method without a CrudOperation annotation unchanged`() {
         // Object#toString carries no @CrudOperation, so the operation must pass through untouched
         val plain =
             HandlerMethod(

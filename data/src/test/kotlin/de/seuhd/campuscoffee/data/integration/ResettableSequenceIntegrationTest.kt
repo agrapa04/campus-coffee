@@ -14,7 +14,7 @@ class ResettableSequenceIntegrationTest : AbstractDataIntegrationTest() {
     private lateinit var posEntityMapper: PosEntityMapper
 
     @Test
-    fun resetSequenceRestartsIdsAtOne() {
+    fun `resetSequence restarts the id sequence at one`() {
         posRepository.resetSequence()
 
         val first = posRepository.saveAndFlush(posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion()[0]))

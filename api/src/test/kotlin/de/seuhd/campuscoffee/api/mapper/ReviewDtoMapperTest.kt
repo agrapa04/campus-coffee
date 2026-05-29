@@ -27,7 +27,7 @@ class ReviewDtoMapperTest {
     }
 
     @Test
-    fun toDomainForcesUnapprovedZeroCountRegardlessOfInput() {
+    fun `toDomain forces a new review to be unapproved with a zero approval count`() {
         val pos = TestFixtures.getPosFixtures().first()
         val author = TestFixtures.getUserFixtures().first()
         whenever(posService.getById(pos.id!!)).thenReturn(pos)
@@ -50,7 +50,7 @@ class ReviewDtoMapperTest {
     }
 
     @Test
-    fun fromDomainProjectsPosAndAuthorIds() {
+    fun `fromDomain copies the POS and author ids into the DTO`() {
         val review = TestFixtures.getReviewFixtures().first()
 
         val dto = mapper.fromDomain(review)

@@ -13,7 +13,7 @@ import org.springframework.data.repository.NoRepositoryBean
  * repositories.
  */
 @NoRepositoryBean
-open class ResettableSequenceRepositoryImpl<T : Any, ID : Any>(
+class ResettableSequenceRepositoryImpl<T : Any, ID : Any>(
     entityInformation: JpaEntityInformation<T, *>,
     private val entityManager: EntityManager
 ) : SimpleJpaRepository<T, ID>(entityInformation, entityManager),

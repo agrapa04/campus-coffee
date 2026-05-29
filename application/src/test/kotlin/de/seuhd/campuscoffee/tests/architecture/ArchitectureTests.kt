@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
  */
 class ArchitectureTests {
     @Test
-    fun testArchitecture() {
+    fun `each layer depends only on its permitted layers`() {
         val classes =
             ClassFileImporter()
                 .importPackages("de.seuhd.campuscoffee") // imports all sub-packages

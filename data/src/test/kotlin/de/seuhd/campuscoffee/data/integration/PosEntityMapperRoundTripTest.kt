@@ -20,7 +20,7 @@ class PosEntityMapperRoundTripTest : AbstractDataIntegrationTest() {
     private lateinit var entityManager: EntityManager
 
     @Test
-    fun houseNumberSuffixSurvivesPersistenceRoundTrip() {
+    fun `persisting and reloading a POS preserves the house number suffix`() {
         val pos = TestFixtures.getPosFixturesForInsertion().first().copy(houseNumber = "99a")
         val id = posRepository.saveAndFlush(posEntityMapper.toEntity(pos)).id!!
 

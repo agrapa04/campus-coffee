@@ -14,7 +14,7 @@ import org.testcontainers.utility.DockerImageName
 
 /**
  * Base class for data layer integration tests. Boots the data layer against a real PostgreSQL
- * container with the Flyway-managed schema, and clears the tables before each test.
+ * container with the Flyway-managed schema and clears the tables before each test.
  */
 @SpringBootTest(classes = [DataTestApplication::class], webEnvironment = SpringBootTest.WebEnvironment.NONE)
 abstract class AbstractDataIntegrationTest {

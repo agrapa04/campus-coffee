@@ -11,9 +11,9 @@ import org.springframework.http.HttpStatus
 /**
  * System tests for the operations related to Users.
  */
-class UsersSystemTests : AbstractSysTest() {
+class UsersSystemTests : AbstractSystemTest() {
     @Test
-    fun createUser() {
+    fun `creating a user returns it with the same field values`() {
         val userToCreate = TestFixtures.getUserFixturesForInsertion().first()
         val createdUser =
             userDtoMapper.toDomain(
@@ -24,7 +24,7 @@ class UsersSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun createUserInvalidLoginName() {
+    fun `creating a user with an invalid login name returns 400 Bad Request`() {
         val invalidUser = TestFixtures.getUserFixturesForInsertion().first().copy(loginName = "-")
         val statusCode =
             userRequests
@@ -35,7 +35,7 @@ class UsersSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun getAllCreatedUsers() {
+    fun `listing all users returns every created entry`() {
         val createdUserList = TestFixtures.createUserFixtures(userService)
 
         val retrievedUsers = userRequests.retrieveAll().map(userDtoMapper::toDomain)
@@ -44,7 +44,7 @@ class UsersSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun getUserById() {
+    fun `fetching a user by id returns it`() {
         val createdUser = TestFixtures.createUserFixtures(userService).first()
 
         val retrievedUser = userDtoMapper.toDomain(userRequests.retrieveById(createdUser.id!!))
@@ -53,7 +53,7 @@ class UsersSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun filterUserByLoginName() {
+    fun `filtering users by login name returns the matching user`() {
         val createdUser = TestFixtures.createUserFixtures(userService).first()
         val filteredUser = userDtoMapper.toDomain(userRequests.retrieveByFilter("login_name", createdUser.loginName))
 
@@ -61,7 +61,7 @@ class UsersSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun updateUser() {
+    fun `updating a user changes its fields and persists them`() {
         val original = TestFixtures.createUserFixtures(userService).first()
 
         val userToUpdate =
@@ -82,7 +82,7 @@ class UsersSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun deleteUser() {
+    fun `deleting a user twice returns 204 No Content then 404 Not Found`() {
         val userToDelete = TestFixtures.createUserFixtures(userService).first()
         val id = requireNotNull(userToDelete.id)
 

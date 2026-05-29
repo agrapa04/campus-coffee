@@ -1,12 +1,12 @@
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
-    id("campuscoffee.java-conventions")
-    id("campuscoffee.kotlin-conventions")
-    id("campuscoffee.kotlin-jpa-conventions")
-    id("campuscoffee.kotlin-kapt-conventions")
-    id("campuscoffee.jacoco-conventions")
-    id("campuscoffee.pitest-conventions")
+    id("de.seuhd.campuscoffee.java-conventions")
+    id("de.seuhd.campuscoffee.kotlin-conventions")
+    id("de.seuhd.campuscoffee.kotlin-jpa-conventions")
+    id("de.seuhd.campuscoffee.kotlin-kapt-conventions")
+    id("de.seuhd.campuscoffee.jacoco-conventions")
+    id("de.seuhd.campuscoffee.pitest-conventions")
 }
 
 dependencies {
@@ -25,6 +25,10 @@ dependencies {
     compileOnly(libs.mapstruct)
     testImplementation(libs.mapstruct)
     kapt(libs.mapstruct.processor)
+
+    // Generate Spring configuration metadata for the @ConfigurationProperties classes (OsmApiProperties);
+    // the processor runs via kapt.
+    kapt(libs.spring.boot.configuration.processor)
 
     testImplementation(libs.testcontainers.postgresql)
 }

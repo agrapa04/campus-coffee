@@ -18,7 +18,7 @@ So coverage/mutation of `domain`/`api`/`data` is largely produced by tests that 
 *different* module. A naive per-module JaCoCo setup would report `data` at ~0% and miss the
 integration/system contribution everywhere. The good news (confirmed in
 `application/src/test/.../system/AbstractSysTest.java`): system tests use
-`webEnvironment = RANDOM_PORT`, i.e. an **embedded server in the same JVM as the test**.
+`webEnvironment = RANDOM_PORT`, i.e., an **embedded server in the same JVM as the test**.
 A JaCoCo agent attached to the test JVM therefore already records coverage of
 `domain`/`api`/`data`; we only need to **aggregate** the exec data back onto the right classes.
 
@@ -210,7 +210,7 @@ Add properties:
 <pitest.version>1.19.1</pitest.version>
 <pitest.junit5.version>1.2.2</pitest.junit5.version>
 <!-- PIT mutator group, one of DEFAULTS (stable set), STRONGER (more aggressive mutators),
-     or ALL (every mutator). Override per run, e.g. -Dpitest.mutators=ALL -->
+     or ALL (every mutator). Override per run, e.g., -Dpitest.mutators=ALL -->
 <pitest.mutators>DEFAULTS</pitest.mutators>
 ```
 Defaulting to `DEFAULTS` keeps the first runs fast and the surviving mutants meaningful. Switching

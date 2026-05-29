@@ -76,7 +76,7 @@ Convert our own API surface; the only Optional that stays is the framework `JpaR
     it mocks the framework `findById` that `findByIdOrNull` delegates to (extensions can't be mocked).
     This is the single deliberate remaining `Optional`.
 - Coverage note: the new `?:`/`?.let` add branches; all are exercised by existing found/not-found tests
-  (e.g. `getByMissingIdReturnsNotFound`, `updateMissingPosReturnsNotFound`, `filterByNonexistentValue…`).
+  (e.g., `getByMissingIdReturnsNotFound`, `updateMissingPosReturnsNotFound`, `filterByNonexistentValue…`).
 
 ### 1c. Refactor `CrudOperationCustomizer.createSuccessResponseContent` (remove `var`/nested-`if`)
 Replace the `var returnType` reassignment + nested `if/else` with a `when` and small helpers; collapse
@@ -132,7 +132,7 @@ is a config value, not an id — leave it.
 `id` is nullable because a JPA-generated identifier does not exist until the row is persisted, so a
 newly built domain object genuinely has no id. Options:
 
-- **A. Distinguish "new" from "persisted" at the type level** — e.g. a `NewPos` (no id) vs `Pos`
+- **A. Distinguish "new" from "persisted" at the type level** — e.g., a `NewPos` (no id) vs `Pos`
   (non-null `id: Long`), or a generic wrapper `Persisted<T>(val id: Long, val value: T)`. This is the
   "correct" model and removes every id `!!`, but it doubles the model surface, fights the generic
   `CrudController<…>` / `CrudService<DOMAIN, ID>` / mapper machinery (which assume one type per
@@ -214,7 +214,7 @@ on the existing `gradle build`/CI, like `coverageGate`) and provides `ktlintForm
    `end_of_line` (the two are complementary; both are kept).
 5. **One-time format**: run `gradle ktlintFormat` (removes the existing trailing commas per the
    `.editorconfig` and applies any other fixes); manually wrap the 1–2 lines over 120 cols ktlint can't
-   auto-wrap (e.g. `CrudOperationCustomizerTest.kt`). Commit **separately** from the wiring.
+   auto-wrap (e.g., `CrudOperationCustomizerTest.kt`). Commit **separately** from the wiring.
    - Fallback: if a ktlint version does not honor the flag override under `ktlint_official` and keeps
      re-adding commas, instead disable the two rules outright —
      `ktlint_standard_trailing-comma-on-declaration-site = disabled` and

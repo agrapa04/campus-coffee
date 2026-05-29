@@ -1,15 +1,15 @@
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
-    id("campuscoffee.java-conventions")
-    id("campuscoffee.kotlin-conventions")
-    id("campuscoffee.kotlin-kapt-conventions")
-    id("campuscoffee.jacoco-conventions")
-    id("campuscoffee.pitest-conventions")
+    id("de.seuhd.campuscoffee.java-conventions")
+    id("de.seuhd.campuscoffee.kotlin-conventions")
+    id("de.seuhd.campuscoffee.kotlin-kapt-conventions")
+    id("de.seuhd.campuscoffee.jacoco-conventions")
+    id("de.seuhd.campuscoffee.pitest-conventions")
 }
 
 dependencies {
-    // api re-exposes domain types in its public signatures (e.g. CrudController<PosDto, Pos, Long>).
+    // api re-exposes domain types in its public signatures (e.g., CrudController<PosDto, Pos, Long>).
     api(project(":domain"))
 
     implementation(libs.spring.boot.starter.web)

@@ -17,7 +17,7 @@ class PosRepositoryIntegrationTest : AbstractDataIntegrationTest() {
     private lateinit var posEntityMapper: PosEntityMapper
 
     @Test
-    fun findByNameReturnsMatchingPos() {
+    fun `findByName returns the matching POS and null when none matches`() {
         val saved = posRepository.save(posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()))
 
         assertThat(posRepository.findByName(saved.name!!)?.id).isEqualTo(saved.id)
@@ -25,7 +25,7 @@ class PosRepositoryIntegrationTest : AbstractDataIntegrationTest() {
     }
 
     @Test
-    fun duplicateNameViolatesUniqueConstraint() {
+    fun `saving two POS with the same name throws DataIntegrityViolationException`() {
         val pos = TestFixtures.getPosFixturesForInsertion().first()
         posRepository.saveAndFlush(posEntityMapper.toEntity(pos))
 

@@ -3,17 +3,20 @@ package de.seuhd.campuscoffee.tests.system
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringIdAndTimestamps
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringTimestamps
+import de.seuhd.campuscoffee.tests.SystemTestUtils.client
 import de.seuhd.campuscoffee.tests.SystemTestUtils.posRequests
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.client.returnResult
 
 /**
  * System tests for the operations related to POS (Point of Sale).
  */
-class PosSystemTests : AbstractSysTest() {
+class PosSystemTests : AbstractSystemTest() {
     @Test
-    fun createPos() {
+    fun `creating a POS returns it with the same field values`() {
         val posToCreate = TestFixtures.getPosFixturesForInsertion().first()
         val createdPos =
             posDtoMapper.toDomain(
@@ -24,7 +27,7 @@ class PosSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun getAllCreatedPos() {
+    fun `listing all POS returns every created entry`() {
         val createdPosList = TestFixtures.createPosFixtures(posService)
 
         val retrievedPos = posRequests.retrieveAll().map(posDtoMapper::toDomain)
@@ -33,7 +36,7 @@ class PosSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun getPosById() {
+    fun `fetching a POS by id returns it`() {
         val createdPos = TestFixtures.createPosFixtures(posService).first()
 
         val retrievedPos = posDtoMapper.toDomain(posRequests.retrieveById(createdPos.id!!))
@@ -42,7 +45,7 @@ class PosSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun filterPosByName() {
+    fun `filtering POS by name returns the matching POS`() {
         val createdPos = TestFixtures.createPosFixtures(posService).first()
         val filteredPos = posDtoMapper.toDomain(posRequests.retrieveByFilter("name", createdPos.name))
 
@@ -50,7 +53,7 @@ class PosSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun updatePos() {
+    fun `updating a POS changes its fields and persists them`() {
         val original = TestFixtures.createPosFixtures(posService).first()
 
         // domain models are immutable, so derive the updated instance with copy()
@@ -68,7 +71,7 @@ class PosSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun deletePos() {
+    fun `deleting a POS twice returns 204 No Content then 404 Not Found`() {
         val posToDelete = TestFixtures.createPosFixtures(posService).first()
         val id = requireNotNull(posToDelete.id)
 
@@ -79,5 +82,22 @@ class PosSystemTests : AbstractSysTest() {
 
         val remainingPosIds: List<Long?> = posRequests.retrieveAll().map { it.id }
         assertThat(remainingPosIds).doesNotContain(id)
+    }
+
+    @Test
+    fun `the API serves JSON even when the client prefers XML`() {
+        TestFixtures.createPosFixtures(posService)
+
+        // a browser prefers XML (application/xml;q=0.9) but also accepts */*; the API must answer JSON
+        val result =
+            client()
+                .get()
+                .uri("/api/pos")
+                .accept(MediaType.APPLICATION_XML, MediaType.ALL)
+                .exchange()
+                .returnResult<String>()
+
+        assertThat(result.status.value()).isEqualTo(HttpStatus.OK.value())
+        assertThat(result.responseBody).startsWith("[") // a JSON array, not <List>/<PosDto> XML
     }
 }

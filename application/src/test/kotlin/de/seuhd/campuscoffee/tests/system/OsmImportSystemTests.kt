@@ -15,20 +15,21 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.web.servlet.client.returnResult
 
 /**
  * System tests for importing a POS from an OpenStreetMap node. The external OSM HTTP API is stubbed
  * with WireMock, and the OSM client is pointed at the stub through the `osm.api.base-url` property.
  * The server starts before the Spring context so the client resolves the stub URL.
  */
-class OsmImportSystemTests : AbstractSysTest() {
+class OsmImportSystemTests : AbstractSystemTest() {
     @BeforeEach
     fun resetStubs() {
         wireMock.resetAll()
     }
 
     @Test
-    fun importOsmNodeCreatesPos() {
+    fun `importing an OSM node returns 201 Created with the mapped POS fields`() {
         wireMock.stubFor(
             get(urlEqualTo("/node/$NODE_ID")).willReturn(
                 aResponse()
@@ -43,7 +44,7 @@ class OsmImportSystemTests : AbstractSysTest() {
                 .post()
                 .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
                 .exchange()
-                .returnResult(PosDto::class.java)
+                .returnResult<PosDto>()
 
         assertThat(result.status.value()).isEqualTo(HttpStatus.CREATED.value())
         val imported = result.responseBody!!
@@ -55,7 +56,7 @@ class OsmImportSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun importMissingOsmNodeReturnsNotFound() {
+    fun `importing a missing OSM node returns 404 Not Found`() {
         wireMock.stubFor(
             get(urlEqualTo("/node/$NODE_ID")).willReturn(aResponse().withStatus(HttpStatus.NOT_FOUND.value()))
         )
@@ -65,7 +66,7 @@ class OsmImportSystemTests : AbstractSysTest() {
                 .post()
                 .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
                 .exchange()
-                .returnResult(ByteArray::class.java)
+                .returnResult<ByteArray>()
                 .status
                 .value()
 
@@ -73,7 +74,7 @@ class OsmImportSystemTests : AbstractSysTest() {
     }
 
     @Test
-    fun importOsmNodeWithMissingTagReturnsBadRequest() {
+    fun `importing an OSM node with a missing tag returns 400 Bad Request`() {
         val withoutAmenity = validTags().apply { remove("amenity") }
         wireMock.stubFor(
             get(urlEqualTo("/node/$NODE_ID")).willReturn(
@@ -89,7 +90,7 @@ class OsmImportSystemTests : AbstractSysTest() {
                 .post()
                 .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
                 .exchange()
-                .returnResult(ByteArray::class.java)
+                .returnResult<ByteArray>()
                 .status
                 .value()
 

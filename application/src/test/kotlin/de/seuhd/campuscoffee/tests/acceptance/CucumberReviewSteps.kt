@@ -13,17 +13,15 @@ import io.cucumber.java.en.Given
 import io.cucumber.java.en.Then
 import io.cucumber.java.en.When
 import org.assertj.core.api.Assertions.assertThat
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 
 /**
  * Step definitions for the review approval Cucumber tests. The Spring context, container, and cleanup
  * hooks live in [CucumberSpringConfiguration].
  */
-class CucumberReviewSteps {
-    @Autowired
-    protected lateinit var posDtoMapper: PosDtoMapper
-
+class CucumberReviewSteps(
+    private val posDtoMapper: PosDtoMapper
+) {
     private val usersByLogin = mutableMapOf<String, UserDto>()
     private val posByName = mutableMapOf<String, PosDto>()
     private val reviewsByAuthorAndPos = mutableMapOf<String, ReviewDto>()

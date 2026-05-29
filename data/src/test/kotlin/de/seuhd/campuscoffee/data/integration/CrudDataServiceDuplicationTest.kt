@@ -22,7 +22,7 @@ class CrudDataServiceDuplicationTest : AbstractDataIntegrationTest() {
     private lateinit var userDataService: UserDataService
 
     @Test
-    fun duplicatePosNameThrowsDuplicationException() {
+    fun `upsert throws DuplicationException for a duplicate POS name`() {
         val pos = TestFixtures.getPosFixturesForInsertion().first()
         posDataService.upsert(pos)
 
@@ -30,7 +30,7 @@ class CrudDataServiceDuplicationTest : AbstractDataIntegrationTest() {
     }
 
     @Test
-    fun duplicateUserEmailThrowsDuplicationException() {
+    fun `upsert throws DuplicationException for a duplicate user email`() {
         val user = TestFixtures.getUserFixturesForInsertion().first()
         userDataService.upsert(user)
         // same email but a different login name, so the email uniqueness constraint is the one violated
@@ -40,7 +40,7 @@ class CrudDataServiceDuplicationTest : AbstractDataIntegrationTest() {
     }
 
     @Test
-    fun nonUniqueViolationIsRethrownNotMappedToDuplication() {
+    fun `upsert propagates a non-uniqueness violation instead of mapping it to DuplicationException`() {
         // an empty description violates a CHECK constraint, not a uniqueness constraint, so the data
         // service must propagate the original exception rather than wrap it as a DuplicationException
         val invalid = TestFixtures.getPosFixturesForInsertion().first().copy(description = "")

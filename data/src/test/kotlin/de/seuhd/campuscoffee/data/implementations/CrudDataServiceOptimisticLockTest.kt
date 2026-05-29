@@ -19,7 +19,7 @@ import java.util.Optional
  */
 class CrudDataServiceOptimisticLockTest {
     @Test
-    fun optimisticLockFailureBecomesConcurrentUpdateException() {
+    fun `upsert maps a JPA optimistic lock failure to ConcurrentUpdateException`() {
         val repository = mock<PosRepository>()
         val mapper = mock<PosEntityMapper>()
         val service = PosDataServiceImpl(repository, mapper)

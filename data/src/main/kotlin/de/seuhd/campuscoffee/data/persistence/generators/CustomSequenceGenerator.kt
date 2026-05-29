@@ -14,8 +14,8 @@ class CustomSequenceGenerator : SequenceStyleGenerator() {
         parameters: Properties
     ) {
         val tableName = creationContext.value.table.name
-        parameters.setProperty(SequenceStyleGenerator.SEQUENCE_PARAM, tableName + "_seq")
-        parameters.setProperty(SequenceStyleGenerator.INCREMENT_PARAM, "1")
+        parameters.setProperty(SEQUENCE_PARAM, tableName + "_seq")
+        parameters.setProperty(INCREMENT_PARAM, "1")
         super.configure(creationContext, parameters)
     }
 }

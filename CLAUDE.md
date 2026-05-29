@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CampusCoffee is a Spring Boot application for managing Points of Sale (POS) like cafes and coffee shops on campus. It follows a **hexagonal (ports-and-adapters) architecture** with strict layer separation enforced by ArchUnit tests.
+CampusCoffee is a Spring Boot application for managing Points of Sale (POS) like cafés and coffee shops on campus. It follows a **hexagonal (ports-and-adapters) architecture** with strict layer separation enforced by ArchUnit tests.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ The project uses a **multi-module Gradle structure** (Kotlin DSL) with four modu
 - **application**: Main Spring Boot application that wires everything together (depends on: domain, api, data at runtime).
 
 ### Layer Rules (Enforced by ArchUnit)
-From `application/src/test/java/de/seuhd/campuscoffee/tests/architecture/ArchitectureTests.java:20-30`:
+From `application/src/test/kotlin/de/seuhd/campuscoffee/tests/architecture/ArchitectureTests.kt`:
 
 - **api** layer may only be accessed by **application**.
 - **domain** layer may only be accessed by **api**, **data**, and **application**.
@@ -28,18 +28,18 @@ From `application/src/test/java/de/seuhd/campuscoffee/tests/architecture/Archite
 
 The domain defines **port interfaces** that adapters implement:
 
-- **API Ports** (`domain/src/main/java/de/seuhd/campuscoffee/domain/ports/api/`): Generic service interface `CrudService<DOMAIN, ID>` and concrete service interfaces such as `PosService`, `UserService`, and `ReviewService`.
-- **Data Ports** (`domain/src/main/java/de/seuhd/campuscoffee/domain/ports/data/`): Generic data service interface `CrudDataService<DOMAIN, ID>` and concrete service interfaces such as `PosDataService`, `UserDataService`, `ReviewDataService`, and `OsmDataService`.
+- **API Ports** (`domain/src/main/kotlin/de/seuhd/campuscoffee/domain/ports/api/`): Generic service interface `CrudService<DOMAIN, ID>` and concrete service interfaces such as `PosService`, `UserService`, and `ReviewService`.
+- **Data Ports** (`domain/src/main/kotlin/de/seuhd/campuscoffee/domain/ports/data/`): Generic data service interface `CrudDataService<DOMAIN, ID>` and concrete service interfaces such as `PosDataService`, `UserDataService`, `ReviewDataService`, and `OsmDataService`.
 
 Service **implementations**:
-- API services in `domain/src/main/java/de/seuhd/campuscoffee/domain/implementation/`.
-- Data services in `data/src/main/java/de/seuhd/campuscoffee/data/implementations/`.
+- API services in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/implementation/`.
+- Data services in `data/src/main/kotlin/de/seuhd/campuscoffee/data/implementations/`.
 
 ### Generic Base Classes
 
 The codebase uses extensive generics to reduce duplication:
 
-- **CrudController** (`api/src/main/java/de/seuhd/campuscoffee/api/controller/CrudController.java`): Generic REST controller for CRUD operations.
+- **CrudController** (`api/src/main/kotlin/de/seuhd/campuscoffee/api/controller/CrudController.kt`): Generic REST controller for CRUD operations.
 - **CrudService** / **CrudServiceImpl**: Generic CRUD service interface and implementation.
 - **CrudDataService** / **CrudDataServiceImpl**: Generic data service interface and implementation.
 - **DtoMapper** / **EntityMapper**: Generic mapping interfaces using MapStruct.
@@ -61,6 +61,16 @@ Domain-specific controllers/services extend these base classes (e.g., `PosContro
 gradle build
 ```
 
+### Format and Lint (ktlint)
+
+The Kotlin sources are formatted and linted with ktlint (official Kotlin style, configured via the root
+`.editorconfig`). `gradle build` fails on violations because `ktlintCheck` is wired into `check`; apply
+the fixes with:
+
+```shell
+gradle ktlintFormat
+```
+
 ### Start PostgreSQL Database
 
 ```shell
@@ -76,7 +86,11 @@ gradle :application:bootRun --args='--spring.profiles.active=dev'
 The `dev` profile:
 - Enables Swagger UI at `http://localhost:8080/api/swagger-ui.html`.
 - Enables API docs at `http://localhost:8080/api/api-docs`.
-- Clears repositories and loads initial data on startup (see `application/src/main/java/de/seuhd/campuscoffee/LoadInitialData.java`).
+- Registers the dev-only `DevController` (in the `api` layer) under `/api/dev`:
+  `GET /api/dev/data` reports the counts, `PUT /api/dev/data` replaces the data with the fixture
+  dataset (clear + seed; idempotent), and `DELETE /api/dev/data` clears it.
+
+The application no longer loads any data on startup (in any profile); use the `dev` endpoints above.
 
 ### Run Tests
 
@@ -109,7 +123,7 @@ gradle test --tests "PosServiceTest.testMethodName"
   fails the build when aggregated line or branch coverage is below its minimums (90% line, 80% branch).
   The minimums track current coverage; raise them when adding tests, never lower them to make a build pass.
 - **Mutation testing (PITest)**: opt-in and local via the `-Pmutation` property and the per-module
-  `pitest` task (e.g. `gradle :domain:pitest -Pmutation`). Each module runs PIT against its own tests and
+  `pitest` task (e.g., `gradle :domain:pitest -Pmutation`). Each module runs PIT against its own tests and
   writes its own report under `<module>/build/reports/pitest/index.html`: `domain` mutates `domain.*`,
   `api` mutates `api.*`, and `data` mutates `data.*`. The `application` cross-module run
   (`gradle :application:pitest -Pmutation`) additionally mutates `api.*`/`data.*` against the system and
@@ -119,7 +133,7 @@ gradle test --tests "PosServiceTest.testMethodName"
   `campuscoffee.pitest-conventions` convention plugin. Select the mutator group with
   `-Ppitest.mutators=DEFAULTS|STRONGER|ALL`.
 - When adding a feature, also add tests; use surviving mutants to find missing assertions. The
-  hand-written mapping logic in `PosEntityMapper` (house-number parsing), `ReviewDtoMapper` (expression
+  handwritten mapping logic in `PosEntityMapper` (house-number parsing), `ReviewDtoMapper` (expression
   mappings), and `HouseNumberConverter` contains real logic and is kept in scope for both tools.
 
 ### Docker
@@ -147,23 +161,40 @@ Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql
 
 ## Testing Strategy
 
-- **Unit and Integration Tests**: In `domain/src/test/java/` (e.g., `PosServiceTest`, `ReviewServiceTest`)
-- **System Tests**: In `application/src/test/java/de/seuhd/campuscoffee/tests/system/` (e.g., `PosSystemTests`, `UsersSystemTests`)
+- **Unit and Integration Tests**: In `domain/src/test/kotlin/` (e.g., `PosServiceTest`, `ReviewServiceTest`)
+- **System Tests**: In `application/src/test/kotlin/de/seuhd/campuscoffee/tests/system/` (e.g., `PosSystemTests`, `UsersSystemTests`)
   - Use Testcontainers for PostgreSQL.
-  - Use RestAssured for API testing.
+  - Use Spring's `RestTestClient` for API testing.
   - Extend `AbstractSysTest` base class.
-- **Acceptance Tests**: In `application/src/test/java/de/seuhd/campuscoffee/tests/acceptance/`
+- **Acceptance Tests**: In `application/src/test/kotlin/de/seuhd/campuscoffee/tests/acceptance/`
   - Cucumber BDD tests with `.feature` files in `application/src/test/resources/de/seuhd/campuscoffee/tests/acceptance/`
-  - Step definitions in `CucumberPosSteps.java`
-- **Architecture Tests**: In `application/src/test/java/de/seuhd/campuscoffee/tests/architecture/`
+  - Step definitions in `CucumberPosSteps.kt` and `CucumberReviewSteps.kt`
+- **Architecture Tests**: In `application/src/test/kotlin/de/seuhd/campuscoffee/tests/architecture/`
   - ArchUnit tests enforce hexagonal architecture rules
+
+### Test Naming
+
+Test methods (those annotated with `@Test` or `@ParameterizedTest`) use Kotlin backtick names that
+read as a sentence describing the behavior under test. The structure is the same throughout: active
+voice, present tense, the subject under test first (a scenario for behavior tests, the function name
+for focused unit tests), then the **outcome stated as the fact the test actually asserts** — the
+explicit HTTP status for system tests (`409 Conflict`, `404 Not Found`), the exception type, or the
+returned value. Avoid `should` and vague status nouns (`returns conflict`). Examples:
+
+- ``fun `creating a POS with a duplicate name returns 409 Conflict`()`` (system test)
+- ``fun `upsert throws DuplicationException for a duplicate POS name`()`` (data test)
+- ``fun `findByName returns the matching POS and null when none matches`()`` (repository test)
+
+ktlint's `function-naming` rule permits these for test-annotated functions. Non-test functions —
+setup (`@BeforeEach`/`@AfterAll`), `@MethodSource` providers, Cucumber step definitions, and private
+helpers — keep conventional camelCase names.
 
 ## Key Technologies
 
 - **Spring Boot 4.0.6** (Spring Framework 7).
-- **Java 25** with JSpecify annotations for nullability.
-- **Lombok** for boilerplate reduction.
-- **MapStruct** for object mapping (DTOs <-> domain models <-> entities).
+- **Kotlin** on JDK 25; nullability is expressed with Kotlin's nullable types.
+- **MapStruct** for object mapping (DTOs <-> domain models <-> entities), run via kapt.
+- **ktlint** for Kotlin formatting and linting (the official Kotlin style; `ktlintCheck` runs as part of `check`).
 - **Bean Validation** (Jakarta Validation) for input validation (validation happens in the controllers based on the DTOs, before mapping them to domain models).
 - **OpenAPI/Swagger** (SpringDoc) for API documentation.
 - **Spring `@HttpExchange`** declarative HTTP client over `RestClient` (OpenStreetMap API integration).
@@ -175,25 +206,25 @@ Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql
 
 ### Error Handling
 
-Domain exceptions in `domain/src/main/java/de/seuhd/campuscoffee/domain/exceptions/`:
+Domain exceptions in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/exceptions/`:
 - `NotFoundException`: Entity not found.
 - `DuplicationException`: Duplicate unique fields.
 - `ValidationException`: Business rule violation.
 - `MissingFieldException`: Required field missing.
 
-Global exception handler: `api/src/main/java/de/seuhd/campuscoffee/api/exceptions/GlobalExceptionHandler.java`.
+Global exception handler: `api/src/main/kotlin/de/seuhd/campuscoffee/api/exceptions/GlobalExceptionHandler.kt`.
 
 ### MapStruct Configuration
 
-The project uses Lombok with MapStruct. The annotation processor configuration lives in the `campuscoffee.java-conventions` convention plugin (`build-logic/`), with `lombok-mapstruct-binding` to ensure correct ordering.
+MapStruct runs as a Kotlin annotation processor via kapt, applied through the `campuscoffee.kotlin-kapt-conventions` convention plugin (`build-logic/`); the `api` and `data` modules declare `kapt(mapstruct-processor)`. The generated `*MapperImpl` classes are excluded from the coverage and mutation gates.
 
 ### Custom Sequence Generation
 
-JPA entities use custom sequence generators defined in `data/src/main/java/de/seuhd/campuscoffee/data/persistence/generators/` to allow resetting sequences when running in the `dev` profile.
+JPA entities use custom sequence generators defined in `data/src/main/kotlin/de/seuhd/campuscoffee/data/persistence/generators/` to allow resetting sequences when running in the `dev` profile.
 
 ### OpenAPI Customization
 
-Custom OpenAPI annotations in `api/src/main/java/de/seuhd/campuscoffee/api/openapi/`:
+Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/openapi/`:
 - `@CrudOperation` for common CRUD operations.
 - `CrudOperationCustomizer` for customizing OpenAPI spec.
 - Reduces repetitive annotations in controllers.
@@ -241,19 +272,19 @@ Base URL: `http://localhost:8080/api`.
 
 ### Adding a New Entity
 
-1. Create domain model in `domain/src/main/java/de/seuhd/campuscoffee/domain/model/objects/`.
-2. Create service interface in `domain/src/main/java/de/seuhd/campuscoffee/domain/ports/api/` (extend `CrudService<DOMAIN, ID>`).
-3. Create data service interface in `domain/src/main/java/de/seuhd/campuscoffee/domain/ports/data/` (extend `CrudDataService<DOMAIN, ID>`).
-4. Create service implementation in `domain/src/main/java/de/seuhd/campuscoffee/domain/implementation/` (extend `CrudServiceImpl<DOMAIN, ID>`).
-5. Create JPA entity in `data/src/main/java/de/seuhd/campuscoffee/data/persistence/entities/`.
-6. Create repository in `data/src/main/java/de/seuhd/campuscoffee/data/persistence/repositories/` (extend `JpaRepository`).
-7. Create entity mapper in `data/src/main/java/de/seuhd/campuscoffee/data/mapper/` (extend `EntityMapper`).
-8. Create data service implementation in `data/src/main/java/de/seuhd/campuscoffee/data/implementations/` (extend `CrudDataServiceImpl<DOMAIN, ENTITY, RESPOSITORY, ID>`).
-9. Create DTO in `api/src/main/java/de/seuhd/campuscoffee/api/dtos/` (extend `Dto<ID>`).
-10. Create DTO mapper in `api/src/main/java/de/seuhd/campuscoffee/api/mapper/` (extend `DtoMapper<DOMAIN, DTO>`).
-11. Create controller in `api/src/main/java/de/seuhd/campuscoffee/api/controller/` (extend `CrudController<DTO, DOMAIN, ID>`).
+1. Create domain model in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/model/objects/`.
+2. Create service interface in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/ports/api/` (extend `CrudService<DOMAIN, ID>`).
+3. Create data service interface in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/ports/data/` (extend `CrudDataService<DOMAIN, ID>`).
+4. Create service implementation in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/implementation/` (extend `CrudServiceImpl<DOMAIN, ID>`).
+5. Create JPA entity in `data/src/main/kotlin/de/seuhd/campuscoffee/data/persistence/entities/`.
+6. Create repository in `data/src/main/kotlin/de/seuhd/campuscoffee/data/persistence/repositories/` (extend `JpaRepository`).
+7. Create entity mapper in `data/src/main/kotlin/de/seuhd/campuscoffee/data/mapper/` (extend `EntityMapper`).
+8. Create data service implementation in `data/src/main/kotlin/de/seuhd/campuscoffee/data/implementations/` (extend `CrudDataServiceImpl<DOMAIN, ENTITY, RESPOSITORY, ID>`).
+9. Create DTO in `api/src/main/kotlin/de/seuhd/campuscoffee/api/dtos/` (extend `Dto<ID>`).
+10. Create DTO mapper in `api/src/main/kotlin/de/seuhd/campuscoffee/api/mapper/` (extend `DtoMapper<DOMAIN, DTO>`).
+11. Create controller in `api/src/main/kotlin/de/seuhd/campuscoffee/api/controller/` (extend `CrudController<DTO, DOMAIN, ID>`). Map paths relative to the resource (e.g., `@RequestMapping("/widgets")`); the `/api` base is applied centrally by `ApiPathConfig`.
 12. Create Flyway migration in `data/src/main/resources/db/migration/`.
 
 ### Constraint Violations
 
-Database uniqueness constraints are automatically converted to `DuplicationException` via `ConstraintMapping` in `data/src/main/java/de/seuhd/campuscoffee/data/constraints/`. Register custom constraint mappings there.
+Database uniqueness constraints are automatically converted to `DuplicationException` via `ConstraintMapping` in `data/src/main/kotlin/de/seuhd/campuscoffee/data/constraints/`. Register custom constraint mappings there.

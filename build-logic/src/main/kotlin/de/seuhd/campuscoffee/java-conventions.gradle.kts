@@ -1,3 +1,5 @@
+package de.seuhd.campuscoffee
+
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.process.CommandLineArgumentProvider
 
@@ -44,7 +46,7 @@ dependencies {
     // Test stack shared by every module: JUnit 5 / Mockito / AssertJ via the starter, plus the
     // JUnit Platform launcher Gradle needs on the test runtime classpath (the Spring Boot BOM
     // manages its version but does not add the dependency). Production dependencies that only some
-    // modules use (e.g. spring-boot-starter-web) live in those modules' build files.
+    // modules use (e.g., spring-boot-starter-web) live in those modules' build files.
     // Force a single JUnit Platform version: cucumber-junit-platform-engine pulls JUnit Platform
     // 1.x transitively, which clashes with the JUnit 6 that Spring 7 requires.
     testImplementation(enforcedPlatform(libs.findLibrary("junit-bom").get()))

@@ -37,7 +37,7 @@ class OsmDataServiceTest {
     }
 
     @Test
-    fun validResponseIsParsed() {
+    fun `fetchNode parses a valid OSM response into a node`() {
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(xml(NODE_ID, validTags()))
 
         val node = service.fetchNode(NODE_ID)
@@ -55,7 +55,7 @@ class OsmDataServiceTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    fun emptyOrNullResponseThrowsNotFound(response: String?) {
+    fun `fetchNode throws NotFoundException for an empty or null response`(response: String?) {
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(response)
 
         assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(NotFoundException::class.java)
@@ -63,7 +63,7 @@ class OsmDataServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["name", "amenity", "addr:city", "addr:street", "addr:housenumber", "addr:postcode"])
-    fun missingRequiredTagThrowsMissingField(missingKey: String) {
+    fun `fetchNode throws MissingFieldException when a required tag is missing`(missingKey: String) {
         val tags = validTags()
         tags.remove(missingKey)
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(xml(NODE_ID, tags))
@@ -72,7 +72,7 @@ class OsmDataServiceTest {
     }
 
     @Test
-    fun unsupportedAmenityThrowsMissingField() {
+    fun `fetchNode throws MissingFieldException for an unsupported amenity`() {
         val tags = validTags()
         tags["amenity"] = "library"
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(xml(NODE_ID, tags))
@@ -81,14 +81,14 @@ class OsmDataServiceTest {
     }
 
     @Test
-    fun responseWithoutNodeElementThrowsNotFound() {
+    fun `fetchNode throws NotFoundException when the response has no node element`() {
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn("<osm></osm>")
 
         assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(NotFoundException::class.java)
     }
 
     @Test
-    fun nodeWithoutIdThrowsNotFound() {
+    fun `fetchNode throws NotFoundException when the node has no id`() {
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
             "<osm>\n  <node>\n    <tag k=\"amenity\" v=\"cafe\"/>\n    <tag k=\"name\" v=\"X\"/>\n  </node>\n</osm>\n"
         )
@@ -97,7 +97,7 @@ class OsmDataServiceTest {
     }
 
     @Test
-    fun singleTagIsTreatedAsNoTagsAndReportsMissingField() {
+    fun `fetchNode treats a single tag as no tags and throws MissingFieldException`() {
         // the deserializer only collects tags when they form an array, so a lone tag yields no tags
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
             "<osm>\n  <node id=\"$NODE_ID\">\n    <tag k=\"amenity\" v=\"cafe\"/>\n  </node>\n</osm>\n"
@@ -108,7 +108,7 @@ class OsmDataServiceTest {
 
     @ParameterizedTest
     @MethodSource("nameFallback")
-    fun namePrefersEnglishThenGermanThenPlainName(
+    fun `fetchNode prefers the English then German then plain name`(
         nameDe: String?,
         nameEn: String?,
         expected: String

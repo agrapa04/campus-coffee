@@ -58,11 +58,8 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
      */
     override fun upsert(domain: DOMAIN): DOMAIN {
         try {
-            val id = domain.id
-            if (id == null) {
-                // create new entity
-                return mapper.fromEntity(repository.saveAndFlush(mapper.toEntity(domain)))
-            }
+            // new entity (no id yet): insert and return
+            val id = domain.id ?: return mapper.fromEntity(repository.saveAndFlush(mapper.toEntity(domain)))
 
             // update existing entity (timestamps are set by the @PreUpdate callback)
             val entity = repository.findByIdOrNull(id) ?: throw NotFoundException(domainClass, id)
@@ -85,7 +82,7 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
                     }
                 }
             }
-            // no declared unique constraint matched (e.g. a CHECK or foreign-key violation) -> rethrow
+            // no declared unique constraint matched (e.g., a CHECK or foreign-key violation) -> rethrow
             throw e
         }
     }
@@ -117,7 +114,6 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
          * the driver reported avoids matching on database-specific error-message text. Exposed (not
          * private) so it can be unit-tested directly with a crafted exception.
          */
-        @JvmStatic
         fun constraintNameOf(exception: DataIntegrityViolationException): String? {
             var cause: Throwable? = exception
             while (cause != null) {

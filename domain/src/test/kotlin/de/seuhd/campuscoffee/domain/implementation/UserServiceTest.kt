@@ -28,7 +28,7 @@ class UserServiceTest {
     }
 
     @Test
-    fun getByLoginNameReturnsTheUserResolvedByTheDataService() {
+    fun `getByLoginName returns the user resolved by the data service`() {
         val user = TestFixtures.getUserFixtures().first()
         whenever(userDataService.getByLoginName(user.loginName)).thenReturn(user)
 
@@ -37,7 +37,7 @@ class UserServiceTest {
     }
 
     @Test
-    fun getByIdResolvesThroughTheDataServicePort() {
+    fun `getById returns the user resolved by the data service`() {
         // also pins that the service exposes the injected port (a null port would fail this lookup)
         val user = TestFixtures.getUserFixtures().first()
         val id = requireNotNull(user.id)

@@ -8,8 +8,9 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
 
 /**
- * DTO for POS metadata. Properties are nullable so a request body that omits a field deserializes and
- * is then rejected by bean validation; the controller validates the DTO before it is mapped to a [Pos].
+ * DTO for POS metadata. Properties are nullable, so a request body that omits a field deserializes and
+ * is then rejected by bean validation; the controller validates the DTO before it is mapped to a
+ * [de.seuhd.campuscoffee.domain.model.objects.Pos].
  */
 data class PosDto(
     override val id: Long? = null,

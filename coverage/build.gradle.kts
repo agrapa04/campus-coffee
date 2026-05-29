@@ -45,14 +45,14 @@ val aggregateReport = tasks.named<JacocoReport>("testCodeCoverageReport") {
     }
 }
 
-// Gate exclusions, identical to the Maven coverage module:
-//   TestFixtures (test data shipped in domain/src/main), startup wiring (Application/LoadInitialData),
-//   and the generated MapStruct *MapperImpl classes.
+// Gate exclusions:
+//   TestFixtures (test data shipped in domain/src/main), the Spring Boot entry point (Application),
+//   and the generated MapStruct *MapperImpl classes. The dev-only data endpoints are covered by a
+//   dev-profile system test, so they are not excluded.
 val gateExclusions = listOf(
     "de/seuhd/campuscoffee/domain/tests/**",
     // glob (not `.*`) so the Kotlin file class (ApplicationKt) and companion ($Companion) are excluded too
     "**/Application*",
-    "**/LoadInitialData*",
     "**/*MapperImpl.*",
 )
 

@@ -13,19 +13,19 @@ import org.junit.jupiter.params.provider.ValueSource
 class OsmAmenityTest {
     @ParameterizedTest
     @EnumSource(OsmAmenity::class)
-    fun resolvesEveryConstantFromItsLowercaseName(amenity: OsmAmenity) {
+    fun `fromOsmValue resolves every constant from its lowercase name`(amenity: OsmAmenity) {
         assertThat(OsmAmenity.fromOsmValue(amenity.name.lowercase())).isEqualTo(amenity)
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["CAFE", "Cafe", "FAST_FOOD"])
-    fun doesNotResolveUppercaseOrMixedCase(osmValue: String) {
+    fun `fromOsmValue returns null for uppercase or mixed case`(osmValue: String) {
         assertThat(OsmAmenity.fromOsmValue(osmValue)).isNull()
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["hospital", "parking", "", "cafe "])
-    fun returnsNullForUnknownValues(osmValue: String) {
+    fun `fromOsmValue returns null for unknown values`(osmValue: String) {
         assertThat(OsmAmenity.fromOsmValue(osmValue)).isNull()
     }
 }

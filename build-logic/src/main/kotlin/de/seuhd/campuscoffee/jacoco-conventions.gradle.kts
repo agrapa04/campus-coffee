@@ -1,3 +1,5 @@
+package de.seuhd.campuscoffee
+
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 // Applies JaCoCo so each module records execution data (build/jacoco/test.exec). The combined

@@ -41,7 +41,7 @@ class CrudServiceTest {
     private lateinit var crudService: TestCrudServiceImpl
 
     @Test
-    fun upsertRethrowsDuplicationException() {
+    fun `upsert propagates a DuplicationException from the data service`() {
         val domainObject = TestDomain(null, "duplicate")
         whenever(dataService.upsert(domainObject))
             .thenThrow(DuplicationException(TestDomain::class.java, "name", "duplicate"))
@@ -51,7 +51,7 @@ class CrudServiceTest {
     }
 
     @Test
-    fun deleteDelegatesToDataService() {
+    fun `delete delegates to the data service`() {
         doNothing().whenever(dataService).delete(1L)
 
         crudService.delete(1L)
@@ -60,7 +60,7 @@ class CrudServiceTest {
     }
 
     @Test
-    fun deleteThrowsNotFoundWhenDataServiceThrows() {
+    fun `delete propagates NotFoundException from the data service`() {
         doThrow(NotFoundException(TestDomain::class.java, 2L)).whenever(dataService).delete(2L)
 
         assertThrows<NotFoundException> { crudService.delete(2L) }

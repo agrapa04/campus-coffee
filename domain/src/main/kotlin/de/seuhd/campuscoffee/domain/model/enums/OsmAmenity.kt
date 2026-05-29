@@ -22,7 +22,6 @@ enum class OsmAmenity {
          * @param osmValue the OSM string value (e.g., "bar", "fast_food")
          * @return the matching enum constant, or null if no match is found
          */
-        @JvmStatic
         fun fromOsmValue(osmValue: String): OsmAmenity? = entries.firstOrNull { it.name.lowercase() == osmValue }
     }
 }

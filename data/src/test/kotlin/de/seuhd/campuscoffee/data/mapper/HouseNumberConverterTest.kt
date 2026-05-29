@@ -19,7 +19,7 @@ class HouseNumberConverterTest {
 
     @ParameterizedTest
     @MethodSource("houseNumbers")
-    fun splitsAndMerges(
+    fun `split followed by merge reproduces a valid house number`(
         input: String,
         number: Int,
         suffix: Char?,
@@ -34,7 +34,7 @@ class HouseNumberConverterTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    fun splitOfNullOrEmptyYieldsNoParts(input: String?) {
+    fun `split returns no parts for null or empty input`(input: String?) {
         val parts = converter.split(input)
 
         assertThat(parts.number).isNull()
@@ -42,12 +42,12 @@ class HouseNumberConverterTest {
     }
 
     @Test
-    fun splitWithoutAnyDigitIsRejected() {
+    fun `split throws IllegalArgumentException for a value without a digit`() {
         assertThatThrownBy { converter.split("abc") }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun mergeOfNullNumberIsNull() {
+    fun `merge returns null for a null number`() {
         assertThat(converter.merge(null, 'a')).isNull()
     }
 

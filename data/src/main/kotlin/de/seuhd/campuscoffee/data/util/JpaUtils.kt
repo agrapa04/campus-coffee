@@ -11,7 +11,6 @@ object JpaUtils {
      *
      * @throws IllegalArgumentException if the class is not annotated with [Table] or the name is empty
      */
-    @JvmStatic
     fun extractTableNameFromEntity(entityClass: Class<*>): String {
         require(entityClass.isAnnotationPresent(Table::class.java)) {
             "${entityClass.simpleName} is not annotated with @Table"
