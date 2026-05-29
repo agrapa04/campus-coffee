@@ -23,7 +23,6 @@ enum class OsmAmenity {
          * @return the matching enum constant, or null if no match is found
          */
         @JvmStatic
-        fun fromOsmValue(osmValue: String): OsmAmenity? =
-            entries.firstOrNull { it.name.lowercase() == osmValue }
+        fun fromOsmValue(osmValue: String): OsmAmenity? = entries.firstOrNull { it.name.lowercase() == osmValue }
     }
 }

@@ -21,9 +21,9 @@ class ReviewServiceImpl(
     private val reviewDataService: ReviewDataService,
     private val userDataService: UserDataService,
     private val posDataService: PosDataService,
-    private val approvalConfiguration: ApprovalConfiguration,
-) : CrudServiceImpl<Review, Long>(Review::class.java), ReviewService {
-
+    private val approvalConfiguration: ApprovalConfiguration
+) : CrudServiceImpl<Review, Long>(Review::class.java),
+    ReviewService {
     override fun dataService(): CrudDataService<Review, Long> = reviewDataService
 
     @Transactional
@@ -36,7 +36,7 @@ class ReviewServiceImpl(
         if (domainObject.id == null && reviewDataService.filter(pos, domainObject.author).isNotEmpty()) {
             throw ValidationException(
                 "Author with ID '${domainObject.author.id}'" +
-                    " has already reviewed POS with ID '${pos.id}'.",
+                    " has already reviewed POS with ID '${pos.id}'."
             )
         }
 
@@ -44,14 +44,20 @@ class ReviewServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun filter(posId: Long, approved: Boolean): List<Review> =
-        reviewDataService.filter(posDataService.getById(posId), approved)
+    override fun filter(
+        posId: Long,
+        approved: Boolean
+    ): List<Review> = reviewDataService.filter(posDataService.getById(posId), approved)
 
     @Transactional
-    override fun approve(reviewId: Long, userId: Long): Review {
+    override fun approve(
+        reviewId: Long,
+        userId: Long
+    ): Review {
         log.info(
             "Processing approval request for review with ID '{}' by user with ID '{}'...",
-            reviewId, userId,
+            reviewId,
+            userId
         )
 
         // validate that the user exists
@@ -66,10 +72,11 @@ class ReviewServiceImpl(
         if (authorId == approverId) {
             log.warn(
                 "User with ID '{}' attempted to approve their own review with ID '{}'.",
-                approverId, reviewId,
+                approverId,
+                reviewId
             )
             throw ValidationException(
-                "User with ID '$approverId' cannot approve their own review with ID '$reviewId'.",
+                "User with ID '$approverId' cannot approve their own review with ID '$reviewId'."
             )
         }
 
@@ -81,12 +88,16 @@ class ReviewServiceImpl(
         if (finalReview.approved) {
             log.info(
                 "Review with ID '{}' has now reached the approval quorum ({}/{})",
-                finalReview.id, finalReview.approvalCount, approvalConfiguration.minCount,
+                finalReview.id,
+                finalReview.approvalCount,
+                approvalConfiguration.minCount
             )
         } else {
             log.info(
                 "Review with ID '{}' has not reached the approval quorum ({}/{})",
-                finalReview.id, finalReview.approvalCount, approvalConfiguration.minCount,
+                finalReview.id,
+                finalReview.approvalCount,
+                approvalConfiguration.minCount
             )
         }
 
@@ -105,8 +116,7 @@ class ReviewServiceImpl(
     /**
      * Determines whether a review meets the minimum approval threshold.
      */
-    private fun isApproved(review: Review): Boolean =
-        review.approvalCount >= approvalConfiguration.minCount!!
+    private fun isApproved(review: Review): Boolean = review.approvalCount >= approvalConfiguration.minCount!!
 
     private companion object {
         private val log = LoggerFactory.getLogger(ReviewServiceImpl::class.java)

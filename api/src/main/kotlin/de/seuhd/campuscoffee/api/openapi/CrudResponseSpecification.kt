@@ -14,5 +14,5 @@ class CrudResponseSpecification(
     val httpStatus: HttpStatus,
     val descriptionTemplate: String,
     val isErrorResponse: Boolean = false,
-    val isExternalResource: Boolean = false,
+    val isExternalResource: Boolean = false
 )

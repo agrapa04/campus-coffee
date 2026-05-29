@@ -16,7 +16,6 @@ import org.mockito.kotlin.whenever
  * unapproved with a zero approval count. `fromDomain` must copy the POS and author ids into the DTO.
  */
 class ReviewDtoMapperTest {
-
     private val mapper: ReviewDtoMapper = Mappers.getMapper(ReviewDtoMapper::class.java)
     private val posService: PosService = mock()
     private val userService: UserService = mock()
@@ -33,12 +32,13 @@ class ReviewDtoMapperTest {
         val author = TestFixtures.getUserFixtures().first()
         whenever(posService.getById(pos.id!!)).thenReturn(pos)
         whenever(userService.getById(author.id!!)).thenReturn(author)
-        val dto = ReviewDto(
-            posId = pos.id,
-            authorId = author.id,
-            review = "A long enough review text.",
-            approved = true, // the DTO's approved value must be ignored on toDomain
-        )
+        val dto =
+            ReviewDto(
+                posId = pos.id,
+                authorId = author.id,
+                review = "A long enough review text.",
+                approved = true // the DTO's approved value must be ignored on toDomain
+            )
 
         val result = mapper.toDomain(dto)
 

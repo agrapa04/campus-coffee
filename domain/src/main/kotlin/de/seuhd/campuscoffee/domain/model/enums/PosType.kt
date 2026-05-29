@@ -8,5 +8,5 @@ enum class PosType {
     VENDING_MACHINE,
     BAKERY, // e.g., bakeries in grocery stores selling coffee
     CAFETERIA, // e.g., venues operated by the Studierendenwerk/Mensa
-    OTHER,
+    OTHER
 }

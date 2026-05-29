@@ -15,9 +15,9 @@ import org.springframework.data.repository.NoRepositoryBean
 @NoRepositoryBean
 open class ResettableSequenceRepositoryImpl<T : Any, ID : Any>(
     entityInformation: JpaEntityInformation<T, *>,
-    private val entityManager: EntityManager,
-) : SimpleJpaRepository<T, ID>(entityInformation, entityManager), ResettableSequenceRepository {
-
+    private val entityManager: EntityManager
+) : SimpleJpaRepository<T, ID>(entityInformation, entityManager),
+    ResettableSequenceRepository {
     private val domainClass: Class<T> = entityInformation.javaType
 
     @Transactional

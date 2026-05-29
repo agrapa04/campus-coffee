@@ -11,7 +11,6 @@ import org.junit.jupiter.params.provider.ValueSource
  * Tests the validation in the [Pos] constructor: postal code range and house number pattern.
  */
 class PosTest {
-
     @ParameterizedTest
     // the inclusive bounds and a regular code in between; bounds come from Pos, not hard-coded here
     @ValueSource(ints = [Pos.MIN_POSTAL_CODE, Pos.MAX_POSTAL_CODE, 69117])

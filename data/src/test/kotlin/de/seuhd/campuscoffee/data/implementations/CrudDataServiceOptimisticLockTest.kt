@@ -18,7 +18,6 @@ import java.util.Optional
  * [ConcurrentUpdateException].
  */
 class CrudDataServiceOptimisticLockTest {
-
     @Test
     fun optimisticLockFailureBecomesConcurrentUpdateException() {
         val repository = mock<PosRepository>()

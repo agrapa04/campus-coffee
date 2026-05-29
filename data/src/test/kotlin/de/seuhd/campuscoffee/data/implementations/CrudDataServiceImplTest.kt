@@ -12,7 +12,6 @@ import org.springframework.dao.DataIntegrityViolationException
  * the data-integrity violation's Hibernate cause rather than matching on database-specific message text.
  */
 class CrudDataServiceImplTest {
-
     @Test
     fun readsConstraintNameFromHibernateCause() {
         val reportedName = "some_unique_constraint"
@@ -25,9 +24,11 @@ class CrudDataServiceImplTest {
 
     @Test
     fun returnsNullWhenNoHibernateConstraintViolationInChain() {
-        val exception = DataIntegrityViolationException(
-            "could not execute statement", RuntimeException("some unrelated database error"),
-        )
+        val exception =
+            DataIntegrityViolationException(
+                "could not execute statement",
+                RuntimeException("some unrelated database error")
+            )
 
         assertThat(CrudDataServiceImpl.constraintNameOf(exception)).isNull()
     }

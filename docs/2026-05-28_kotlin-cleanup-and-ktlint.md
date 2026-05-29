@@ -172,7 +172,7 @@ ktlint enforces the official Kotlin conventions the code largely follows (4-spac
 no wildcard imports). One deliberate deviation from `ktlint_official`'s defaults: **trailing commas are
 turned off** (`ij_kotlin_allow_trailing_comma* = false`), per preference. ktlint then *removes* the
 trailing commas currently in ~62 files, so the one-time format is a larger — but one-time and
-behavior-neutral — diff (mitigated by `.git-blame-ignore-revs`). Integration via the jlleitschuh
+behavior-neutral — diff. Integration via the jlleitschuh
 `org.jlleitschuh.gradle.ktlint` plugin, which auto-wires `ktlintCheck` into `check` (so the gate rides
 on the existing `gradle build`/CI, like `coverageGate`) and provides `ktlintFormat`.
 
@@ -214,9 +214,7 @@ on the existing `gradle build`/CI, like `coverageGate`) and provides `ktlintForm
    `end_of_line` (the two are complementary; both are kept).
 5. **One-time format**: run `gradle ktlintFormat` (removes the existing trailing commas per the
    `.editorconfig` and applies any other fixes); manually wrap the 1–2 lines over 120 cols ktlint can't
-   auto-wrap (e.g. `CrudOperationCustomizerTest.kt`). Commit **separately** from the wiring; add
-   `.git-blame-ignore-revs` with that SHA (especially worthwhile here, as the comma removal touches many
-   files) and document `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+   auto-wrap (e.g. `CrudOperationCustomizerTest.kt`). Commit **separately** from the wiring.
    - Fallback: if a ktlint version does not honor the flag override under `ktlint_official` and keeps
      re-adding commas, instead disable the two rules outright —
      `ktlint_standard_trailing-comma-on-declaration-site = disabled` and
@@ -235,7 +233,7 @@ on the existing `gradle build`/CI, like `coverageGate`) and provides `ktlintForm
    replace Optional with nullables, refactor OpenAPI schema builder, fix comments & param names").
    `gradle build` green, coverage gate holds.
 2. Phase 3 wiring (catalog, build-logic, convention plugin, `.editorconfig`) → one commit.
-3. One-time `ktlintFormat` → a separate commit (+ `.git-blame-ignore-revs`).
+3. One-time `ktlintFormat` → a separate commit.
 4. CHANGELOG `[Unreleased]` entry covering all of the above.
 
 ## Verification
@@ -262,4 +260,4 @@ on the existing `gradle build`/CI, like `coverageGate`) and provides `ktlintForm
   `domain/build.gradle.kts`, `gradle/libs.versions.toml`, `build-logic/.../java-conventions.gradle.kts`.
 - Phase 3: `gradle/libs.versions.toml`, `build-logic/build.gradle.kts`,
   `build-logic/.../kotlin-conventions.gradle.kts`, `.editorconfig` (new), `.gitattributes` (new),
-  `.git-blame-ignore-revs` (new), `CHANGELOG.md`, plus the one-time formatting touches.
+  `CHANGELOG.md`, plus the one-time formatting touches.

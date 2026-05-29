@@ -10,8 +10,11 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * @param id          unique identifier of the domain object with a missing field
  * @param fieldName   name of the missing field
  */
-class MissingFieldException(domainClass: Class<out DomainModel<*>>, id: Any?, fieldName: String) :
-    RuntimeException(
+class MissingFieldException(
+    domainClass: Class<out DomainModel<*>>,
+    id: Any?,
+    fieldName: String
+) : RuntimeException(
         "${domainClass.simpleName} with ID $id does not have the required fields. " +
-            "Field '$fieldName' is missing.",
+            "Field '$fieldName' is missing."
     )

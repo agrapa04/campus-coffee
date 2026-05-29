@@ -11,7 +11,6 @@ import org.junit.jupiter.params.provider.ValueSource
  * than only through the data-layer OSM tests.
  */
 class OsmAmenityTest {
-
     @ParameterizedTest
     @EnumSource(OsmAmenity::class)
     fun resolvesEveryConstantFromItsLowercaseName(amenity: OsmAmenity) {

@@ -17,9 +17,8 @@ import org.springframework.stereotype.Component
 class LoadInitialData(
     private val posService: PosService,
     private val userService: UserService,
-    private val reviewService: ReviewService,
+    private val reviewService: ReviewService
 ) : InitializingBean {
-
     override fun afterPropertiesSet() {
         log.info("Deleting existing data...")
         reviewService.clear()

@@ -13,11 +13,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
  */
 @Mapper(
     componentModel = "spring",
-    uses = [PosEntityMapper::class, UserEntityMapper::class],
+    uses = [PosEntityMapper::class, UserEntityMapper::class]
 )
 @ConditionalOnMissingBean // prevent IntelliJ warning about duplicate beans
 interface ReviewEntityMapper : EntityMapper<Review, ReviewEntity> {
-
     @Mapping(target = "version", ignore = true)
     override fun toEntity(source: Review): ReviewEntity
 
@@ -26,5 +25,8 @@ interface ReviewEntityMapper : EntityMapper<Review, ReviewEntity> {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "approvalCount", defaultValue = "0")
-    override fun updateEntity(source: Review, @MappingTarget target: ReviewEntity)
+    override fun updateEntity(
+        source: Review,
+        @MappingTarget target: ReviewEntity
+    )
 }

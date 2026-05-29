@@ -20,7 +20,10 @@ interface ReviewService : CrudService<Review, Long> {
      * @param approved the approval status to filter by
      * @return a list of reviews matching the filter criteria
      */
-    fun filter(posId: Long, approved: Boolean): List<Review>
+    fun filter(
+        posId: Long,
+        approved: Boolean
+    ): List<Review>
 
     /**
      * Approves a review on behalf of a user.
@@ -31,5 +34,8 @@ interface ReviewService : CrudService<Review, Long> {
      * @param userId   unique identifier of the user approving the review
      * @return the persisted review with the incremented approval count and updated approval status
      */
-    fun approve(reviewId: Long, userId: Long): Review
+    fun approve(
+        reviewId: Long,
+        userId: Long
+    ): Review
 }

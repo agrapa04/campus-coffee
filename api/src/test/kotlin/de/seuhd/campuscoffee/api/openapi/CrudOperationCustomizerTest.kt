@@ -33,7 +33,6 @@ import java.util.stream.Stream
  * list, a reference for a single object, none for void).
  */
 class CrudOperationCustomizerTest {
-
     private val customizer = CrudOperationCustomizer()
 
     @ParameterizedTest
@@ -48,7 +47,7 @@ class CrudOperationCustomizerTest {
 
         val responses = operation.responses
         assertThat(responses.keys).containsExactlyInAnyOrderElementsOf(
-            specs.map { it.httpStatus.value().toString() },
+            specs.map { it.httpStatus.value().toString() }
         )
 
         for (spec in specs) {
@@ -65,10 +64,11 @@ class CrudOperationCustomizerTest {
     @Test
     fun leavesOperationsWithoutCrudAnnotationUnchanged() {
         // Object#toString carries no @CrudOperation, so the operation must pass through untouched
-        val plain = HandlerMethod(
-            PosController(mock<PosService>(), mock<PosDtoMapper>()),
-            Any::class.java.getMethod("toString"),
-        )
+        val plain =
+            HandlerMethod(
+                PosController(mock<PosService>(), mock<PosDtoMapper>()),
+                Any::class.java.getMethod("toString")
+            )
 
         val operation = customizer.customize(Operation(), plain)
 
@@ -77,7 +77,10 @@ class CrudOperationCustomizerTest {
     }
 
     /** A list return gives an array schema with item references, a single object a reference, void no body. */
-    private fun assertSuccessContentMatchesReturnType(handlerMethod: HandlerMethod, content: Content?) {
+    private fun assertSuccessContentMatchesReturnType(
+        handlerMethod: HandlerMethod,
+        content: Content?
+    ) {
         var returnType = ResolvableType.forMethodReturnType(handlerMethod.method)
         if (returnType.rawClass == ResponseEntity::class.java) {
             returnType = returnType.getGeneric(0)
@@ -101,17 +104,22 @@ class CrudOperationCustomizerTest {
     companion object {
         /** Every `@CrudOperation`-annotated handler method on the real controllers. */
         @JvmStatic
-        fun crudOperationMethods(): Stream<Arguments> = Stream.of(
-            PosController(mock<PosService>(), mock<PosDtoMapper>()),
-            UserController(mock<UserService>(), mock<UserDtoMapper>()),
-            ReviewController(mock<ReviewService>(), mock<ReviewDtoMapper>()),
-        ).flatMap { controller ->
-            controller.javaClass.declaredMethods
-                // skip the synthetic bridge methods the generic CrudController overrides generate;
-                // they carry the annotation but a raw return type, which springdoc never passes
-                .filter { it.isAnnotationPresent(CrudOperation::class.java) && !it.isBridge && !it.isSynthetic }
-                .map { arguments(named("${controller.javaClass.simpleName}.${it.name}", HandlerMethod(controller, it))) }
-                .stream()
-        }
+        fun crudOperationMethods(): Stream<Arguments> =
+            Stream
+                .of(
+                    PosController(mock<PosService>(), mock<PosDtoMapper>()),
+                    UserController(mock<UserService>(), mock<UserDtoMapper>()),
+                    ReviewController(mock<ReviewService>(), mock<ReviewDtoMapper>())
+                ).flatMap { controller ->
+                    controller.javaClass.declaredMethods
+                        // skip the synthetic bridge methods the generic CrudController overrides generate;
+                        // they carry the annotation but a raw return type, which springdoc never passes
+                        .filter { it.isAnnotationPresent(CrudOperation::class.java) && !it.isBridge && !it.isSynthetic }
+                        .map {
+                            arguments(
+                                named("${controller.javaClass.simpleName}.${it.name}", HandlerMethod(controller, it))
+                            )
+                        }.stream()
+                }
     }
 }

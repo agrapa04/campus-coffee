@@ -41,9 +41,8 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/api/pos")
 class PosController(
     private val posService: PosService,
-    private val posDtoMapper: PosDtoMapper,
+    private val posDtoMapper: PosDtoMapper
 ) : CrudController<Pos, PosDto, Long>() {
-
     override fun service(): CrudService<Pos, Long> = posService
 
     override fun mapper(): DtoMapper<Pos, PosDto> = posDtoMapper
@@ -58,7 +57,7 @@ class PosController(
     @GetMapping("/{id}")
     override fun getById(
         @Parameter(description = "Unique identifier of the POS to retrieve.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: Long
     ): ResponseEntity<PosDto> = super.getById(id)
 
     @Operation
@@ -66,7 +65,8 @@ class PosController(
     @PostMapping("")
     override fun create(
         @Parameter(description = "Data of the POS to create.", required = true)
-        @RequestBody @Valid dto: PosDto
+        @RequestBody
+        @Valid dto: PosDto
     ): ResponseEntity<PosDto> = super.create(dto)
 
     @Operation
@@ -76,7 +76,8 @@ class PosController(
         @Parameter(description = "Unique identifier of the POS to update.", required = true)
         @PathVariable id: Long,
         @Parameter(description = "Data of the POS to update.", required = true)
-        @RequestBody @Valid dto: PosDto
+        @RequestBody
+        @Valid dto: PosDto
     ): ResponseEntity<PosDto> = super.update(id, dto)
 
     @Operation
@@ -84,7 +85,7 @@ class PosController(
     @DeleteMapping("/{id}")
     override fun delete(
         @Parameter(description = "Unique identifier of the POS to delete.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: Long
     ): ResponseEntity<Void> = super.delete(id)
 
     @Operation
@@ -92,9 +93,8 @@ class PosController(
     @GetMapping("/filter")
     fun filter(
         @Parameter(description = "Name of the POS to retrieve.", required = true)
-        @RequestParam("name") name: String,
-    ): ResponseEntity<PosDto> =
-        ResponseEntity.ok(posDtoMapper.fromDomain(posService.getByName(name)))
+        @RequestParam("name") name: String
+    ): ResponseEntity<PosDto> = ResponseEntity.ok(posDtoMapper.fromDomain(posService.getByName(name)))
 
     @Operation
     @CrudOperation(operation = IMPORT, resource = POS, externalResource = OSM_NODE)
@@ -103,7 +103,7 @@ class PosController(
         @Parameter(description = "Unique identifier of the OpenStreetMap node to import.", required = true)
         @PathVariable nodeId: Long,
         @Parameter(description = "Campus type to assign to the imported POS.", required = true)
-        @RequestParam("campus_type") campusType: CampusType,
+        @RequestParam("campus_type") campusType: CampusType
     ): ResponseEntity<PosDto> {
         val createdPos = posDtoMapper.fromDomain(posService.importFromOsmNode(nodeId, campusType))
         return ResponseEntity.created(getLocation(createdPos.persistedId)).body(createdPos)

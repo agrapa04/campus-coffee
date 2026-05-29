@@ -26,7 +26,6 @@ import java.util.stream.Stream
  */
 @ExtendWith(MockitoExtension::class)
 class OsmDataServiceTest {
-
     @Mock
     private lateinit var osmClient: OsmClient
 
@@ -91,7 +90,7 @@ class OsmDataServiceTest {
     @Test
     fun nodeWithoutIdThrowsNotFound() {
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
-            "<osm>\n  <node>\n    <tag k=\"amenity\" v=\"cafe\"/>\n    <tag k=\"name\" v=\"X\"/>\n  </node>\n</osm>\n",
+            "<osm>\n  <node>\n    <tag k=\"amenity\" v=\"cafe\"/>\n    <tag k=\"name\" v=\"X\"/>\n  </node>\n</osm>\n"
         )
 
         assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(NotFoundException::class.java)
@@ -101,7 +100,7 @@ class OsmDataServiceTest {
     fun singleTagIsTreatedAsNoTagsAndReportsMissingField() {
         // the deserializer only collects tags when they form an array, so a lone tag yields no tags
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
-            "<osm>\n  <node id=\"$NODE_ID\">\n    <tag k=\"amenity\" v=\"cafe\"/>\n  </node>\n</osm>\n",
+            "<osm>\n  <node id=\"$NODE_ID\">\n    <tag k=\"amenity\" v=\"cafe\"/>\n  </node>\n</osm>\n"
         )
 
         assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(MissingFieldException::class.java)
@@ -109,7 +108,11 @@ class OsmDataServiceTest {
 
     @ParameterizedTest
     @MethodSource("nameFallback")
-    fun namePrefersEnglishThenGermanThenPlainName(nameDe: String?, nameEn: String?, expected: String) {
+    fun namePrefersEnglishThenGermanThenPlainName(
+        nameDe: String?,
+        nameEn: String?,
+        expected: String
+    ) {
         val tags = validTags()
         if (nameDe != null) tags["name:de"] = nameDe
         if (nameEn != null) tags["name:en"] = nameEn
@@ -118,32 +121,42 @@ class OsmDataServiceTest {
         assertThat(service.fetchNode(NODE_ID).name).isEqualTo(expected)
     }
 
-    private fun validTags(): MutableMap<String, String> = linkedMapOf(
-        "name" to "Campus Cafe",
-        "amenity" to "cafe",
-        "addr:city" to "Heidelberg",
-        "addr:street" to "Hauptstrasse",
-        "addr:housenumber" to "5",
-        "addr:postcode" to "69117",
-    )
+    private fun validTags(): MutableMap<String, String> =
+        linkedMapOf(
+            "name" to "Campus Cafe",
+            "amenity" to "cafe",
+            "addr:city" to "Heidelberg",
+            "addr:street" to "Hauptstrasse",
+            "addr:housenumber" to "5",
+            "addr:postcode" to "69117"
+        )
 
-    private fun xml(nodeId: Long, tags: Map<String, String>): String = buildString {
-        append("<osm>\n  <node id=\"").append(nodeId).append("\">\n")
-        tags.forEach { (key, value) ->
-            append("    <tag k=\"").append(key).append("\" v=\"").append(value).append("\"/>\n")
+    private fun xml(
+        nodeId: Long,
+        tags: Map<String, String>
+    ): String =
+        buildString {
+            append("<osm>\n  <node id=\"").append(nodeId).append("\">\n")
+            tags.forEach { (key, value) ->
+                append("    <tag k=\"")
+                    .append(key)
+                    .append("\" v=\"")
+                    .append(value)
+                    .append("\"/>\n")
+            }
+            append("  </node>\n</osm>\n")
         }
-        append("  </node>\n</osm>\n")
-    }
 
     companion object {
         private const val NODE_ID = 123L
 
         @JvmStatic
-        fun nameFallback(): Stream<Arguments> = Stream.of(
-            arguments(null, null, "Campus Cafe"), // only the plain name tag
-            arguments("Cafe DE", null, "Cafe DE"), // name:de wins over name
-            arguments(null, "Cafe EN", "Cafe EN"), // name:en wins over name
-            arguments("Cafe DE", "Cafe EN", "Cafe EN"), // name:en wins over name:de
-        )
+        fun nameFallback(): Stream<Arguments> =
+            Stream.of(
+                arguments(null, null, "Campus Cafe"), // only the plain name tag
+                arguments("Cafe DE", null, "Cafe DE"), // name:de wins over name
+                arguments(null, "Cafe EN", "Cafe EN"), // name:en wins over name
+                arguments("Cafe DE", "Cafe EN", "Cafe EN") // name:en wins over name:de
+            )
     }
 }

@@ -20,19 +20,17 @@ data class ReviewDto(
     override val id: Long? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
-
     @field:NotNull(message = "POS ID cannot be null.")
     val posId: Long?,
-
     @field:NotNull(message = "Author ID cannot be null.")
     val authorId: Long?,
-
     @field:NotBlank(message = "Review text cannot be empty.")
     @field:Size(
-        min = MIN_REVIEW_LENGTH, max = MAX_REVIEW_LENGTH,
-        message = "Review must be between {min} and {max} characters long.",
+        min = MIN_REVIEW_LENGTH,
+        max = MAX_REVIEW_LENGTH,
+        message = "Review must be between {min} and {max} characters long."
     )
     val review: String?,
-
-    val approved: Boolean? = null, // missing when creating a new review
+    // missing when creating a new review
+    val approved: Boolean? = null
 ) : Dto<Long>

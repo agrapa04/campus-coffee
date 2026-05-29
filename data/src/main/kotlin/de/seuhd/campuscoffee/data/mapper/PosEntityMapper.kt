@@ -19,7 +19,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 @Mapper(componentModel = "spring")
 @ConditionalOnMissingBean // prevent IntelliJ warning about duplicate beans
 abstract class PosEntityMapper : EntityMapper<Pos, PosEntity> {
-
     @Autowired
     protected lateinit var houseNumberConverter: HouseNumberConverter
 
@@ -36,7 +35,10 @@ abstract class PosEntityMapper : EntityMapper<Pos, PosEntity> {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "address", expression = "java(toAddress(source, target.getAddress()))")
-    abstract override fun updateEntity(source: Pos, @MappingTarget target: PosEntity)
+    abstract override fun updateEntity(
+        source: Pos,
+        @MappingTarget target: PosEntity
+    )
 
     /**
      * Merges the numeric house number and suffix stored on the entity into a single string.
@@ -53,7 +55,10 @@ abstract class PosEntityMapper : EntityMapper<Pos, PosEntity> {
      * number string into its numeric and suffix parts. MapStruct only calls this with a non-null source;
      * a null address (an update of an entity whose embedded address is absent) yields a new one.
      */
-    protected fun toAddress(source: Pos, address: AddressEntity?): AddressEntity {
+    protected fun toAddress(
+        source: Pos,
+        address: AddressEntity?
+    ): AddressEntity {
         val target = address ?: AddressEntity()
         target.street = source.street
         target.city = source.city

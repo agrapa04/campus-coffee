@@ -13,7 +13,6 @@ import org.springframework.data.repository.findByIdOrNull
  * embedded address columns round-trip through the [PosEntityMapper] split and merge.
  */
 class PosEntityMapperRoundTripTest : AbstractDataIntegrationTest() {
-
     @Autowired
     private lateinit var posEntityMapper: PosEntityMapper
 

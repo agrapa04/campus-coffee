@@ -14,5 +14,7 @@ interface OsmClient {
      * @return the XML response body, or null if the response has no body
      */
     @GetExchange("/node/{id}")
-    fun fetchNode(@PathVariable("id") nodeId: Long): String?
+    fun fetchNode(
+        @PathVariable("id") nodeId: Long
+    ): String?
 }

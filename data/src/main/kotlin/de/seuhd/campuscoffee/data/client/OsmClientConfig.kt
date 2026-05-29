@@ -14,14 +14,19 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory
 @Configuration
 class OsmClientConfig {
     @Bean
-    fun osmClient(@Value("\${osm.api.base-url}") baseUrl: String): OsmClient {
-        val restClient = RestClient.builder()
-            .baseUrl(baseUrl)
-            .defaultHeader("User-Agent", "CampusCoffee/0.0.2")
-            .build()
-        val factory = HttpServiceProxyFactory
-            .builderFor(RestClientAdapter.create(restClient))
-            .build()
+    fun osmClient(
+        @Value("\${osm.api.base-url}") baseUrl: String
+    ): OsmClient {
+        val restClient =
+            RestClient
+                .builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("User-Agent", "CampusCoffee/0.0.2")
+                .build()
+        val factory =
+            HttpServiceProxyFactory
+                .builderFor(RestClientAdapter.create(restClient))
+                .build()
         return factory.createClient(OsmClient::class.java)
     }
 }

@@ -19,7 +19,10 @@ interface ReviewDataService : CrudDataService<Review, Long> {
      * @param approved the approval status to filter by
      * @return a list of all reviews for the specified point of sale
      */
-    fun filter(pos: Pos, approved: Boolean): List<Review>
+    fun filter(
+        pos: Pos,
+        approved: Boolean
+    ): List<Review>
 
     /**
      * Retrieves all reviews for a specific point of sale authored by a specific user.
@@ -28,5 +31,8 @@ interface ReviewDataService : CrudDataService<Review, Long> {
      * @param author the author whose reviews to retrieve
      * @return a list of reviews for the specified point of sale and author
      */
-    fun filter(pos: Pos, author: User): List<Review>
+    fun filter(
+        pos: Pos,
+        author: User
+    ): List<Review>
 }

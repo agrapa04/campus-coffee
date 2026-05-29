@@ -13,5 +13,5 @@ package de.seuhd.campuscoffee.api.openapi
 annotation class CrudOperation(
     val operation: Operation,
     val resource: Resource,
-    val externalResource: Resource = Resource.NONE,
+    val externalResource: Resource = Resource.NONE
 )

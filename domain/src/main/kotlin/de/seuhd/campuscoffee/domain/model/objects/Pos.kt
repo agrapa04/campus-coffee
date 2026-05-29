@@ -21,9 +21,8 @@ data class Pos(
     val street: String,
     val houseNumber: String,
     val postalCode: Int,
-    val city: String,
+    val city: String
 ) : DomainModel<Long> {
-
     init {
         if (!HOUSE_NUMBER_PATTERN.matches(houseNumber)) {
             throw ValidationException("Invalid house number '$houseNumber'.")

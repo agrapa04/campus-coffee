@@ -25,10 +25,9 @@ import org.testcontainers.containers.PostgreSQLContainer
  */
 @SpringBootTest(
     classes = [Application::class],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 abstract class AbstractSysTest {
-
     @Autowired
     protected lateinit var posService: PosService
 

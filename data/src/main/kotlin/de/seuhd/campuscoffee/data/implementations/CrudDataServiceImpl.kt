@@ -34,18 +34,16 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
      * to the domain field it guards, so a uniqueness violation is reported as a [DuplicationException]
      * on that field.
      */
-    protected val uniqueConstraints: Set<ConstraintMapping<DOMAIN>>,
+    protected val uniqueConstraints: Set<ConstraintMapping<DOMAIN>>
 ) : CrudDataService<DOMAIN, ID>
     where REPOSITORY : JpaRepository<ENTITY, ID>, REPOSITORY : ResettableSequenceRepository {
-
     override fun clear() {
         repository.deleteAllInBatch()
         repository.flush()
         repository.resetSequence() // ensure consistent IDs after clearing (for local testing)
     }
 
-    override fun getAll(): List<DOMAIN> =
-        repository.findAll().map { mapper.fromEntity(it) }
+    override fun getAll(): List<DOMAIN> = repository.findAll().map { mapper.fromEntity(it) }
 
     override fun getById(id: ID): DOMAIN =
         repository.findByIdOrNull(id)?.let { mapper.fromEntity(it) } ?: throw NotFoundException(domainClass, id)
@@ -82,7 +80,7 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
                         throw DuplicationException(
                             domainClass,
                             constraint.columnName,
-                            "${constraint.extractValue(domain)}",
+                            "${constraint.extractValue(domain)}"
                         )
                     }
                 }
@@ -116,9 +114,9 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
         /**
          * Returns the name of the database constraint reported by a data-integrity violation, or null
          * when the cause chain contains no Hibernate [ConstraintViolationException]. Reading the name
-         * the driver reported avoids matching on database-specific error-message text.
+         * the driver reported avoids matching on database-specific error-message text. Exposed (not
+         * private) so it can be unit-tested directly with a crafted exception.
          */
-        // exposed (not private) so it can be unit-tested directly with a crafted exception
         @JvmStatic
         fun constraintNameOf(exception: DataIntegrityViolationException): String? {
             var cause: Throwable? = exception

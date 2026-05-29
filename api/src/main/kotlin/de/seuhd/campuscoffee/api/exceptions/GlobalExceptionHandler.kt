@@ -21,7 +21,6 @@ import java.time.LocalDateTime
  */
 @ControllerAdvice
 class GlobalExceptionHandler {
-
     /**
      * Unified handler for the mapped exceptions, returning the HTTP status configured for the
      * exception type and falling back to the generic handler for anything unmapped.
@@ -32,11 +31,15 @@ class GlobalExceptionHandler {
         ConcurrentUpdateException::class,
         IllegalArgumentException::class,
         MissingFieldException::class,
-        ValidationException::class,
+        ValidationException::class
     )
-    fun handleMappedException(exception: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {
-        val config = EXCEPTION_MAPPINGS[exception.javaClass]
-            ?: return handleGenericException(exception, request)
+    fun handleMappedException(
+        exception: Exception,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
+        val config =
+            EXCEPTION_MAPPINGS[exception.javaClass]
+                ?: return handleGenericException(exception, request)
         log.warn(config.logMessage, exception.message)
         return buildErrorResponse(exception, config.httpStatus, request, exception.message)
     }
@@ -48,21 +51,28 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(
         exception: MethodArgumentNotValidException,
-        request: WebRequest,
+        request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        val message = exception.bindingResult.fieldErrors.joinToString("; ") {
-            "${it.field} ${it.defaultMessage}"
-        }
+        val message =
+            exception.bindingResult.fieldErrors.joinToString("; ") {
+                "${it.field} ${it.defaultMessage}"
+            }
         log.warn("Domain validation failed: {}", message)
         return buildErrorResponse(exception, HttpStatus.BAD_REQUEST, request, message)
     }
 
     /** Fallback handler for unexpected exceptions, returning HTTP 500. */
     @ExceptionHandler(Exception::class)
-    fun handleGenericException(exception: Exception, request: WebRequest): ResponseEntity<ErrorResponse> {
+    fun handleGenericException(
+        exception: Exception,
+        request: WebRequest
+    ): ResponseEntity<ErrorResponse> {
         log.error("Unexpected error occurred", exception)
         return buildErrorResponse(
-            exception, HttpStatus.INTERNAL_SERVER_ERROR, request, "An unexpected error occurred.",
+            exception,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            request,
+            "An unexpected error occurred."
         )
     }
 
@@ -70,16 +80,17 @@ class GlobalExceptionHandler {
         exception: Exception,
         status: HttpStatus,
         request: WebRequest,
-        message: String?,
+        message: String?
     ): ResponseEntity<ErrorResponse> {
-        val error = ErrorResponse(
-            errorCode = exception.javaClass.simpleName,
-            message = message,
-            statusCode = status.value(),
-            statusMessage = status.reasonPhrase,
-            timestamp = LocalDateTime.now(),
-            path = extractPath(request),
-        )
+        val error =
+            ErrorResponse(
+                errorCode = exception.javaClass.simpleName,
+                message = message,
+                statusCode = status.value(),
+                statusMessage = status.reasonPhrase,
+                timestamp = LocalDateTime.now(),
+                path = extractPath(request)
+            )
         return ResponseEntity.status(status).body(error)
     }
 
@@ -90,20 +101,24 @@ class GlobalExceptionHandler {
      * Maps an exception type to the HTTP status to return and the log message template
      * (with `{}` as the placeholder for the exception message).
      */
-    private data class ExceptionConfig(val httpStatus: HttpStatus, val logMessage: String)
+    private data class ExceptionConfig(
+        val httpStatus: HttpStatus,
+        val logMessage: String
+    )
 
     private companion object {
         private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
-        private val EXCEPTION_MAPPINGS: Map<Class<out Exception>, ExceptionConfig> = mapOf(
-            NotFoundException::class.java to ExceptionConfig(HttpStatus.NOT_FOUND, "Resource not found: {}"),
-            DuplicationException::class.java to ExceptionConfig(HttpStatus.CONFLICT, "Duplicate resource: {}"),
-            ConcurrentUpdateException::class.java to
-                ExceptionConfig(HttpStatus.CONFLICT, "Concurrent modification: {}"),
-            IllegalArgumentException::class.java to ExceptionConfig(HttpStatus.BAD_REQUEST, "Bad request: {}"),
-            MissingFieldException::class.java to ExceptionConfig(HttpStatus.BAD_REQUEST, "Bad request: {}"),
-            ValidationException::class.java to
-                ExceptionConfig(HttpStatus.BAD_REQUEST, "Domain validation failed: {}"),
-        )
+        private val EXCEPTION_MAPPINGS: Map<Class<out Exception>, ExceptionConfig> =
+            mapOf(
+                NotFoundException::class.java to ExceptionConfig(HttpStatus.NOT_FOUND, "Resource not found: {}"),
+                DuplicationException::class.java to ExceptionConfig(HttpStatus.CONFLICT, "Duplicate resource: {}"),
+                ConcurrentUpdateException::class.java to
+                    ExceptionConfig(HttpStatus.CONFLICT, "Concurrent modification: {}"),
+                IllegalArgumentException::class.java to ExceptionConfig(HttpStatus.BAD_REQUEST, "Bad request: {}"),
+                MissingFieldException::class.java to ExceptionConfig(HttpStatus.BAD_REQUEST, "Bad request: {}"),
+                ValidationException::class.java to
+                    ExceptionConfig(HttpStatus.BAD_REQUEST, "Domain validation failed: {}")
+            )
     }
 }

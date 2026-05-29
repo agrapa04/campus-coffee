@@ -12,7 +12,7 @@ package de.seuhd.campuscoffee.data.constraints
 class ConstraintMapping<DOMAIN>(
     private val valueExtractor: (DOMAIN) -> Any?,
     val columnName: String,
-    val constraintName: String,
+    val constraintName: String
 ) {
     fun extractValue(domain: DOMAIN): Any? = valueExtractor(domain)
 }

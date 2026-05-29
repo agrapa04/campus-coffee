@@ -28,7 +28,6 @@ import org.mockito.kotlin.whenever
  */
 @ExtendWith(MockitoExtension::class)
 class ReviewServiceTest {
-
     private val approvalConfiguration = TestFixtures.getApprovalConfiguration()
 
     @Mock
@@ -63,8 +62,11 @@ class ReviewServiceTest {
     @Test
     fun approvalSuccessfulIfUserIsNotAuthor() {
         // one short of the quorum, so the single approval below pushes it to exactly the quorum
-        val review = TestFixtures.getReviewFixtures().first()
-            .copy(approvalCount = approvalConfiguration.minCount!! - 1, approved = false)
+        val review =
+            TestFixtures
+                .getReviewFixtures()
+                .first()
+                .copy(approvalCount = approvalConfiguration.minCount!! - 1, approved = false)
         val user = TestFixtures.getUserFixtures().last()
         val userId = requireNotNull(user.id)
         whenever(userDataService.getById(userId)).thenReturn(user)
@@ -85,9 +87,10 @@ class ReviewServiceTest {
     fun retrieveAllApprovedPos() {
         val pos = TestFixtures.getPosFixtures().first()
         val posId = requireNotNull(pos.id)
-        val reviews = TestFixtures.getReviewFixtures().map {
-            it.copy(pos = pos, approvalCount = approvalConfiguration.minCount!!, approved = true)
-        }
+        val reviews =
+            TestFixtures.getReviewFixtures().map {
+                it.copy(pos = pos, approvalCount = approvalConfiguration.minCount!!, approved = true)
+            }
         whenever(posDataService.getById(posId)).thenReturn(pos)
         whenever(reviewDataService.filter(pos, true)).thenReturn(reviews)
 
@@ -126,8 +129,11 @@ class ReviewServiceTest {
     @Test
     fun approvalApprovesReviewWhenThresholdIsReached() {
         val quorum = approvalConfiguration.minCount!!
-        val unapprovedReview = TestFixtures.getReviewFixtures().first()
-            .copy(approvalCount = quorum - 1, approved = false)
+        val unapprovedReview =
+            TestFixtures
+                .getReviewFixtures()
+                .first()
+                .copy(approvalCount = quorum - 1, approved = false)
 
         var updatedReview = reviewService.updateApprovalStatus(unapprovedReview)
         assertFalse(updatedReview.approved)

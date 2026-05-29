@@ -1,6 +1,5 @@
 package de.seuhd.campuscoffee.tests.system
 
-import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringIdAndTimestamps
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringTimestamps
@@ -13,13 +12,13 @@ import org.springframework.http.HttpStatus
  * System tests for the operations related to POS (Point of Sale).
  */
 class PosSystemTests : AbstractSysTest() {
-
     @Test
     fun createPos() {
         val posToCreate = TestFixtures.getPosFixturesForInsertion().first()
-        val createdPos = posDtoMapper.toDomain(
-            posRequests.create(listOf(posDtoMapper.fromDomain(posToCreate))).first(),
-        )
+        val createdPos =
+            posDtoMapper.toDomain(
+                posRequests.create(listOf(posDtoMapper.fromDomain(posToCreate))).first()
+            )
 
         assertEqualsIgnoringIdAndTimestamps(createdPos, posToCreate)
     }
@@ -57,9 +56,10 @@ class PosSystemTests : AbstractSysTest() {
         // domain models are immutable, so derive the updated instance with copy()
         val posToUpdate = original.copy(name = original.name + " (Updated)", description = "Updated description")
 
-        val updatedPos = posDtoMapper.toDomain(
-            posRequests.update(listOf(posDtoMapper.fromDomain(posToUpdate))).first(),
-        )
+        val updatedPos =
+            posDtoMapper.toDomain(
+                posRequests.update(listOf(posDtoMapper.fromDomain(posToUpdate))).first()
+            )
         assertEqualsIgnoringTimestamps(updatedPos, posToUpdate)
 
         // verify changes persist

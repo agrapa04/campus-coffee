@@ -17,7 +17,6 @@ import org.mockito.kotlin.whenever
  */
 @ExtendWith(MockitoExtension::class)
 class UserServiceTest {
-
     @Mock
     private lateinit var userDataService: UserDataService
 

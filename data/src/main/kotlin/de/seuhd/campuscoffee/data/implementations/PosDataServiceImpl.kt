@@ -16,20 +16,19 @@ import org.springframework.stereotype.Service
 @Service
 class PosDataServiceImpl(
     repository: PosRepository,
-    entityMapper: PosEntityMapper,
+    entityMapper: PosEntityMapper
 ) : CrudDataServiceImpl<Pos, PosEntity, PosRepository, Long>(
-    repository,
-    entityMapper,
-    Pos::class.java,
-    // unique constraint on the POS name, reported as a DuplicationException on that field
-    setOf(ConstraintMapping({ it.name }, PosEntity.NAME_COLUMN, PosEntity.NAME_UNIQUE_CONSTRAINT)),
-), PosDataService {
-
+        repository,
+        entityMapper,
+        Pos::class.java,
+        // unique constraint on the POS name, reported as a DuplicationException on that field
+        setOf(ConstraintMapping({ it.name }, PosEntity.NAME_COLUMN, PosEntity.NAME_UNIQUE_CONSTRAINT))
+    ),
+    PosDataService {
     /**
      * Retrieves a POS by its unique name.
      *
      * @throws NotFoundException if no POS exists with the given name
      */
-    override fun getByName(name: String): Pos =
-        findByFieldOrThrow({ repository.findByName(name) }, "name", name)
+    override fun getByName(name: String): Pos = findByFieldOrThrow({ repository.findByName(name) }, "name", name)
 }

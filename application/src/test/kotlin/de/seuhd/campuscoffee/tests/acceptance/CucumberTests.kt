@@ -14,10 +14,10 @@ import org.junit.platform.suite.api.Suite
 @SelectPackages("de.seuhd.campuscoffee.tests.acceptance")
 @ConfigurationParameter(
     key = Constants.PLUGIN_PROPERTY_NAME,
-    value = "pretty, html:target/cucumber-report/cucumber.html",
+    value = "pretty, html:target/cucumber-report/cucumber.html"
 )
 @ConfigurationParameter(
     key = Constants.GLUE_PROPERTY_NAME,
-    value = "de.seuhd.campuscoffee.tests.acceptance",
+    value = "de.seuhd.campuscoffee.tests.acceptance"
 )
 class CucumberTests

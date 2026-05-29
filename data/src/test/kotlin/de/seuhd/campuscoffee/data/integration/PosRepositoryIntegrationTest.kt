@@ -13,7 +13,6 @@ import org.springframework.dao.DataIntegrityViolationException
  * real database.
  */
 class PosRepositoryIntegrationTest : AbstractDataIntegrationTest() {
-
     @Autowired
     private lateinit var posEntityMapper: PosEntityMapper
 

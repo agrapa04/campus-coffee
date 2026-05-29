@@ -13,11 +13,12 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration
 @OpenAPIDefinition(
-    info = Info(
-        title = "CampusCoffee API",
-        version = "0.0.5",
-        description = "REST API for managing campus coffee points of sale, users, and reviews.",
-    ),
+    info =
+        Info(
+            title = "CampusCoffee API",
+            version = "0.0.5",
+            description = "REST API for managing campus coffee points of sale, users, and reviews."
+        )
 )
 class OpenApiConfig {
     /**
@@ -26,8 +27,11 @@ class OpenApiConfig {
      * Swagger UI schema list.
      */
     @Bean
-    fun errorResponseSchemaCustomizer(): OpenApiCustomizer = OpenApiCustomizer { openApi ->
-        ModelConverters.getInstance().read(ErrorResponse::class.java)
-            .forEach { (name, schema) -> openApi.components.addSchemas(name, schema) }
-    }
+    fun errorResponseSchemaCustomizer(): OpenApiCustomizer =
+        OpenApiCustomizer { openApi ->
+            ModelConverters
+                .getInstance()
+                .read(ErrorResponse::class.java)
+                .forEach { (name, schema) -> openApi.components.addSchemas(name, schema) }
+        }
 }

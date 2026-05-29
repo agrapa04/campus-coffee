@@ -10,7 +10,10 @@ import com.fasterxml.jackson.databind.JsonNode
  * Custom deserializer that extracts the node id and tags from the OSM XML's nested structure.
  */
 class OsmResponseDeserializer : JsonDeserializer<OsmResponse>() {
-    override fun deserialize(p: JsonParser, context: DeserializationContext): OsmResponse {
+    override fun deserialize(
+        p: JsonParser,
+        context: DeserializationContext
+    ): OsmResponse {
         val root: JsonNode = p.codec.readTree(p)
         val nodeElement = root.get("node")
 
@@ -20,7 +23,7 @@ class OsmResponseDeserializer : JsonDeserializer<OsmResponse>() {
 
         return OsmResponse(
             id = nodeElement.get("id").asLong(),
-            tags = deserializeTags(nodeElement.get("tag")),
+            tags = deserializeTags(nodeElement.get("tag"))
         )
     }
 

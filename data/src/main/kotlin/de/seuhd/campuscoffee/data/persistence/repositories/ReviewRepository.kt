@@ -8,7 +8,16 @@ import org.springframework.data.jpa.repository.JpaRepository
 /**
  * Repository for persisting review entities.
  */
-interface ReviewRepository : JpaRepository<ReviewEntity, Long>, ResettableSequenceRepository {
-    fun findAllByPosAndApproved(pos: PosEntity, approved: Boolean): List<ReviewEntity>
-    fun findAllByPosAndAuthor(pos: PosEntity, author: UserEntity): List<ReviewEntity>
+interface ReviewRepository :
+    JpaRepository<ReviewEntity, Long>,
+    ResettableSequenceRepository {
+    fun findAllByPosAndApproved(
+        pos: PosEntity,
+        approved: Boolean
+    ): List<ReviewEntity>
+
+    fun findAllByPosAndAuthor(
+        pos: PosEntity,
+        author: UserEntity
+    ): List<ReviewEntity>
 }

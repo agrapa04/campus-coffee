@@ -15,7 +15,6 @@ import org.assertj.core.api.Assertions.assertThat
  * in [CucumberSpringConfiguration].
  */
 class CucumberPosSteps {
-
     private lateinit var createdPosList: List<PosDto>
     private lateinit var updatedPos: PosDto
 
@@ -26,16 +25,17 @@ class CucumberPosSteps {
      */
     @DataTableType
     @Suppress("unused")
-    fun toPosDto(row: Map<String, String>): PosDto = PosDto(
-        name = row["name"],
-        description = row["description"],
-        type = PosType.valueOf(row["type"]!!),
-        campus = CampusType.valueOf(row["campus"]!!),
-        street = row["street"],
-        houseNumber = row["houseNumber"],
-        postalCode = row["postalCode"]!!.toInt(),
-        city = row["city"],
-    )
+    fun toPosDto(row: Map<String, String>): PosDto =
+        PosDto(
+            name = row["name"],
+            description = row["description"],
+            type = PosType.valueOf(row["type"]!!),
+            campus = CampusType.valueOf(row["campus"]!!),
+            street = row["street"],
+            houseNumber = row["houseNumber"],
+            postalCode = row["postalCode"]!!.toInt(),
+            city = row["city"]
+        )
 
     // Given -----------------------------------------------------------------------
 
@@ -58,7 +58,10 @@ class CucumberPosSteps {
     }
 
     @When("I update the description of the POS with name {string} to {string}")
-    fun iUpdateTheDescriptionOfThePosWithNameTo(name: String, description: String) {
+    fun iUpdateTheDescriptionOfThePosWithNameTo(
+        name: String,
+        description: String
+    ) {
         val posToUpdate = posRequests.retrieveByFilter("name", name)
         updatedPos = posToUpdate.copy(description = description)
         posRequests.update(listOf(updatedPos))

@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service
  */
 @Service
 class UserServiceImpl(
-    private val userDataService: UserDataService,
-) : CrudServiceImpl<User, Long>(User::class.java), UserService {
-
+    private val userDataService: UserDataService
+) : CrudServiceImpl<User, Long>(User::class.java),
+    UserService {
     override fun dataService(): CrudDataService<User, Long> = userDataService
 
     override fun getByLoginName(loginName: String): User {

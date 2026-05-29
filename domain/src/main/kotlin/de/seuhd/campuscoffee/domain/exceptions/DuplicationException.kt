@@ -10,5 +10,8 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * @param fieldName   the field name that must be unique (e.g., "name", "login name", "email address")
  * @param fieldValue  the duplicate value
  */
-class DuplicationException(domainClass: Class<out DomainModel<*>>, fieldName: String, fieldValue: String) :
-    RuntimeException("${domainClass.simpleName} with $fieldName '$fieldValue' already exists.")
+class DuplicationException(
+    domainClass: Class<out DomainModel<*>>,
+    fieldName: String,
+    fieldValue: String
+) : RuntimeException("${domainClass.simpleName} with $fieldName '$fieldValue' already exists.")

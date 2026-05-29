@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired
  * [de.seuhd.campuscoffee.data.persistence.repositories.ReviewRepository].
  */
 class ReviewRepositoryIntegrationTest : AbstractDataIntegrationTest() {
-
     @Autowired
     private lateinit var posEntityMapper: PosEntityMapper
 
@@ -54,14 +53,19 @@ class ReviewRepositoryIntegrationTest : AbstractDataIntegrationTest() {
 
     private fun persistUser(user: User): UserEntity = userRepository.save(userEntityMapper.toEntity(user))
 
-    private fun persistReview(pos: PosEntity, author: UserEntity, approved: Boolean): ReviewEntity {
-        val entity = ReviewEntity().apply {
-            this.pos = pos
-            this.author = author
-            review = "A review with enough characters."
-            approvalCount = if (approved) 3 else 0
-            this.approved = approved
-        }
+    private fun persistReview(
+        pos: PosEntity,
+        author: UserEntity,
+        approved: Boolean
+    ): ReviewEntity {
+        val entity =
+            ReviewEntity().apply {
+                this.pos = pos
+                this.author = author
+                review = "A review with enough characters."
+                approvalCount = if (approved) 3 else 0
+                this.approved = approved
+            }
         return reviewRepository.save(entity)
     }
 }

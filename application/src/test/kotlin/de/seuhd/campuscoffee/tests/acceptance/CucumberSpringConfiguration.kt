@@ -24,7 +24,6 @@ import org.testcontainers.containers.PostgreSQLContainer
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @CucumberContextConfiguration
 class CucumberSpringConfiguration {
-
     @Autowired
     protected lateinit var posService: PosService
 

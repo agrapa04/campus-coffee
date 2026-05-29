@@ -29,7 +29,6 @@ import java.util.stream.Stream
  */
 @ExtendWith(MockitoExtension::class)
 class PosTypeMappingTest {
-
     @Mock
     private lateinit var posDataService: PosDataService
 
@@ -45,7 +44,10 @@ class PosTypeMappingTest {
 
     @ParameterizedTest
     @MethodSource("amenityToPosType")
-    fun mapsAmenityToPosType(amenity: OsmAmenity, expectedType: PosType) {
+    fun mapsAmenityToPosType(
+        amenity: OsmAmenity,
+        expectedType: PosType
+    ) {
         whenever(osmDataService.fetchNode(NODE_ID)).thenReturn(nodeWith(amenity, "69117"))
         whenever(posDataService.upsert(any<Pos>())).thenAnswer { it.getArgument<Pos>(0) }
 
@@ -80,31 +82,36 @@ class PosTypeMappingTest {
             .isInstanceOf(MissingFieldException::class.java)
     }
 
-    private fun nodeWith(amenity: OsmAmenity, postcode: String): OsmNode = OsmNode(
-        nodeId = NODE_ID,
-        name = "Campus Cafe",
-        amenity = amenity,
-        city = "Heidelberg",
-        street = "Hauptstrasse",
-        houseNumber = "5",
-        postcode = postcode,
-        description = "An arbitrary description.",
-    )
+    private fun nodeWith(
+        amenity: OsmAmenity,
+        postcode: String
+    ): OsmNode =
+        OsmNode(
+            nodeId = NODE_ID,
+            name = "Campus Cafe",
+            amenity = amenity,
+            city = "Heidelberg",
+            street = "Hauptstrasse",
+            houseNumber = "5",
+            postcode = postcode,
+            description = "An arbitrary description."
+        )
 
     companion object {
         private const val NODE_ID = 42L
 
         @JvmStatic
-        fun amenityToPosType(): Stream<Arguments> = Stream.of(
-            arguments(OsmAmenity.CAFE, PosType.CAFE),
-            arguments(OsmAmenity.ICE_CREAM, PosType.CAFE),
-            arguments(OsmAmenity.VENDING_MACHINE, PosType.VENDING_MACHINE),
-            arguments(OsmAmenity.FOOD_COURT, PosType.CAFETERIA),
-            arguments(OsmAmenity.BAR, PosType.OTHER),
-            arguments(OsmAmenity.BIERGARTEN, PosType.OTHER),
-            arguments(OsmAmenity.PUB, PosType.OTHER),
-            arguments(OsmAmenity.RESTAURANT, PosType.OTHER),
-            arguments(OsmAmenity.FAST_FOOD, PosType.OTHER),
-        )
+        fun amenityToPosType(): Stream<Arguments> =
+            Stream.of(
+                arguments(OsmAmenity.CAFE, PosType.CAFE),
+                arguments(OsmAmenity.ICE_CREAM, PosType.CAFE),
+                arguments(OsmAmenity.VENDING_MACHINE, PosType.VENDING_MACHINE),
+                arguments(OsmAmenity.FOOD_COURT, PosType.CAFETERIA),
+                arguments(OsmAmenity.BAR, PosType.OTHER),
+                arguments(OsmAmenity.BIERGARTEN, PosType.OTHER),
+                arguments(OsmAmenity.PUB, PosType.OTHER),
+                arguments(OsmAmenity.RESTAURANT, PosType.OTHER),
+                arguments(OsmAmenity.FAST_FOOD, PosType.OTHER)
+            )
     }
 }

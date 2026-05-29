@@ -39,5 +39,8 @@ interface PosService : CrudService<Pos, Long> {
      * @throws MissingFieldException if the OSM node lacks required fields for creating a valid POS
      * @throws DuplicationException if a POS with the same name already exists
      */
-    fun importFromOsmNode(nodeId: Long, campusType: CampusType): Pos
+    fun importFromOsmNode(
+        nodeId: Long,
+        campusType: CampusType
+    ): Pos
 }

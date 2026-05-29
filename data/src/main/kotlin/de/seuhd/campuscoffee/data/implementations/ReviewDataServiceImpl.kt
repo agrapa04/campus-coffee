@@ -20,16 +20,27 @@ class ReviewDataServiceImpl(
     repository: ReviewRepository,
     entityMapper: ReviewEntityMapper,
     private val posEntityMapper: PosEntityMapper,
-    private val userEntityMapper: UserEntityMapper,
+    private val userEntityMapper: UserEntityMapper
 ) : CrudDataServiceImpl<Review, ReviewEntity, ReviewRepository, Long>(
-    repository, entityMapper, Review::class.java, emptySet(),
-), ReviewDataService {
-
-    override fun filter(pos: Pos, approved: Boolean): List<Review> =
-        repository.findAllByPosAndApproved(posEntityMapper.toEntity(pos), approved)
+        repository,
+        entityMapper,
+        Review::class.java,
+        emptySet()
+    ),
+    ReviewDataService {
+    override fun filter(
+        pos: Pos,
+        approved: Boolean
+    ): List<Review> =
+        repository
+            .findAllByPosAndApproved(posEntityMapper.toEntity(pos), approved)
             .map { mapper.fromEntity(it) }
 
-    override fun filter(pos: Pos, author: User): List<Review> =
-        repository.findAllByPosAndAuthor(posEntityMapper.toEntity(pos), userEntityMapper.toEntity(author))
+    override fun filter(
+        pos: Pos,
+        author: User
+    ): List<Review> =
+        repository
+            .findAllByPosAndAuthor(posEntityMapper.toEntity(pos), userEntityMapper.toEntity(author))
             .map { mapper.fromEntity(it) }
 }

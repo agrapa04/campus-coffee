@@ -9,7 +9,10 @@ import java.util.Properties
  * uses sequence "users_seq") and sets the increment to 1 to match the Flyway-created sequences.
  */
 class CustomSequenceGenerator : SequenceStyleGenerator() {
-    override fun configure(creationContext: GeneratorCreationContext, parameters: Properties) {
+    override fun configure(
+        creationContext: GeneratorCreationContext,
+        parameters: Properties
+    ) {
         val tableName = creationContext.value.table.name
         parameters.setProperty(SequenceStyleGenerator.SEQUENCE_PARAM, tableName + "_seq")
         parameters.setProperty(SequenceStyleGenerator.INCREMENT_PARAM, "1")

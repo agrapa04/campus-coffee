@@ -21,7 +21,6 @@ import org.springframework.http.HttpStatus
  * hooks live in [CucumberSpringConfiguration].
  */
 class CucumberReviewSteps {
-
     @Autowired
     protected lateinit var posDtoMapper: PosDtoMapper
 
@@ -39,12 +38,13 @@ class CucumberReviewSteps {
      */
     @DataTableType
     @Suppress("unused")
-    fun toUserDto(row: Map<String, String>): UserDto = UserDto(
-        loginName = row["loginName"],
-        emailAddress = row["emailAddress"],
-        firstName = row["firstName"],
-        lastName = row["lastName"],
-    )
+    fun toUserDto(row: Map<String, String>): UserDto =
+        UserDto(
+            loginName = row["loginName"],
+            emailAddress = row["emailAddress"],
+            firstName = row["firstName"],
+            lastName = row["lastName"]
+        )
 
     // Given -----------------------------------------------------------------------
 
@@ -60,26 +60,42 @@ class CucumberReviewSteps {
     }
 
     @Given("{string} reviewed {string} with {string}")
-    fun userReviewedPosWith(login: String, posName: String, text: String) {
+    fun userReviewedPosWith(
+        login: String,
+        posName: String,
+        text: String
+    ) {
         createReview(login, posName, text)
     }
 
     // When -----------------------------------------------------------------------
 
     @When("{string} reviews {string} with {string}")
-    fun userReviewsPosWith(login: String, posName: String, text: String) {
+    fun userReviewsPosWith(
+        login: String,
+        posName: String,
+        text: String
+    ) {
         createReview(login, posName, text)
     }
 
     @When("{string} approves the review by {string} for {string}")
-    fun userApprovesReview(approverLogin: String, authorLogin: String, posName: String) {
+    fun userApprovesReview(
+        approverLogin: String,
+        authorLogin: String,
+        posName: String
+    ) {
         val review = reviewsByAuthorAndPos.getValue(reviewKey(authorLogin, posName))
         val updated = reviewRequests.approve(review.id!!, usersByLogin.getValue(approverLogin).id!!)
         reviewsByAuthorAndPos[reviewKey(authorLogin, posName)] = updated
     }
 
     @When("{string} tries to approve the review by {string} for {string}")
-    fun userTriesToApproveReview(approverLogin: String, authorLogin: String, posName: String) {
+    fun userTriesToApproveReview(
+        approverLogin: String,
+        authorLogin: String,
+        posName: String
+    ) {
         val review = reviewsByAuthorAndPos.getValue(reviewKey(authorLogin, posName))
         lastApprovalStatusCode =
             reviewRequests.approveAndReturnStatusCode(review.id!!, usersByLogin.getValue(approverLogin).id!!)
@@ -88,12 +104,18 @@ class CucumberReviewSteps {
     // Then -----------------------------------------------------------------------
 
     @Then("the review by {string} for {string} is approved")
-    fun theReviewIsApproved(authorLogin: String, posName: String) {
+    fun theReviewIsApproved(
+        authorLogin: String,
+        posName: String
+    ) {
         assertThat(currentReview(authorLogin, posName).approved).isTrue()
     }
 
     @Then("the review by {string} for {string} is not approved")
-    fun theReviewIsNotApproved(authorLogin: String, posName: String) {
+    fun theReviewIsNotApproved(
+        authorLogin: String,
+        posName: String
+    ) {
         assertThat(currentReview(authorLogin, posName).approved).isFalse()
     }
 
@@ -104,17 +126,27 @@ class CucumberReviewSteps {
 
     // helpers ---------------------------------------------------------------------
 
-    private fun createReview(login: String, posName: String, text: String) {
-        val review = ReviewDto(
-            posId = posByName.getValue(posName).id,
-            authorId = usersByLogin.getValue(login).id,
-            review = text,
-        )
+    private fun createReview(
+        login: String,
+        posName: String,
+        text: String
+    ) {
+        val review =
+            ReviewDto(
+                posId = posByName.getValue(posName).id,
+                authorId = usersByLogin.getValue(login).id,
+                review = text
+            )
         reviewsByAuthorAndPos[reviewKey(login, posName)] = reviewRequests.create(listOf(review)).first()
     }
 
-    private fun currentReview(authorLogin: String, posName: String): ReviewDto =
-        reviewRequests.retrieveById(reviewsByAuthorAndPos.getValue(reviewKey(authorLogin, posName)).id!!)
+    private fun currentReview(
+        authorLogin: String,
+        posName: String
+    ): ReviewDto = reviewRequests.retrieveById(reviewsByAuthorAndPos.getValue(reviewKey(authorLogin, posName)).id!!)
 
-    private fun reviewKey(login: String, posName: String): String = "$login @ $posName"
+    private fun reviewKey(
+        login: String,
+        posName: String
+    ): String = "$login @ $posName"
 }

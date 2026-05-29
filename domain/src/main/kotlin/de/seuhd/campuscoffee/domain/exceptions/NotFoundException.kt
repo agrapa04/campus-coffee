@@ -7,7 +7,6 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * Supports finding by ID or by a specific field name and value.
  */
 class NotFoundException : RuntimeException {
-
     /**
      * Creates an exception for an entity not found by ID.
      *

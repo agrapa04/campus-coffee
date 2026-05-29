@@ -20,5 +20,5 @@ data class ErrorResponse(
     val statusCode: Int,
     val statusMessage: String? = null,
     val timestamp: LocalDateTime? = null,
-    val path: String? = null,
+    val path: String? = null
 )

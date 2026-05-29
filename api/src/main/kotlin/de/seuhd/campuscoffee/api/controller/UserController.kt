@@ -34,9 +34,8 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/api/users")
 class UserController(
     private val userService: UserService,
-    private val userDtoMapper: UserDtoMapper,
+    private val userDtoMapper: UserDtoMapper
 ) : CrudController<User, UserDto, Long>() {
-
     override fun service(): CrudService<User, Long> = userService
 
     override fun mapper(): DtoMapper<User, UserDto> = userDtoMapper
@@ -51,7 +50,7 @@ class UserController(
     @GetMapping("/{id}")
     override fun getById(
         @Parameter(description = "Unique identifier of the user to retrieve.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: Long
     ): ResponseEntity<UserDto> = super.getById(id)
 
     @Operation
@@ -59,7 +58,8 @@ class UserController(
     @PostMapping("")
     override fun create(
         @Parameter(description = "Data of the user to create.", required = true)
-        @RequestBody @Valid dto: UserDto
+        @RequestBody
+        @Valid dto: UserDto
     ): ResponseEntity<UserDto> = super.create(dto)
 
     @Operation
@@ -69,7 +69,8 @@ class UserController(
         @Parameter(description = "Unique identifier of the user to update.", required = true)
         @PathVariable id: Long,
         @Parameter(description = "Data of the user to update.", required = true)
-        @RequestBody @Valid dto: UserDto
+        @RequestBody
+        @Valid dto: UserDto
     ): ResponseEntity<UserDto> = super.update(id, dto)
 
     @Operation
@@ -77,7 +78,7 @@ class UserController(
     @DeleteMapping("/{id}")
     override fun delete(
         @Parameter(description = "Unique identifier of the user to delete.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: Long
     ): ResponseEntity<Void> = super.delete(id)
 
     @Operation
@@ -85,7 +86,6 @@ class UserController(
     @GetMapping("/filter")
     fun filter(
         @Parameter(description = "Login name of the user to retrieve.", required = true)
-        @RequestParam("login_name") loginName: String,
-    ): ResponseEntity<UserDto> =
-        ResponseEntity.ok(userDtoMapper.fromDomain(userService.getByLoginName(loginName)))
+        @RequestParam("login_name") loginName: String
+    ): ResponseEntity<UserDto> = ResponseEntity.ok(userDtoMapper.fromDomain(userService.getByLoginName(loginName)))
 }

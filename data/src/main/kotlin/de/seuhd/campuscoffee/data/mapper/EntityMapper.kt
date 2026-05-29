@@ -22,5 +22,8 @@ interface EntityMapper<DOMAIN : DomainModel<*>, ENTITY : Entity> {
      * Updates an existing JPA entity with data from the domain model. JPA-managed fields (id,
      * createdAt, updatedAt) are preserved.
      */
-    fun updateEntity(source: DOMAIN, @MappingTarget target: ENTITY)
+    fun updateEntity(
+        source: DOMAIN,
+        @MappingTarget target: ENTITY
+    )
 }

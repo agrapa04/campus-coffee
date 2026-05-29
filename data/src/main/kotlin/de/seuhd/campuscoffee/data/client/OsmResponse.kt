@@ -13,5 +13,5 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 @JsonDeserialize(using = OsmResponseDeserializer::class)
 data class OsmResponse(
     val id: Long? = null,
-    val tags: Map<String, String> = emptyMap(),
+    val tags: Map<String, String> = emptyMap()
 )

@@ -10,6 +10,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 @Configuration
 @EnableJpaRepositories(
     basePackages = ["de.seuhd.campuscoffee.data.persistence.repositories"],
-    repositoryBaseClass = ResettableSequenceRepositoryImpl::class,
+    repositoryBaseClass = ResettableSequenceRepositoryImpl::class
 )
 class RepositoryConfiguration

@@ -20,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class PosServiceImpl(
     private val posDataService: PosDataService,
-    private val osmDataService: OsmDataService,
-) : CrudServiceImpl<Pos, Long>(Pos::class.java), PosService {
-
+    private val osmDataService: OsmDataService
+) : CrudServiceImpl<Pos, Long>(Pos::class.java),
+    PosService {
     override fun dataService(): CrudDataService<Pos, Long> = posDataService
 
     override fun getByName(name: String): Pos {
@@ -31,7 +31,10 @@ class PosServiceImpl(
     }
 
     @Transactional
-    override fun importFromOsmNode(nodeId: Long, campusType: CampusType): Pos {
+    override fun importFromOsmNode(
+        nodeId: Long,
+        campusType: CampusType
+    ): Pos {
         log.info("Importing POS from OpenStreetMap node {}...", nodeId)
 
         // fetch the OSM node data using the port
@@ -50,15 +53,19 @@ class PosServiceImpl(
      *
      * @throws MissingFieldException if required fields are missing or invalid
      */
-    private fun convertOsmNodeToPos(osmNode: OsmNode, campusType: CampusType): Pos {
+    private fun convertOsmNodeToPos(
+        osmNode: OsmNode,
+        campusType: CampusType
+    ): Pos {
         val posType = mapAmenityToPosType(osmNode.amenity)
 
-        val postalCode = try {
-            osmNode.postcode.toInt()
-        } catch (e: NumberFormatException) {
-            log.error("Could not parse postcode {} of OSM node {}", osmNode.postcode, osmNode.nodeId)
-            throw MissingFieldException(OsmNode::class.java, osmNode.nodeId, "postcode")
-        }
+        val postalCode =
+            try {
+                osmNode.postcode.toInt()
+            } catch (e: NumberFormatException) {
+                log.error("Could not parse postcode {} of OSM node {}", osmNode.postcode, osmNode.nodeId)
+                throw MissingFieldException(OsmNode::class.java, osmNode.nodeId, "postcode")
+            }
 
         return Pos(
             name = osmNode.name,
@@ -68,20 +75,21 @@ class PosServiceImpl(
             street = osmNode.street,
             houseNumber = osmNode.houseNumber,
             postalCode = postalCode,
-            city = osmNode.city,
+            city = osmNode.city
         )
     }
 
     /**
      * Maps an OpenStreetMap amenity type to a POS type.
      */
-    private fun mapAmenityToPosType(amenity: OsmAmenity): PosType = when (amenity) {
-        OsmAmenity.CAFE, OsmAmenity.ICE_CREAM -> PosType.CAFE
-        OsmAmenity.VENDING_MACHINE -> PosType.VENDING_MACHINE
-        OsmAmenity.FOOD_COURT -> PosType.CAFETERIA
-        OsmAmenity.BAR, OsmAmenity.BIERGARTEN, OsmAmenity.PUB, OsmAmenity.RESTAURANT,
-        OsmAmenity.FAST_FOOD -> PosType.OTHER
-    }
+    private fun mapAmenityToPosType(amenity: OsmAmenity): PosType =
+        when (amenity) {
+            OsmAmenity.CAFE, OsmAmenity.ICE_CREAM -> PosType.CAFE
+            OsmAmenity.VENDING_MACHINE -> PosType.VENDING_MACHINE
+            OsmAmenity.FOOD_COURT -> PosType.CAFETERIA
+            OsmAmenity.BAR, OsmAmenity.BIERGARTEN, OsmAmenity.PUB, OsmAmenity.RESTAURANT,
+            OsmAmenity.FAST_FOOD -> PosType.OTHER
+        }
 
     private companion object {
         private val log = LoggerFactory.getLogger(PosServiceImpl::class.java)

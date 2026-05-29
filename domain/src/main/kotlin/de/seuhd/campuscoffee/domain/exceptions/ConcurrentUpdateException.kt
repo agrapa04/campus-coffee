@@ -9,7 +9,9 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * @param domainClass class of the domain object (e.g., "Review")
  * @param id          the ID of the entity that was modified concurrently
  */
-class ConcurrentUpdateException(domainClass: Class<out DomainModel<*>>, id: Any?) :
-    RuntimeException(
-        "${domainClass.simpleName} with ID $id was modified concurrently. Please reload it and retry.",
+class ConcurrentUpdateException(
+    domainClass: Class<out DomainModel<*>>,
+    id: Any?
+) : RuntimeException(
+        "${domainClass.simpleName} with ID $id was modified concurrently. Please reload it and retry."
     )

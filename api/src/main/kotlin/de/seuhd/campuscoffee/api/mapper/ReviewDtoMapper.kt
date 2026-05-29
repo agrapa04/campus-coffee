@@ -17,7 +17,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 @Mapper(componentModel = "spring")
 @ConditionalOnMissingBean // prevent IntelliJ warning about duplicate beans
 abstract class ReviewDtoMapper : DtoMapper<Review, ReviewDto> {
-
     // internal, not protected: MapStruct's generated subclass and the same-module test both inject these,
     // and a protected member is not visible to a test in the same package
     @Autowired
@@ -34,14 +33,15 @@ abstract class ReviewDtoMapper : DtoMapper<Review, ReviewDto> {
      * Builds a domain review from the DTO, resolving the referenced POS and author by id. A new review
      * always starts unapproved with a zero approval count; the DTO's `approved` value is ignored.
      */
-    override fun toDomain(source: ReviewDto): Review = Review(
-        id = source.id,
-        createdAt = source.createdAt,
-        updatedAt = source.updatedAt,
-        pos = posService.getById(source.posId!!),
-        author = userService.getById(source.authorId!!),
-        review = source.review!!,
-        approved = false,
-        approvalCount = 0,
-    )
+    override fun toDomain(source: ReviewDto): Review =
+        Review(
+            id = source.id,
+            createdAt = source.createdAt,
+            updatedAt = source.updatedAt,
+            pos = posService.getById(source.posId!!),
+            author = userService.getById(source.authorId!!),
+            review = source.review!!,
+            approved = false,
+            approvalCount = 0
+        )
 }

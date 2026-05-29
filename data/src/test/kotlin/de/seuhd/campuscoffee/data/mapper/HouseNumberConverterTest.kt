@@ -15,12 +15,16 @@ import java.util.stream.Stream
  * that a validated domain object never reaches.
  */
 class HouseNumberConverterTest {
-
     private val converter = HouseNumberConverter()
 
     @ParameterizedTest
     @MethodSource("houseNumbers")
-    fun splitsAndMerges(input: String, number: Int, suffix: Char?, merged: String) {
+    fun splitsAndMerges(
+        input: String,
+        number: Int,
+        suffix: Char?,
+        merged: String
+    ) {
         val parts = converter.split(input)
 
         assertThat(parts.number).isEqualTo(number)
@@ -49,13 +53,14 @@ class HouseNumberConverterTest {
 
     companion object {
         @JvmStatic
-        fun houseNumbers(): Stream<Arguments> = Stream.of(
-            arguments("21a", 21, 'a', "21a"),
-            arguments("100", 100, null, "100"),
-            arguments("5", 5, null, "5"),
-            // the letter is the suffix; separators are dropped, so "21-a" and "21 a" normalize to "21a"
-            arguments("21-a", 21, 'a', "21a"),
-            arguments("21 a", 21, 'a', "21a"),
-        )
+        fun houseNumbers(): Stream<Arguments> =
+            Stream.of(
+                arguments("21a", 21, 'a', "21a"),
+                arguments("100", 100, null, "100"),
+                arguments("5", 5, null, "5"),
+                // the letter is the suffix; separators are dropped, so "21-a" and "21 a" normalize to "21a"
+                arguments("21-a", 21, 'a', "21a"),
+                arguments("21 a", 21, 'a', "21a")
+            )
     }
 }

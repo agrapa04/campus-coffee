@@ -14,21 +14,17 @@ data class UserDto(
     override val id: Long? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
-
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "Login name must be between 1 and 255 characters long.")
     @field:Pattern(regexp = "\\w+", message = "Login name can only contain word characters: [a-zA-Z_0-9]+")
     val loginName: String?,
-
     @field:NotNull
     @field:Email
     val emailAddress: String?,
-
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "First name must be between 1 and 255 characters long.")
     val firstName: String?,
-
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "Last name must be between 1 and 255 characters long.")
-    val lastName: String?,
+    val lastName: String?
 ) : Dto<Long>

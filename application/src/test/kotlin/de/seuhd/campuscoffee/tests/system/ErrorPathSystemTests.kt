@@ -16,7 +16,6 @@ import org.springframework.http.MediaType
  * duplicate unique fields return 409, missing entities return 404, and invalid input returns 400.
  */
 class ErrorPathSystemTests : AbstractSysTest() {
-
     @Test
     fun duplicatePosNameReturnsConflict() {
         val pos = posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first())
@@ -54,8 +53,10 @@ class ErrorPathSystemTests : AbstractSysTest() {
 
     @Test
     fun updateMissingPosReturnsNotFound() {
-        val missing = posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first())
-            .copy(id = MISSING_ID)
+        val missing =
+            posDtoMapper
+                .fromDomain(TestFixtures.getPosFixturesForInsertion().first())
+                .copy(id = MISSING_ID)
 
         val statusCode = posRequests.updateAndReturnStatusCodes(listOf(missing)).first()
 
@@ -64,8 +65,10 @@ class ErrorPathSystemTests : AbstractSysTest() {
 
     @Test
     fun updateWithMismatchedPathAndBodyIdReturnsBadRequest() {
-        val created = posRequests
-            .create(listOf(posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first()))).first()
+        val created =
+            posRequests
+                .create(listOf(posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first())))
+                .first()
 
         val statusCode = posRequests.updateWithPathIdAndReturnStatusCode(created.id!! + 1, created)
 
@@ -77,10 +80,14 @@ class ErrorPathSystemTests : AbstractSysTest() {
         val invalid = posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first()).copy(city = "")
 
         // the validation handler names the rejected field in the message; assert the name, not the exact text
-        val result = client()
-            .post().uri("/api/pos")
-            .contentType(MediaType.APPLICATION_JSON).body(invalid)
-            .exchange().returnResult(String::class.java)
+        val result =
+            client()
+                .post()
+                .uri("/api/pos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(invalid)
+                .exchange()
+                .returnResult(String::class.java)
 
         assertThat(result.status.value()).isEqualTo(HttpStatus.BAD_REQUEST.value())
         assertThat(result.responseBody).contains("city")

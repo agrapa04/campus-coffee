@@ -22,7 +22,6 @@ import org.mockito.kotlin.whenever
  */
 @ExtendWith(MockitoExtension::class)
 class PosServiceTest {
-
     @Mock
     private lateinit var posDataService: PosDataService
 

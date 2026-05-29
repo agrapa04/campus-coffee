@@ -21,13 +21,15 @@ import org.mockito.kotlin.whenever
  */
 @ExtendWith(MockitoExtension::class)
 class CrudServiceTest {
-
     /** Test-only domain model. */
-    private data class TestDomain(override val id: Long?, val name: String) : DomainModel<Long>
+    private data class TestDomain(
+        override val id: Long?,
+        val name: String
+    ) : DomainModel<Long>
 
     /** Test-only concrete implementation of CrudServiceImpl. */
     private class TestCrudServiceImpl(
-        private val dataService: CrudDataService<TestDomain, Long>,
+        private val dataService: CrudDataService<TestDomain, Long>
     ) : CrudServiceImpl<TestDomain, Long>(TestDomain::class.java) {
         override fun dataService(): CrudDataService<TestDomain, Long> = dataService
     }

@@ -47,8 +47,16 @@ configure<PitestPluginExtension> {
     // only classes under classes/java/main are the kapt-generated *MapperImpl, which are excluded anyway.
     additionalMutableCodePaths.set(
         listOf(
-            project(":api").layout.buildDirectory.dir("classes/kotlin/main").get().asFile,
-            project(":data").layout.buildDirectory.dir("classes/kotlin/main").get().asFile,
+            project(":api")
+                .layout.buildDirectory
+                .dir("classes/kotlin/main")
+                .get()
+                .asFile,
+            project(":data")
+                .layout.buildDirectory
+                .dir("classes/kotlin/main")
+                .get()
+                .asFile
         )
     )
 }

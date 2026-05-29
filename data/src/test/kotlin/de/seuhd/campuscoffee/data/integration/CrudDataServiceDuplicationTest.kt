@@ -15,7 +15,6 @@ import org.springframework.dao.DataIntegrityViolationException
  * other integrity violations unchanged.
  */
 class CrudDataServiceDuplicationTest : AbstractDataIntegrationTest() {
-
     @Autowired
     private lateinit var posDataService: PosDataService
 

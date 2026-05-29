@@ -9,9 +9,11 @@ import org.springframework.stereotype.Component
  */
 @Component
 class HouseNumberConverter {
-
     /** The numeric house number and an optional single suffix character. */
-    data class Parts(val number: Int?, val suffix: Char?)
+    data class Parts(
+        val number: Int?,
+        val suffix: Char?
+    )
 
     /**
      * Splits a house number into its numeric part and optional letter suffix (the 'a' in "21a",
@@ -38,7 +40,10 @@ class HouseNumberConverter {
      *
      * @return the merged string, or null when the numeric part is null
      */
-    fun merge(number: Int?, suffix: Char?): String? {
+    fun merge(
+        number: Int?,
+        suffix: Char?
+    ): String? {
         if (number == null) {
             return null
         }

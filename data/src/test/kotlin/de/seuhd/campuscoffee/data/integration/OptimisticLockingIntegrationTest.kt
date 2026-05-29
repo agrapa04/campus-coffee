@@ -15,7 +15,6 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException
  * first save succeeds, and the second save fails because its version is now stale.
  */
 class OptimisticLockingIntegrationTest : AbstractDataIntegrationTest() {
-
     @Autowired
     private lateinit var posEntityMapper: PosEntityMapper
 
@@ -24,20 +23,23 @@ class OptimisticLockingIntegrationTest : AbstractDataIntegrationTest() {
 
     @Test
     fun staleReviewUpdateIsRejected() {
-        val savedAuthor = userRepository.saveAndFlush(
-            userEntityMapper.toEntity(TestFixtures.getUserFixturesForInsertion().first()),
-        )
-        val savedPos = posRepository.saveAndFlush(
-            posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()),
-        )
+        val savedAuthor =
+            userRepository.saveAndFlush(
+                userEntityMapper.toEntity(TestFixtures.getUserFixturesForInsertion().first())
+            )
+        val savedPos =
+            posRepository.saveAndFlush(
+                posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first())
+            )
 
-        val reviewEntity = ReviewEntity().apply {
-            pos = savedPos
-            author = savedAuthor
-            review = "Great place!"
-            approvalCount = 0
-            approved = false
-        }
+        val reviewEntity =
+            ReviewEntity().apply {
+                pos = savedPos
+                author = savedAuthor
+                review = "Great place!"
+                approvalCount = 0
+                approved = false
+            }
         val id = reviewRepository.saveAndFlush(reviewEntity).id!!
 
         // each lookup returns a detached entity, so these are two independent snapshots at the initial version

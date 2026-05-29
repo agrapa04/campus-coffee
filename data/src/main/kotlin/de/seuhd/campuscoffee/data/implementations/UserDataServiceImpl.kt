@@ -16,20 +16,22 @@ import org.springframework.stereotype.Service
 @Service
 class UserDataServiceImpl(
     repository: UserRepository,
-    entityMapper: UserEntityMapper,
+    entityMapper: UserEntityMapper
 ) : CrudDataServiceImpl<User, UserEntity, UserRepository, Long>(
-    repository,
-    entityMapper,
-    User::class.java,
-    // unique constraints on login name and email, reported as a DuplicationException on the offending field
-    setOf(
-        ConstraintMapping({ it.loginName }, UserEntity.LOGIN_NAME_COLUMN, UserEntity.LOGIN_NAME_UNIQUE_CONSTRAINT),
-        ConstraintMapping(
-            { it.emailAddress }, UserEntity.EMAIL_ADDRESS_COLUMN, UserEntity.EMAIL_ADDRESS_UNIQUE_CONSTRAINT,
-        ),
+        repository,
+        entityMapper,
+        User::class.java,
+        // unique constraints on login name and email, reported as a DuplicationException on the offending field
+        setOf(
+            ConstraintMapping({ it.loginName }, UserEntity.LOGIN_NAME_COLUMN, UserEntity.LOGIN_NAME_UNIQUE_CONSTRAINT),
+            ConstraintMapping(
+                { it.emailAddress },
+                UserEntity.EMAIL_ADDRESS_COLUMN,
+                UserEntity.EMAIL_ADDRESS_UNIQUE_CONSTRAINT
+            )
+        )
     ),
-), UserDataService {
-
+    UserDataService {
     /**
      * Retrieves a user by their unique login name.
      *

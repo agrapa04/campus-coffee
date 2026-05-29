@@ -14,5 +14,5 @@ data class Review(
     val author: User,
     val review: String,
     val approvalCount: Int,
-    val approved: Boolean,
+    val approved: Boolean
 ) : DomainModel<Long>

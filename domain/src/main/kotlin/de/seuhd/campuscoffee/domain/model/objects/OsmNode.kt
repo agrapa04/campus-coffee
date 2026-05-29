@@ -14,8 +14,7 @@ data class OsmNode(
     val street: String,
     val amenity: OsmAmenity,
     val name: String,
-    val description: String,
+    val description: String
 ) : DomainModel<Long> {
-
     override val id: Long get() = nodeId
 }

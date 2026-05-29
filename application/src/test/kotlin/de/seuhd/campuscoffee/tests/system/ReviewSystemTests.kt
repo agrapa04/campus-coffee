@@ -15,14 +15,15 @@ import org.springframework.http.HttpStatus
  * approvals from users other than the author to become approved.
  */
 class ReviewSystemTests : AbstractSysTest() {
-
     @Test
     fun createReviewStartsUnapproved() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
 
-        val created = reviewRequests
-            .create(listOf(reviewFor(pos, author, "Solid espresso and plenty of seating."))).first()
+        val created =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "Solid espresso and plenty of seating.")))
+                .first()
 
         assertThat(created.approved).isFalse()
     }
@@ -31,8 +32,10 @@ class ReviewSystemTests : AbstractSysTest() {
     fun retrieveAllAndById() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
-        val created = reviewRequests
-            .create(listOf(reviewFor(pos, author, "A reliable spot between lectures."))).first()
+        val created =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "A reliable spot between lectures.")))
+                .first()
 
         assertThat(reviewRequests.retrieveAll().map { it.id }).containsExactly(created.id)
 
@@ -44,13 +47,17 @@ class ReviewSystemTests : AbstractSysTest() {
     fun updateReviewChangesText() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
-        val created = reviewRequests
-            .create(listOf(reviewFor(pos, author, "Original review text, long enough."))).first()
+        val created =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "Original review text, long enough.")))
+                .first()
 
         // approval count and status are not asserted: an update currently resets both because
         // ReviewDtoMapper hardcodes them on toDomain.
-        val updated = reviewRequests
-            .update(listOf(created.copy(review = "Updated review text, also long enough."))).first()
+        val updated =
+            reviewRequests
+                .update(listOf(created.copy(review = "Updated review text, also long enough.")))
+                .first()
 
         assertThat(updated.review).isEqualTo("Updated review text, also long enough.")
         assertThat(reviewRequests.retrieveById(created.id!!).review)
@@ -61,8 +68,10 @@ class ReviewSystemTests : AbstractSysTest() {
     fun deleteReview() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
-        val created = reviewRequests
-            .create(listOf(reviewFor(pos, author, "This review will be deleted."))).first()
+        val created =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "This review will be deleted.")))
+                .first()
         val id = requireNotNull(created.id)
 
         val statusCodes = reviewRequests.deleteAndReturnStatusCodes(listOf(id, id))
@@ -77,8 +86,10 @@ class ReviewSystemTests : AbstractSysTest() {
         val author = createUser("author", "author@uni-heidelberg.de")
         val firstApprover = createUser("approver_one", "approver.one@uni-heidelberg.de")
         val secondApprover = createUser("approver_two", "approver.two@uni-heidelberg.de")
-        val review = reviewRequests
-            .create(listOf(reviewFor(pos, author, "Review that stays below the quorum."))).first()
+        val review =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "Review that stays below the quorum.")))
+                .first()
 
         reviewRequests.approve(review.id!!, firstApprover.id!!)
         val afterTwoApprovals = reviewRequests.approve(review.id!!, secondApprover.id!!)
@@ -93,8 +104,10 @@ class ReviewSystemTests : AbstractSysTest() {
         val firstApprover = createUser("approver_one", "approver.one@uni-heidelberg.de")
         val secondApprover = createUser("approver_two", "approver.two@uni-heidelberg.de")
         val thirdApprover = createUser("approver_three", "approver.three@uni-heidelberg.de")
-        val review = reviewRequests
-            .create(listOf(reviewFor(pos, author, "Review that reaches the quorum."))).first()
+        val review =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "Review that reaches the quorum.")))
+                .first()
 
         reviewRequests.approve(review.id!!, firstApprover.id!!)
         reviewRequests.approve(review.id!!, secondApprover.id!!)
@@ -107,8 +120,10 @@ class ReviewSystemTests : AbstractSysTest() {
     fun selfApprovalIsRejected() {
         val pos = createPos()
         val author = createUser("author", "author@uni-heidelberg.de")
-        val review = reviewRequests
-            .create(listOf(reviewFor(pos, author, "Author tries to approve this review."))).first()
+        val review =
+            reviewRequests
+                .create(listOf(reviewFor(pos, author, "Author tries to approve this review.")))
+                .first()
 
         val statusCode = reviewRequests.approveAndReturnStatusCode(review.id!!, author.id!!)
 
@@ -121,8 +136,10 @@ class ReviewSystemTests : AbstractSysTest() {
         val author = createUser("author", "author@uni-heidelberg.de")
         reviewRequests.create(listOf(reviewFor(pos, author, "First review by this author.")))
 
-        val statusCode = reviewRequests
-            .createAndReturnStatusCodes(listOf(reviewFor(pos, author, "Second review by the same author."))).first()
+        val statusCode =
+            reviewRequests
+                .createAndReturnStatusCodes(listOf(reviewFor(pos, author, "Second review by the same author.")))
+                .first()
 
         assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST.value())
     }
@@ -145,10 +162,14 @@ class ReviewSystemTests : AbstractSysTest() {
         val secondApprover = createUser("approver_two", "approver.two@uni-heidelberg.de")
         val thirdApprover = createUser("approver_three", "approver.three@uni-heidelberg.de")
 
-        val approvedReview = reviewRequests
-            .create(listOf(reviewFor(pos, approvedAuthor, "This review reaches the quorum."))).first()
-        val pendingReview = reviewRequests
-            .create(listOf(reviewFor(pos, pendingAuthor, "This review stays below the quorum."))).first()
+        val approvedReview =
+            reviewRequests
+                .create(listOf(reviewFor(pos, approvedAuthor, "This review reaches the quorum.")))
+                .first()
+        val pendingReview =
+            reviewRequests
+                .create(listOf(reviewFor(pos, pendingAuthor, "This review stays below the quorum.")))
+                .first()
 
         reviewRequests.approve(approvedReview.id!!, firstApprover.id!!)
         reviewRequests.approve(approvedReview.id!!, secondApprover.id!!)
@@ -166,10 +187,17 @@ class ReviewSystemTests : AbstractSysTest() {
 
     private fun createPos(): Pos = posService.upsert(TestFixtures.getPosFixturesForInsertion().first())
 
-    private fun createUser(loginName: String, emailAddress: String): User = userService.upsert(
-        User(loginName = loginName, emailAddress = emailAddress, firstName = "First", lastName = "Last"),
-    )
+    private fun createUser(
+        loginName: String,
+        emailAddress: String
+    ): User =
+        userService.upsert(
+            User(loginName = loginName, emailAddress = emailAddress, firstName = "First", lastName = "Last")
+        )
 
-    private fun reviewFor(pos: Pos, author: User, text: String): ReviewDto =
-        ReviewDto(posId = pos.id, authorId = author.id, review = text)
+    private fun reviewFor(
+        pos: Pos,
+        author: User,
+        text: String
+    ): ReviewDto = ReviewDto(posId = pos.id, authorId = author.id, review = text)
 }

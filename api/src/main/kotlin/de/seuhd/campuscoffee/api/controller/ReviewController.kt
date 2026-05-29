@@ -37,9 +37,8 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/api/reviews")
 class ReviewController(
     private val reviewService: ReviewService,
-    private val reviewDtoMapper: ReviewDtoMapper,
+    private val reviewDtoMapper: ReviewDtoMapper
 ) : CrudController<Review, ReviewDto, Long>() {
-
     override fun service(): CrudService<Review, Long> = reviewService
 
     override fun mapper(): DtoMapper<Review, ReviewDto> = reviewDtoMapper
@@ -54,7 +53,7 @@ class ReviewController(
     @GetMapping("/{id}")
     override fun getById(
         @Parameter(description = "Unique identifier of the review to retrieve.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: Long
     ): ResponseEntity<ReviewDto> = super.getById(id)
 
     @Operation
@@ -62,7 +61,8 @@ class ReviewController(
     @PostMapping("")
     override fun create(
         @Parameter(description = "Data of the review to create.", required = true)
-        @RequestBody @Valid dto: ReviewDto
+        @RequestBody
+        @Valid dto: ReviewDto
     ): ResponseEntity<ReviewDto> = super.create(dto)
 
     @Operation
@@ -72,7 +72,8 @@ class ReviewController(
         @Parameter(description = "Unique identifier of the review to update.", required = true)
         @PathVariable id: Long,
         @Parameter(description = "Data of the review to update.", required = true)
-        @RequestBody @Valid dto: ReviewDto
+        @RequestBody
+        @Valid dto: ReviewDto
     ): ResponseEntity<ReviewDto> = super.update(id, dto)
 
     @Operation
@@ -80,7 +81,7 @@ class ReviewController(
     @DeleteMapping("/{id}")
     override fun delete(
         @Parameter(description = "Unique identifier of the review to delete.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: Long
     ): ResponseEntity<Void> = super.delete(id)
 
     @Operation
@@ -90,7 +91,7 @@ class ReviewController(
         @Parameter(description = "Unique identifier of the POS to retrieve approved reviews for.", required = true)
         @RequestParam("pos_id") posId: Long,
         @Parameter(description = "The approval status of the reviews to retrieve.", required = true)
-        @RequestParam("approved") approved: Boolean,
+        @RequestParam("approved") approved: Boolean
     ): ResponseEntity<List<ReviewDto>> =
         ResponseEntity.ok(reviewService.filter(posId, approved).map { reviewDtoMapper.fromDomain(it) })
 
@@ -100,7 +101,6 @@ class ReviewController(
         @Parameter(description = "Unique identifier of the review to approve.", required = true)
         @PathVariable id: Long,
         @Parameter(description = "Unique identifier of the user approving the review.", required = true)
-        @RequestParam("user_id") userId: Long,
-    ): ResponseEntity<ReviewDto> =
-        ResponseEntity.ok(reviewDtoMapper.fromDomain(reviewService.approve(id, userId)))
+        @RequestParam("user_id") userId: Long
+    ): ResponseEntity<ReviewDto> = ResponseEntity.ok(reviewDtoMapper.fromDomain(reviewService.approve(id, userId)))
 }

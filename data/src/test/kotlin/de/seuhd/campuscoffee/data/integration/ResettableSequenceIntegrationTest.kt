@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired
  * Verifies that resetSequence restarts the id sequence, so ids are predictable after a reset.
  */
 class ResettableSequenceIntegrationTest : AbstractDataIntegrationTest() {
-
     @Autowired
     private lateinit var posEntityMapper: PosEntityMapper
 

@@ -17,9 +17,8 @@ import org.springframework.transaction.annotation.Transactional
  * @param domainClass the domain class type, used for exception and log messages
  */
 abstract class CrudServiceImpl<DOMAIN : DomainModel<ID>, ID>(
-    protected val domainClass: Class<DOMAIN>,
+    protected val domainClass: Class<DOMAIN>
 ) : CrudService<DOMAIN, ID> {
-
     /** The data service used for the actual persistence operations. */
     protected abstract fun dataService(): CrudDataService<DOMAIN, ID>
 

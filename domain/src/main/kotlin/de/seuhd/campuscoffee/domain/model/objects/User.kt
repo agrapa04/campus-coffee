@@ -12,5 +12,5 @@ data class User(
     val loginName: String,
     val emailAddress: String,
     val firstName: String,
-    val lastName: String,
+    val lastName: String
 ) : DomainModel<Long>

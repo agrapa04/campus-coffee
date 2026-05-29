@@ -18,7 +18,6 @@ import org.testcontainers.utility.DockerImageName
  */
 @SpringBootTest(classes = [DataTestApplication::class], webEnvironment = SpringBootTest.WebEnvironment.NONE)
 abstract class AbstractDataIntegrationTest {
-
     @Autowired
     protected lateinit var posRepository: PosRepository
 

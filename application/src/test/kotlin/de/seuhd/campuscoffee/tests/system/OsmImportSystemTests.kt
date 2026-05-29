@@ -22,7 +22,6 @@ import org.springframework.test.context.DynamicPropertySource
  * The server starts before the Spring context so the client resolves the stub URL.
  */
 class OsmImportSystemTests : AbstractSysTest() {
-
     @BeforeEach
     fun resetStubs() {
         wireMock.resetAll()
@@ -35,13 +34,16 @@ class OsmImportSystemTests : AbstractSysTest() {
                 aResponse()
                     .withStatus(HttpStatus.OK.value())
                     .withHeader("Content-Type", "application/xml")
-                    .withBody(osmXml(NODE_ID, validTags())),
-            ),
+                    .withBody(osmXml(NODE_ID, validTags()))
+            )
         )
 
-        val result = client()
-            .post().uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-            .exchange().returnResult(PosDto::class.java)
+        val result =
+            client()
+                .post()
+                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
+                .exchange()
+                .returnResult(PosDto::class.java)
 
         assertThat(result.status.value()).isEqualTo(HttpStatus.CREATED.value())
         val imported = result.responseBody!!
@@ -55,12 +57,17 @@ class OsmImportSystemTests : AbstractSysTest() {
     @Test
     fun importMissingOsmNodeReturnsNotFound() {
         wireMock.stubFor(
-            get(urlEqualTo("/node/$NODE_ID")).willReturn(aResponse().withStatus(HttpStatus.NOT_FOUND.value())),
+            get(urlEqualTo("/node/$NODE_ID")).willReturn(aResponse().withStatus(HttpStatus.NOT_FOUND.value()))
         )
 
-        val status = client()
-            .post().uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-            .exchange().returnResult(ByteArray::class.java).status.value()
+        val status =
+            client()
+                .post()
+                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
+                .exchange()
+                .returnResult(ByteArray::class.java)
+                .status
+                .value()
 
         assertThat(status).isEqualTo(HttpStatus.NOT_FOUND.value())
     }
@@ -73,35 +80,49 @@ class OsmImportSystemTests : AbstractSysTest() {
                 aResponse()
                     .withStatus(HttpStatus.OK.value())
                     .withHeader("Content-Type", "application/xml")
-                    .withBody(osmXml(NODE_ID, withoutAmenity)),
-            ),
+                    .withBody(osmXml(NODE_ID, withoutAmenity))
+            )
         )
 
-        val status = client()
-            .post().uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-            .exchange().returnResult(ByteArray::class.java).status.value()
+        val status =
+            client()
+                .post()
+                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
+                .exchange()
+                .returnResult(ByteArray::class.java)
+                .status
+                .value()
 
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
     }
 
     // helpers ---------------------------------------------------------------------
 
-    private fun validTags(): MutableMap<String, String> = linkedMapOf(
-        "name" to "Campus Cafe",
-        "amenity" to "cafe",
-        "addr:city" to "Heidelberg",
-        "addr:street" to "Hauptstrasse",
-        "addr:housenumber" to "5",
-        "addr:postcode" to "69117",
-    )
+    private fun validTags(): MutableMap<String, String> =
+        linkedMapOf(
+            "name" to "Campus Cafe",
+            "amenity" to "cafe",
+            "addr:city" to "Heidelberg",
+            "addr:street" to "Hauptstrasse",
+            "addr:housenumber" to "5",
+            "addr:postcode" to "69117"
+        )
 
-    private fun osmXml(nodeId: Long, tags: Map<String, String>): String = buildString {
-        append("<osm>\n  <node id=\"").append(nodeId).append("\">\n")
-        tags.forEach { (key, value) ->
-            append("    <tag k=\"").append(key).append("\" v=\"").append(value).append("\"/>\n")
+    private fun osmXml(
+        nodeId: Long,
+        tags: Map<String, String>
+    ): String =
+        buildString {
+            append("<osm>\n  <node id=\"").append(nodeId).append("\">\n")
+            tags.forEach { (key, value) ->
+                append("    <tag k=\"")
+                    .append(key)
+                    .append("\" v=\"")
+                    .append(value)
+                    .append("\"/>\n")
+            }
+            append("  </node>\n</osm>\n")
         }
-        append("  </node>\n</osm>\n")
-    }
 
     private companion object {
         const val NODE_ID = 123L

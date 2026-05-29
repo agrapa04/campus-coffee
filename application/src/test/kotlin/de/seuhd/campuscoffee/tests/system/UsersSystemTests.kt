@@ -1,6 +1,5 @@
 package de.seuhd.campuscoffee.tests.system
 
-import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringIdAndTimestamps
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringTimestamps
@@ -13,13 +12,13 @@ import org.springframework.http.HttpStatus
  * System tests for the operations related to Users.
  */
 class UsersSystemTests : AbstractSysTest() {
-
     @Test
     fun createUser() {
         val userToCreate = TestFixtures.getUserFixturesForInsertion().first()
-        val createdUser = userDtoMapper.toDomain(
-            userRequests.create(listOf(userDtoMapper.fromDomain(userToCreate))).first(),
-        )
+        val createdUser =
+            userDtoMapper.toDomain(
+                userRequests.create(listOf(userDtoMapper.fromDomain(userToCreate))).first()
+            )
 
         assertEqualsIgnoringIdAndTimestamps(createdUser, userToCreate)
     }
@@ -27,8 +26,10 @@ class UsersSystemTests : AbstractSysTest() {
     @Test
     fun createUserInvalidLoginName() {
         val invalidUser = TestFixtures.getUserFixturesForInsertion().first().copy(loginName = "-")
-        val statusCode = userRequests
-            .createAndReturnStatusCodes(listOf(userDtoMapper.fromDomain(invalidUser))).first()
+        val statusCode =
+            userRequests
+                .createAndReturnStatusCodes(listOf(userDtoMapper.fromDomain(invalidUser)))
+                .first()
 
         assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST.value())
     }
@@ -63,14 +64,16 @@ class UsersSystemTests : AbstractSysTest() {
     fun updateUser() {
         val original = TestFixtures.createUserFixtures(userService).first()
 
-        val userToUpdate = original.copy(
-            loginName = original.loginName + "_updated",
-            emailAddress = "updated." + original.emailAddress,
-        )
+        val userToUpdate =
+            original.copy(
+                loginName = original.loginName + "_updated",
+                emailAddress = "updated." + original.emailAddress
+            )
 
-        val updatedUser = userDtoMapper.toDomain(
-            userRequests.update(listOf(userDtoMapper.fromDomain(userToUpdate))).first(),
-        )
+        val updatedUser =
+            userDtoMapper.toDomain(
+                userRequests.update(listOf(userDtoMapper.fromDomain(userToUpdate))).first()
+            )
         assertEqualsIgnoringTimestamps(updatedUser, userToUpdate)
 
         // verify changes persist

@@ -17,9 +17,8 @@ import org.springframework.web.client.RestClientException
  */
 @Service
 class OsmDataServiceImpl(
-    private val osmClient: OsmClient,
+    private val osmClient: OsmClient
 ) : OsmDataService {
-
     override fun fetchNode(nodeId: Long): OsmNode {
         try {
             log.debug("Fetching OSM node with ID '{}'...", nodeId)
@@ -50,7 +49,10 @@ class OsmDataServiceImpl(
      *
      * @throws MissingFieldException if required fields are missing
      */
-    private fun parseOsmXml(xmlResponse: String, nodeId: Long): OsmNode {
+    private fun parseOsmXml(
+        xmlResponse: String,
+        nodeId: Long
+    ): OsmNode {
         // parse XML using Jackson (the deserializer ensures the node element and id are present)
         val osmResponse = XmlMapper().readValue(xmlResponse, OsmResponse::class.java)
         val tags = osmResponse.tags
@@ -61,10 +63,11 @@ class OsmDataServiceImpl(
         val houseNumber = getRequiredTag(tags, "addr:housenumber", nodeId)
         val postcode = getRequiredTag(tags, "addr:postcode", nodeId)
         val amenityStr = getRequiredTag(tags, "amenity", nodeId)
-        val amenity = OsmAmenity.fromOsmValue(amenityStr) ?: run {
-            log.warn("OSM node {} has unsupported amenity type: {}", nodeId, amenityStr)
-            throw MissingFieldException(OsmNode::class.java, nodeId, "amenity")
-        }
+        val amenity =
+            OsmAmenity.fromOsmValue(amenityStr) ?: run {
+                log.warn("OSM node {} has unsupported amenity type: {}", nodeId, amenityStr)
+                throw MissingFieldException(OsmNode::class.java, nodeId, "amenity")
+            }
 
         val nameDe = tags["name:de"]
         val nameEn = tags["name:en"]
@@ -88,11 +91,17 @@ class OsmDataServiceImpl(
      *
      * @throws MissingFieldException if the tag is missing
      */
-    private fun getRequiredTag(tags: Map<String, String>, key: String, nodeId: Long): String =
+    private fun getRequiredTag(
+        tags: Map<String, String>,
+        key: String,
+        nodeId: Long
+    ): String =
         tags[key] ?: run {
             log.warn(
                 "OSM node {} is missing required field: '{}'. Available tags: {}",
-                nodeId, key, tags.keys
+                nodeId,
+                key,
+                tags.keys
             )
             throw MissingFieldException(OsmNode::class.java, nodeId, key)
         }

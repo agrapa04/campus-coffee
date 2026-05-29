@@ -20,15 +20,18 @@ import org.springframework.web.method.HandlerMethod
  */
 @Component
 class CrudOperationCustomizer : OperationCustomizer {
-
-    override fun customize(operation: Operation, handlerMethod: HandlerMethod): Operation {
+    override fun customize(
+        operation: Operation,
+        handlerMethod: HandlerMethod
+    ): Operation {
         val crudOperation = handlerMethod.getMethodAnnotation(CrudOperation::class.java)
         if (crudOperation != null) {
-            val params = Parameters(
-                crudOperation.operation,
-                crudOperation.resource,
-                crudOperation.externalResource.takeIf { it != NONE }
-            )
+            val params =
+                Parameters(
+                    crudOperation.operation,
+                    crudOperation.resource,
+                    crudOperation.externalResource.takeIf { it != NONE }
+                )
             operation.summary = crudOperation.operation.summaryTemplate(params)
             operation.responses = createResponses(params, handlerMethod)
         }
@@ -39,12 +42,15 @@ class CrudOperationCustomizer : OperationCustomizer {
      * Creates the API responses from the operation's response specifications, attaching the
      * ErrorResponse schema for error responses and the return-type schema for success responses.
      */
-    fun createResponses(params: Parameters, handlerMethod: HandlerMethod): ApiResponses {
+    fun createResponses(
+        params: Parameters,
+        handlerMethod: HandlerMethod
+    ): ApiResponses {
         val responses = ApiResponses()
         for (spec in params.operation.responseSpecifications) {
             val response = ApiResponse().description(formatDescription(spec, params))
             response.content(
-                if (spec.isErrorResponse) createErrorResponseContent() else createSuccessResponseContent(handlerMethod),
+                if (spec.isErrorResponse) createErrorResponseContent() else createSuccessResponseContent(handlerMethod)
             )
             responses.addApiResponse(spec.httpStatus.value().toString(), response)
         }
@@ -54,7 +60,10 @@ class CrudOperationCustomizer : OperationCustomizer {
     /**
      * Formats the description template with the regular or external resource name.
      */
-    private fun formatDescription(spec: CrudResponseSpecification, params: Parameters): String {
+    private fun formatDescription(
+        spec: CrudResponseSpecification,
+        params: Parameters
+    ): String {
         val substitution = params.externalResourceName?.takeIf { spec.isExternalResource } ?: params.resourceName
         return String.format(spec.descriptionTemplate, substitution)
     }
@@ -70,11 +79,12 @@ class CrudOperationCustomizer : OperationCustomizer {
      */
     private fun createSuccessResponseContent(handlerMethod: HandlerMethod): Content? {
         val returnType = unwrapResponseEntity(ResolvableType.forMethodReturnType(handlerMethod.method))
-        val schema = when (returnType.rawClass) {
-            Void::class.java, Void.TYPE -> return null
-            List::class.java -> arraySchema(returnType.getGeneric(0))
-            else -> refSchema(returnType)
-        }
+        val schema =
+            when (returnType.rawClass) {
+                Void::class.java, Void.TYPE -> return null
+                List::class.java -> arraySchema(returnType.getGeneric(0))
+                else -> refSchema(returnType)
+            }
         return Content().addMediaType("application/json", MediaType().schema(schema))
     }
 
@@ -83,10 +93,11 @@ class CrudOperationCustomizer : OperationCustomizer {
         if (returnType.rawClass == ResponseEntity::class.java) returnType.getGeneric(0) else returnType
 
     /** An array schema whose items reference the component schema of the given element type. */
-    private fun arraySchema(itemType: ResolvableType): Schema<*> = Schema<Any>().apply {
-        type = "array"
-        items = refSchema(itemType)
-    }
+    private fun arraySchema(itemType: ResolvableType): Schema<*> =
+        Schema<Any>().apply {
+            type = "array"
+            items = refSchema(itemType)
+        }
 
     /** A reference (`$ref`) to the component schema for the given type. */
     private fun refSchema(type: ResolvableType): Schema<*> =
