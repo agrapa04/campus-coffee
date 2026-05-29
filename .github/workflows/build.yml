@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: jdx/mise-action@v3
+      - uses: jdx/mise-action@v4
 
       # `gradle build` runs `check`: ktlint, detekt, the tests, and the coverage aggregate report and gate.
       - name: Build with Gradle
@@ -25,7 +25,7 @@ jobs:
       # Upload even when the build fails, so a failed coverage gate still leaves the report to inspect.
       - name: Upload coverage reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-coverage-reports
           path: |
