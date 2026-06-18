@@ -59,6 +59,14 @@ class SecurityConfig {
                 // is targeted, so it is enforced in the domain, and the URL rule only requires a login.
                 authorize(HttpMethod.GET, "/api/users", hasRole("ADMIN"))
                 authorize(HttpMethod.GET, "/api/users/**", authenticated)
+                // Actuator: health is public (it reports only an UP/DOWN status, so it is safe to
+                // expose); metrics is admin-only. These must precede the public GET catch-all below,
+                // which would otherwise make them anonymous. env carries no rule here; application.yaml
+                // controls where it is exposed.
+                authorize("/actuator/health", permitAll)
+                authorize("/actuator/health/**", permitAll)
+                authorize("/actuator/metrics", hasRole("ADMIN"))
+                authorize("/actuator/metrics/**", hasRole("ADMIN"))
                 // All other reads (the POS directory and reviews) are public.
                 authorize(HttpMethod.GET, "/**", permitAll)
                 // POS curation (create/update/delete and the OSM import) requires a moderator.

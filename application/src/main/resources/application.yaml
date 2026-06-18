@@ -34,7 +34,7 @@ campus-coffee:
     min-count: 3
   fixtures:
     # Load the fixture data once on startup, but only when the database has no users yet. Off by
-    # default; the prod deployment turns it on, because that profile has no /api/dev endpoints to load
+    # default; the prod deployment turns it on because that profile has no /api/dev endpoints to load
     # data through.
     load-on-startup: false
 jwt:
@@ -57,6 +57,7 @@ spring:
       include-message: always
       include-binding-errors: always
 management: # https://docs.spring.io/spring-boot/reference/actuator/endpoints.html
+  # Exposing an endpoint only makes it reachable; the access rules live in SecurityConfig.
   endpoints:
     web:
       exposure:
@@ -87,3 +88,10 @@ campus-coffee:
     # This is a teaching deployment, so it loads the fixture data on startup. Set
     # LOAD_FIXTURES_ON_STARTUP=false for an empty database.
     load-on-startup: ${LOAD_FIXTURES_ON_STARTUP:true}
+management:
+  # env is not exposed in prod: even with sensitive values masked it reveals the configuration
+  # structure and property-source names.
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics
