@@ -7,6 +7,7 @@ import de.seuhd.campuscoffee.api.mapper.UserDtoMapper
 import de.seuhd.campuscoffee.domain.ports.api.PosService
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
+import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import de.seuhd.campuscoffee.tests.SystemTestUtils.configureClient
 import de.seuhd.campuscoffee.tests.SystemTestUtils.configurePostgresContainers
 import de.seuhd.campuscoffee.tests.SystemTestUtils.getPostgresContainer
@@ -55,6 +56,9 @@ abstract class AbstractSystemTest {
         reviewService.clear()
         posService.clear()
         userService.clear()
+        // seed the fixture users (with known passwords and their role sets) so a write request can
+        // authenticate over HTTP Basic; every write request now requires an authenticated user
+        seededAuthUsers = TestFixtures.createUserFixtures(userService)
         configureClient(port)
     }
 
@@ -64,6 +68,9 @@ abstract class AbstractSystemTest {
         posService.clear()
         userService.clear()
     }
+
+    /** The fixture users seeded before each test, available so a test can act as a specific one. */
+    protected lateinit var seededAuthUsers: List<de.seuhd.campuscoffee.domain.model.objects.User>
 
     protected companion object {
         // Shared across all system tests: a val in the companion object is a single instance, started once.

@@ -4,6 +4,7 @@ import de.seuhd.campuscoffee.domain.exceptions.ConcurrentUpdateException
 import de.seuhd.campuscoffee.domain.exceptions.DeletionConflictException
 import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
 import de.seuhd.campuscoffee.domain.exceptions.ExternalServiceException
+import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.exceptions.MissingFieldException
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.exceptions.ValidationException
@@ -44,6 +45,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         IllegalArgumentException::class,
         MissingFieldException::class,
         ValidationException::class,
+        ForbiddenException::class,
         ExternalServiceException::class
     )
     fun handleMappedException(
@@ -178,6 +180,8 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                 MissingFieldException::class.java to ExceptionConfig(HttpStatus.BAD_REQUEST, "Bad request: {}"),
                 ValidationException::class.java to
                     ExceptionConfig(HttpStatus.BAD_REQUEST, "Domain validation failed: {}"),
+                ForbiddenException::class.java to
+                    ExceptionConfig(HttpStatus.FORBIDDEN, "Forbidden: {}"),
                 ExternalServiceException::class.java to
                     ExceptionConfig(HttpStatus.BAD_GATEWAY, "External service failure: {}")
             )

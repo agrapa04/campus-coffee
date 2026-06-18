@@ -1,5 +1,7 @@
 package de.seuhd.campuscoffee.domain.implementation
 
+import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
+import de.seuhd.campuscoffee.domain.model.objects.Role
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.ports.data.PasswordHasher
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
@@ -7,6 +9,7 @@ import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -56,6 +59,44 @@ class UserServiceTest {
     }
 
     @Test
+    fun `getById with an acting user returns the target when the caller is that same user`() {
+        val user = TestFixtures.plainUser()
+        val id = requireNotNull(user.id)
+        whenever(userDataService.getById(id)).thenReturn(user)
+
+        assertThat(userService.getById(id, actingUser = user)).isEqualTo(user)
+    }
+
+    @Test
+    fun `getById with an acting user returns any user when the caller is an admin`() {
+        val target = TestFixtures.plainUser()
+        val admin = TestFixtures.admin()
+        val id = requireNotNull(target.id)
+        whenever(userDataService.getById(id)).thenReturn(target)
+
+        assertThat(userService.getById(id, actingUser = admin)).isEqualTo(target)
+    }
+
+    @Test
+    fun `getById with an acting user throws ForbiddenException when a non-admin reads another user`() {
+        val target = TestFixtures.admin()
+        val actor = TestFixtures.plainUser()
+        val id = requireNotNull(target.id)
+        whenever(userDataService.getById(id)).thenReturn(target)
+
+        assertThrows<ForbiddenException> { userService.getById(id, actingUser = actor) }
+    }
+
+    @Test
+    fun `getByLoginName with an acting user throws ForbiddenException when a non-admin reads another user`() {
+        val target = TestFixtures.admin()
+        val actor = TestFixtures.plainUser()
+        whenever(userDataService.getByLoginName(target.loginName)).thenReturn(target)
+
+        assertThrows<ForbiddenException> { userService.getByLoginName(target.loginName, actingUser = actor) }
+    }
+
+    @Test
     fun `upsert hashes a supplied raw password and clears it before persisting`() {
         val user = TestFixtures.getUserFixturesForInsertion().first().copy(password = "plaintext1")
         whenever(passwordHasher.hash("plaintext1")).thenReturn("{bcrypt}HASHED")
@@ -92,5 +133,102 @@ class UserServiceTest {
         // the omitted password leaves the stored hash intact instead of nulling it
         assertThat(result.passwordHash).isEqualTo("{bcrypt}STORED")
         verify(passwordHasher, never()).hash(any())
+    }
+
+    @Test
+    fun `register forces a plain USER role regardless of the requested roles`() {
+        // a client trying to self-assign ADMIN on registration still ends up a plain USER
+        val requested =
+            TestFixtures
+                .getUserFixturesForInsertion()
+                .first()
+                .copy(password = "longenough1", roles = setOf(Role.ADMIN, Role.MODERATOR))
+        whenever(passwordHasher.hash(any())).thenReturn("{bcrypt}HASHED")
+        whenever(userDataService.upsert(any())).thenAnswer { it.arguments[0] as User }
+
+        val result = userService.register(requested)
+
+        assertThat(result.roles).containsExactly(Role.USER)
+    }
+
+    @Test
+    fun `update lets a user edit their own profile but keeps their roles`() {
+        val existing = TestFixtures.moderator()
+        val id = requireNotNull(existing.id)
+        // the user edits their own name and (uselessly) omits roles; the existing roles must survive
+        val update = existing.copy(firstName = "Maximilian", roles = emptySet(), passwordHash = null)
+        whenever(userDataService.getById(id)).thenReturn(existing)
+        whenever(userDataService.upsert(any())).thenAnswer { it.arguments[0] as User }
+
+        val result = userService.update(update, actingUser = existing)
+
+        assertThat(result.firstName).isEqualTo("Maximilian")
+        assertThat(result.roles).isEqualTo(existing.roles)
+    }
+
+    @Test
+    fun `update throws ForbiddenException when a non-admin edits another user`() {
+        val target = TestFixtures.admin()
+        val actor = TestFixtures.plainUser()
+        val update = target.copy(firstName = "Hijacked", passwordHash = null)
+
+        assertThrows<ForbiddenException> { userService.update(update, actingUser = actor) }
+        verify(userDataService, never()).upsert(any())
+    }
+
+    @Test
+    fun `update throws ForbiddenException when a non-admin changes their own roles`() {
+        val self = TestFixtures.plainUser()
+        val id = requireNotNull(self.id)
+        // the user tries to grant themselves ADMIN on their own account
+        val update = self.copy(roles = setOf(Role.USER, Role.ADMIN), passwordHash = null)
+        whenever(userDataService.getById(id)).thenReturn(self)
+
+        assertThrows<ForbiddenException> { userService.update(update, actingUser = self) }
+        verify(userDataService, never()).upsert(any())
+    }
+
+    @Test
+    fun `update lets an admin change another user's roles`() {
+        val admin = TestFixtures.admin()
+        val target = TestFixtures.plainUser()
+        val id = requireNotNull(target.id)
+        val update = target.copy(roles = setOf(Role.USER, Role.MODERATOR), passwordHash = null)
+        whenever(userDataService.getById(id)).thenReturn(target)
+        whenever(userDataService.upsert(any())).thenAnswer { it.arguments[0] as User }
+
+        val result = userService.update(update, actingUser = admin)
+
+        assertThat(result.roles).containsExactlyInAnyOrder(Role.USER, Role.MODERATOR)
+    }
+
+    @Test
+    fun `update keeps the USER role when an admin sets a role set without USER`() {
+        val admin = TestFixtures.admin()
+        val target = TestFixtures.plainUser()
+        val id = requireNotNull(target.id)
+        // an admin tries to set roles to MODERATOR only, dropping the base USER role
+        val update = target.copy(roles = setOf(Role.MODERATOR), passwordHash = null)
+        whenever(userDataService.getById(id)).thenReturn(target)
+        whenever(userDataService.upsert(any())).thenAnswer { it.arguments[0] as User }
+
+        val result = userService.update(update, actingUser = admin)
+
+        // USER is the base role and is always retained, so the result holds both
+        assertThat(result.roles).containsExactlyInAnyOrder(Role.USER, Role.MODERATOR)
+    }
+
+    @Test
+    fun `update lets an admin change their own roles`() {
+        val admin = TestFixtures.admin()
+        val id = requireNotNull(admin.id)
+        // changing roles is an admin action, including on one's own account
+        val update = admin.copy(roles = setOf(Role.USER, Role.ADMIN), passwordHash = null)
+        whenever(userDataService.getById(id)).thenReturn(admin)
+        whenever(userDataService.upsert(any())).thenAnswer { it.arguments[0] as User }
+
+        val result = userService.update(update, actingUser = admin)
+
+        assertThat(result.roles).containsExactlyInAnyOrder(Role.USER, Role.ADMIN)
     }
 }

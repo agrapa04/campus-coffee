@@ -58,7 +58,7 @@ class PosServiceTest {
 
     @Test
     fun `getById returns the POS from the data service`() {
-        val pos = TestFixtures.getPosFixtures().first()
+        val pos = TestFixtures.anyPos()
         val id = requireNotNull(pos.id)
         whenever(posDataService.getById(id)).thenReturn(pos)
 
@@ -70,7 +70,7 @@ class PosServiceTest {
 
     @Test
     fun `upsert propagates NotFoundException when updating a missing POS`() {
-        val pos = TestFixtures.getPosFixtures().first()
+        val pos = TestFixtures.anyPos()
         val id = requireNotNull(pos.id)
         whenever(posDataService.getById(id)).thenThrow(NotFoundException(Pos::class.java, id))
 
@@ -80,7 +80,7 @@ class PosServiceTest {
 
     @Test
     fun `upsert of a new POS delegates to the data service`() {
-        val pos = TestFixtures.getPosFixtures().first().copy(id = null)
+        val pos = TestFixtures.anyPos().copy(id = null)
         whenever(posDataService.upsert(pos)).thenReturn(pos.copy(id = 1L))
 
         posService.upsert(pos)
@@ -90,7 +90,7 @@ class PosServiceTest {
 
     @Test
     fun `getByName returns the POS from the data service`() {
-        val pos = TestFixtures.getPosFixtures().first()
+        val pos = TestFixtures.anyPos()
         whenever(posDataService.getByName(pos.name)).thenReturn(pos)
 
         val retrievedPos = posService.getByName(pos.name)

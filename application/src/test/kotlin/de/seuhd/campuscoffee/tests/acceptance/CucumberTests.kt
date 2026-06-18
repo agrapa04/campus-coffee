@@ -20,4 +20,8 @@ import org.junit.platform.suite.api.Suite
     key = Constants.GLUE_PROPERTY_NAME,
     value = "de.seuhd.campuscoffee.tests.acceptance"
 )
+@ConfigurationParameter(
+    key = Constants.FILTER_TAGS_PROPERTY_NAME,
+    value = "not @inactive"
+)
 class CucumberTests

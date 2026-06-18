@@ -6,6 +6,7 @@ import de.seuhd.campuscoffee.api.controller.UserController
 import de.seuhd.campuscoffee.api.mapper.PosDtoMapper
 import de.seuhd.campuscoffee.api.mapper.ReviewDtoMapper
 import de.seuhd.campuscoffee.api.mapper.UserDtoMapper
+import de.seuhd.campuscoffee.api.security.CurrentUserProvider
 import de.seuhd.campuscoffee.domain.ports.api.PosService
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
@@ -21,6 +22,7 @@ import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
 import org.springframework.core.ResolvableType
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.method.HandlerMethod
 import java.util.stream.Stream
@@ -46,9 +48,12 @@ class CrudOperationCustomizerTest {
         assertThat(operation.summary).isNotBlank()
 
         val responses = operation.responses
-        assertThat(responses.keys).containsExactlyInAnyOrderElementsOf(
-            specs.map { it.httpStatus.value().toString() }
-        )
+        val expectedStatuses = specs.map { it.httpStatus.value().toString() }.toMutableSet()
+        if (crudOperation.roleRestricted) {
+            // a role-restricted method documents 403 even though it is not in the shared operation spec
+            expectedStatuses.add(HttpStatus.FORBIDDEN.value().toString())
+        }
+        assertThat(responses.keys).containsExactlyInAnyOrderElementsOf(expectedStatuses)
 
         for (spec in specs) {
             val response = responses[spec.httpStatus.value().toString()]!!
@@ -58,6 +63,12 @@ class CrudOperationCustomizerTest {
             } else {
                 assertSuccessContentMatchesReturnType(handlerMethod, response.content)
             }
+        }
+
+        if (crudOperation.roleRestricted) {
+            val forbidden = responses[HttpStatus.FORBIDDEN.value().toString()]!!
+            assertThat(forbidden.description).isNotBlank()
+            assertThat(jsonSchema(forbidden.content).`$ref`).contains("ErrorResponse")
         }
     }
 
@@ -108,8 +119,8 @@ class CrudOperationCustomizerTest {
             Stream
                 .of(
                     PosController(mock<PosService>(), mock<PosDtoMapper>()),
-                    UserController(mock<UserService>(), mock<UserDtoMapper>()),
-                    ReviewController(mock<ReviewService>(), mock<ReviewDtoMapper>())
+                    UserController(mock<UserService>(), mock<UserDtoMapper>(), mock<CurrentUserProvider>()),
+                    ReviewController(mock<ReviewService>(), mock<ReviewDtoMapper>(), mock<CurrentUserProvider>())
                 ).flatMap { controller ->
                     controller.javaClass.declaredMethods
                         // skip the synthetic bridge methods the generic CrudController overrides generate;

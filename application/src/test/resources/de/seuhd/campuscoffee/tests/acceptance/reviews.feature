@@ -5,11 +5,11 @@ Feature: Reviews and the approval workflow
 
   Background:
     Given the following users exist:
-      | loginName | emailAddress                | firstName | lastName |
-      | author    | author@uni-heidelberg.de    | Aria      | Author   |
-      | reviewer1 | reviewer1@uni-heidelberg.de | Rey       | One      |
-      | reviewer2 | reviewer2@uni-heidelberg.de | Rey       | Two      |
-      | reviewer3 | reviewer3@uni-heidelberg.de | Rey       | Three    |
+      | loginName | emailAddress                | firstName | lastName | password         |
+      | author    | author@uni-heidelberg.de    | Aria      | Author   | author-password  |
+      | reviewer1 | reviewer1@uni-heidelberg.de | Rey       | One      | review1-password |
+      | reviewer2 | reviewer2@uni-heidelberg.de | Rey       | Two      | review2-password |
+      | reviewer3 | reviewer3@uni-heidelberg.de | Rey       | Three    | review3-password |
     And a POS named "Schmelzpunkt" exists
 
   Scenario: A newly created review is not yet approved

@@ -3,6 +3,7 @@ package de.seuhd.campuscoffee.tests.acceptance
 import de.seuhd.campuscoffee.domain.ports.api.PosService
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
+import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import de.seuhd.campuscoffee.tests.SystemTestUtils.configureClient
 import de.seuhd.campuscoffee.tests.SystemTestUtils.configurePostgresContainers
 import de.seuhd.campuscoffee.tests.SystemTestUtils.getPostgresContainer
@@ -36,6 +37,9 @@ class CucumberSpringConfiguration(
         reviewService.clear()
         posService.clear()
         userService.clear()
+        // seed the fixture users (with known passwords and roles) so a POS write request in a scenario can
+        // authenticate as a moderator; the feature's own users are registered by the step definitions
+        TestFixtures.createUserFixtures(userService)
         configureClient(port)
     }
 

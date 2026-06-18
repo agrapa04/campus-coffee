@@ -2,12 +2,17 @@ package de.seuhd.campuscoffee.domain.implementation
 
 import de.seuhd.campuscoffee.domain.configuration.ApprovalConfiguration
 import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
+import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.exceptions.ValidationException
 import de.seuhd.campuscoffee.domain.model.objects.Review
+import de.seuhd.campuscoffee.domain.model.objects.ReviewApproval
+import de.seuhd.campuscoffee.domain.model.objects.Role
+import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.model.objects.persistedId
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService
+import de.seuhd.campuscoffee.domain.ports.data.ReviewApprovalDataService
 import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
 import org.slf4j.LoggerFactory
@@ -22,6 +27,7 @@ class ReviewServiceImpl(
     private val reviewDataService: ReviewDataService,
     private val userDataService: UserDataService,
     private val posDataService: PosDataService,
+    private val reviewApprovalDataService: ReviewApprovalDataService,
     private val approvalConfiguration: ApprovalConfiguration
 ) : CrudServiceImpl<Review, Long>(Review::class.java),
     ReviewService {
@@ -68,36 +74,73 @@ class ReviewServiceImpl(
         return super.upsert(reviewToUpsert)
     }
 
+    @Transactional
+    override fun create(
+        review: Review,
+        actingUser: User
+    ): Review =
+        // the author is the authenticated user, never a client-supplied field; the api layer has already
+        // rejected a body carrying an authorId before reaching here
+        upsert(review.copy(author = actingUser))
+
+    @Transactional
+    override fun update(
+        review: Review,
+        actingUser: User
+    ): Review {
+        val reviewId = requireNotNull(review.id) { "A review update must carry the review id." }
+        val existing = reviewDataService.getById(reviewId)
+        requireAuthorOrModerator(existing, actingUser, "update")
+        // the author never changes on update; pin it to the original so a moderator editing someone
+        // else's review does not re-author it (and upsert's author-immutability check stays satisfied)
+        return upsert(review.copy(author = existing.author))
+    }
+
+    @Transactional
+    override fun delete(
+        reviewId: Long,
+        actingUser: User
+    ) {
+        val existing = reviewDataService.getById(reviewId)
+        requireAuthorOrModerator(existing, actingUser, "delete")
+        super.delete(reviewId)
+    }
+
+    // the author, or any moderator, may edit or delete a review; ownership and role combine here, on
+    // the domain User (gated on MODERATOR, not ADMIN)
+    private fun requireAuthorOrModerator(
+        existing: Review,
+        actingUser: User,
+        action: String
+    ) {
+        val isAuthor = existing.author.persistedId == actingUser.persistedId
+        val isModerator = Role.MODERATOR in actingUser.roles
+        if (!isAuthor && !isModerator) {
+            throw ForbiddenException(
+                "Only the author or a moderator may $action review with ID '${existing.persistedId}'."
+            )
+        }
+    }
+
     @Transactional(readOnly = true)
     override fun filter(
         posId: Long,
         approved: Boolean
     ): List<Review> = reviewDataService.filter(posDataService.getById(posId), approved)
 
-    // TODO (Exercise 5): record who approved in the provided review_approvals table (unique
-    //  (review_id, user_id) via ReviewApprovalDataService) so a user can approve a review at most once,
-    //  and derive approvalCount/approved from it; an anonymous count cannot enforce that. The approver
-    //  must come from the authenticated principal (Exercise 2), not the client-asserted userId below.
     @Transactional
     override fun approve(
         reviewId: Long,
-        userId: Long
+        actingUser: User
     ): Review {
-        log.info(
-            "Processing approval request for review with ID '{}' by user with ID '{}'...",
-            reviewId,
-            userId
-        )
-
-        // validate that the user exists
-        val user = userDataService.getById(userId)
-        val approverId = user.persistedId
+        val approverId = actingUser.persistedId
+        log.info("Processing approval request for review with ID '{}' by user with ID '{}'...", reviewId, approverId)
 
         // validate that the review exists
         val reviewToApprove = reviewDataService.getById(reviewId)
         val authorId = reviewToApprove.author.persistedId
 
-        // a user cannot approve their own review
+        // a user cannot approve their own review (the approver is the authenticated user)
         if (authorId == approverId) {
             log.warn(
                 "User with ID '{}' attempted to approve their own review with ID '{}'.",
@@ -109,43 +152,34 @@ class ReviewServiceImpl(
             )
         }
 
-        // increment approval count on the freshly fetched review
-        val approvedReview = reviewToApprove.copy(approvalCount = reviewToApprove.approvalCount + 1)
+        // record who approved; the unique (review_id, user_id) constraint rejects a repeat as a 409
+        // (DuplicationException via the registered ConstraintMapping), so the count can no longer be inflated
+        reviewApprovalDataService.record(ReviewApproval(reviewId = reviewId, userId = approverId))
 
-        // update approval status to determine if the review now reaches the approval quorum
-        val finalReview = updateApprovalStatus(approvedReview)
-        if (finalReview.approved) {
+        // the approval state comes from the recorded rows: the number of distinct approvers, and
+        // whether that count meets the quorum
+        val approvalCount = reviewApprovalDataService.countByReviewId(reviewId)
+        val approved = approvalCount >= approvalConfiguration.minCount
+        if (approved) {
             log.info(
                 "Review with ID '{}' has now reached the approval quorum ({}/{})",
-                finalReview.id,
-                finalReview.approvalCount,
+                reviewId,
+                approvalCount,
                 approvalConfiguration.minCount
             )
         } else {
             log.info(
                 "Review with ID '{}' has not reached the approval quorum ({}/{})",
-                finalReview.id,
-                finalReview.approvalCount,
+                reviewId,
+                approvalCount,
                 approvalConfiguration.minCount
             )
         }
 
-        return reviewDataService.upsert(finalReview)
+        return reviewDataService.upsert(
+            reviewToApprove.copy(approvalCount = approvalCount.toInt(), approved = approved)
+        )
     }
-
-    /**
-     * Calculates and updates the approval status of a review based on its approval count.
-     * Business rule: a review is approved when it reaches the configured minimum approval count.
-     */
-    fun updateApprovalStatus(review: Review): Review {
-        log.debug("Updating approval status of review with ID '{}'...", review.id)
-        return review.copy(approved = isApproved(review))
-    }
-
-    /**
-     * Determines whether a review meets the minimum approval threshold.
-     */
-    private fun isApproved(review: Review): Boolean = review.approvalCount >= approvalConfiguration.minCount
 
     private companion object {
         private val log = LoggerFactory.getLogger(ReviewServiceImpl::class.java)

@@ -3,6 +3,7 @@ package de.seuhd.campuscoffee.tests.acceptance
 import de.seuhd.campuscoffee.api.dtos.PosDto
 import de.seuhd.campuscoffee.domain.model.enums.CampusType
 import de.seuhd.campuscoffee.domain.model.enums.PosType
+import de.seuhd.campuscoffee.tests.SystemTestUtils.MODERATOR
 import de.seuhd.campuscoffee.tests.SystemTestUtils.posRequests
 import io.cucumber.java.DataTableType
 import io.cucumber.java.en.Given
@@ -12,7 +13,8 @@ import org.assertj.core.api.Assertions.assertThat
 
 /**
  * Step definitions for the POS Cucumber tests. The Spring context, container, and cleanup hooks live
- * in [CucumberSpringConfiguration].
+ * in [CucumberSpringConfiguration]. Curating a POS requires a moderator, so the write steps authenticate
+ * as the seeded moderator fixture.
  */
 class CucumberPosSteps {
     private lateinit var createdPosList: List<PosDto>
@@ -46,14 +48,14 @@ class CucumberPosSteps {
 
     @Given("a POS list with the following elements")
     fun aPosListWithTheFollowingElements(posList: List<PosDto>) {
-        assertThat(posRequests.create(posList)).hasSize(posList.size)
+        assertThat(posRequests.create(posList, MODERATOR)).hasSize(posList.size)
     }
 
     // When -----------------------------------------------------------------------
 
     @When("I insert POS with the following elements")
     fun insertPosWithTheFollowingValues(posList: List<PosDto>) {
-        createdPosList = posRequests.create(posList)
+        createdPosList = posRequests.create(posList, MODERATOR)
         assertThat(createdPosList).hasSize(posList.size)
     }
 
@@ -64,7 +66,7 @@ class CucumberPosSteps {
     ) {
         val posToUpdate = posRequests.retrieveByFilter("name", name)
         updatedPos = posToUpdate.copy(description = description)
-        posRequests.update(listOf(updatedPos))
+        posRequests.update(listOf(updatedPos), MODERATOR)
     }
 
     // Then -----------------------------------------------------------------------

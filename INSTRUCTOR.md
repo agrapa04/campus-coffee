@@ -1,0 +1,394 @@
+# Instructor demo: authentication and authorization
+
+This guide demonstrates HTTP Basic authentication, and the access-control matrix built on top of it,
+with CampusCoffee using `docker compose` and `curl`. It targets the reference solution, where the assignment's exercises
+are implemented and authentication is enforced. The first demo (steps 1 to 6) runs the application
+locally; the second (step 7) deploys it to Google Cloud Run and runs the same calls against a public
+HTTPS URL.
+
+> Note: the unmodified student starter does not enforce authentication, so the `401` and `403` responses
+> below appear only after Exercises 1 to 3 are done. This file belongs to the reference solution, not the
+> student starter.
+
+## 1. Build and run with Docker Compose
+
+`compose.yaml` builds the application image and runs it with a PostgreSQL container in the dev profile:
+
+```shell
+# build the image and start the app and the database
+docker compose up --build
+
+# in another shell, load the fixture data (users, POS, reviews); the dev endpoints need no credentials
+curl --request PUT http://localhost:8080/api/dev/data
+```
+
+The base URL is `http://localhost:8080/api`. Swagger UI is at
+`http://localhost:8080/api/swagger-ui.html`.
+
+To run without Docker, start a PostgreSQL container and use Gradle instead:
+
+```shell
+docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:17-alpine
+gradle :application:bootRun --args='--spring.profiles.active=dev'
+```
+
+## 2. The accounts
+
+The fixture data includes five users with known passwords. `USER` is the base; `MODERATOR` (content
+moderation) and `ADMIN` (user administration) are independent grants on top, so `jane_doe` holds all three
+while `olivia_admin` holds `USER` and `ADMIN` but not `MODERATOR`. The same list is in the README's *dev* section.
+
+| Login name      | Password               | Roles                        |
+| --------------- | ---------------------- | ---------------------------- |
+| `student2023`   | `ZwTwB8Hn8VkNLZec7bR1` | `USER`                       |
+| `lisa_lee`      | `lG6v9dGKZA5kfOHTFLNR` | `USER`                       |
+| `maxmustermann` | `AmLtoD3r8lVdnwoLN1Nn` | `USER`, `MODERATOR`          |
+| `jane_doe`      | `aaaMbnPdFYDqkOpS3fVA` | `USER`, `MODERATOR`, `ADMIN` |
+| `olivia_admin`  | `Qp7r2sV9xKmN4bLdTtYw` | `USER`, `ADMIN`              |
+
+`curl` sends Basic credentials with `-u <login>:<password>`.
+
+## 3. Authentication: read requests are public, write requests need credentials
+
+A read request is public and needs no credentials:
+
+```shell
+curl http://localhost:8080/api/pos
+```
+
+An unauthenticated write request is rejected with `401` (use `-i` to see the status line):
+
+```shell
+curl -i --request POST --header "Content-Type: application/json" \
+  --data '{"posId":3,"review":"Great flat white!"}' \
+  http://localhost:8080/api/reviews
+# -> HTTP/1.1 401 Unauthorized, JSON ErrorResponse body
+```
+
+Creating a user needs no credentials, because a user cannot authenticate before the account exists:
+
+```shell
+curl -i --request POST --header "Content-Type: application/json" \
+  --data '{"loginName":"demo_user","emailAddress":"demo@uni-heidelberg.de","firstName":"Demo","lastName":"User","password":"demo-password"}' \
+  http://localhost:8080/api/users
+# -> 201 Created; the response never contains the password or its hash
+```
+
+The same write request with valid credentials succeeds, and the review is authored by the caller, with
+no `authorId` in the body:
+
+```shell
+curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --header "Content-Type: application/json" \
+  --data '{"posId":3,"review":"Great flat white!"}' \
+  http://localhost:8080/api/reviews
+# -> 201 Created; "author" is student2023
+```
+
+A wrong password is rejected with `401`:
+
+```shell
+curl -i --request POST -u student2023:wrong-password --header "Content-Type: application/json" \
+  --data '{"posId":3,"review":"..."}' \
+  http://localhost:8080/api/reviews
+# -> 401 Unauthorized
+```
+
+## 4. Authorization: the three roles
+
+`SecurityConfig` holds the access rules as an ordered `authorizeHttpRequests` block. The coarse,
+URL-based rules are declared there; the finer, per-target rules (a review's author, a user editing or reading only
+their own account) are enforced in the domain services, because they depend on *which* row is targeted.
+
+```kotlin
+authorizeHttpRequests {
+    authorize("/api/dev/**", permitAll)
+    authorize(HttpMethod.POST, "/api/users", permitAll)             // open registration
+    authorize("/api/auth/token", permitAll)
+    authorize(HttpMethod.GET, "/api/users", hasRole("ADMIN"))       // listing users exposes PII -> admin-only
+    authorize(HttpMethod.GET, "/api/users/**", authenticated)       // one user: self or admin (domain decides)
+    authorize(HttpMethod.GET, "/**", permitAll)                     // POS and review reads are public
+    authorize(HttpMethod.POST, "/api/pos/**", hasRole("MODERATOR")) // and PUT, DELETE
+    authorize(HttpMethod.DELETE, "/api/users/**", hasRole("ADMIN"))
+    authorize(anyRequest, authenticated)                            // every other write request
+}
+```
+
+Spring evaluates these rules top to bottom and applies the first match, so the specific matchers come
+before `anyRequest`. `hasRole("MODERATOR")` admits anyone granted `MODERATOR`; an `ADMIN` who is not also a moderator is not admitted.
+
+Creating, updating, or deleting a POS requires `MODERATOR`. A plain `USER` is forbidden, while a
+moderator succeeds:
+
+```shell
+# student2023 (USER) -> 403 Forbidden
+curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --header "Content-Type: application/json" \
+  --data '{"name":"New Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' \
+  http://localhost:8080/api/pos
+
+# maxmustermann (MODERATOR) -> 201 Created
+curl -i --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
+  --data '{"name":"New Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' \
+  http://localhost:8080/api/pos
+```
+
+Managing other users requires `ADMIN`. Any admin (`jane_doe` or `olivia_admin`) may change another user,
+including their roles, or delete one:
+
+```shell
+# a moderator trying to edit another user -> 403
+curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
+  --data '{"id":1,"loginName":"jane_doe","emailAddress":"jane.doe@uni-heidelberg.de","firstName":"Jane","lastName":"Doe","roles":["USER"]}' \
+  http://localhost:8080/api/users/1
+
+# the admin succeeds (this grants MODERATOR to student2023, user id 3)
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA --header "Content-Type: application/json" \
+  --data '{"id":3,"loginName":"student2023","emailAddress":"student2023@study.org","firstName":"Student","lastName":"Example","roles":["USER","MODERATOR"]}' \
+  http://localhost:8080/api/users/3
+```
+
+Any user may edit their *own* profile — name, email, and password; changing roles is an admin action. An
+admin grants or revokes `MODERATOR` and `ADMIN`, but `USER` is the base role and is always retained — a
+role set that omits it still keeps `USER`. Creating a user cannot grant a role either: a new account is
+always a plain `USER`, regardless of any `roles` in the request body:
+
+```shell
+# even if the body asks for ADMIN, the new account is a plain USER
+curl --request POST --header "Content-Type: application/json" \
+  --data '{"loginName":"sneaky","emailAddress":"sneaky@uni-heidelberg.de","firstName":"S","lastName":"S","password":"sneaky-pass","roles":["ADMIN"]}' \
+  http://localhost:8080/api/users
+# -> 201, but GET shows roles = ["USER"]
+```
+
+Reading user data is not public either, because it exposes login names, emails, and roles. A plain `USER`
+may read only their own account, and listing all users is admin-only:
+
+```shell
+# reading a user without credentials is rejected -> 401
+curl -i http://localhost:8080/api/users/3
+```
+
+A plain `USER` may read their own account, but not another's:
+
+```shell
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/3   # own account (id 3) -> 200
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/1   # another user (id 1) -> 403
+```
+
+Listing all users is admin-only:
+
+```shell
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users   # a USER  -> 403
+curl -i -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/users      # an admin -> 200
+```
+
+Editing or deleting a review needs either its *author* or a `MODERATOR` (an `ADMIN` is not a moderator
+unless also granted `MODERATOR`). A plain `USER` editing or deleting someone else's review gets `403`;
+a moderator gets `200`/`204`.
+
+## 5. One approval per user
+
+Approvals are attributed to the caller. The approve endpoint no longer takes a `user_id` query
+parameter: before authentication the client passed it to name the approver, and now the approver is the
+authenticated user, which the client cannot forge. A user cannot approve their own review, and cannot
+approve the same review twice.
+
+```shell
+# self-approval is rejected -> 400 (student2023 is the author of review 3)
+curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/3/approve
+```
+
+Three distinct non-author users approve it; the third reaches the quorum of 3:
+
+```shell
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve       # 200
+curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn http://localhost:8080/api/reviews/3/approve  # 200
+curl -i --request PUT -u lisa_lee:lG6v9dGKZA5kfOHTFLNR http://localhost:8080/api/reviews/3/approve       # 200, review 3 is now approved
+```
+
+Any of them approving again is rejected as a duplicate:
+
+```shell
+# -> 409 Conflict
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve
+```
+
+A review becomes `approved` once it reaches the quorum (`campus-coffee.approval.min-count` = 3) of
+distinct, non-author approvers. In the fixture data, review 1 is already approved.
+
+## 6. Stateless JWT bearer tokens
+
+The same authorization rules also work with a bearer token. Log in once to get a short-lived JWT, then
+send it as `Authorization: Bearer ...`:
+
+```shell
+# exchange credentials for a token, kept in $TOKEN
+TOKEN=$(curl -s --request POST --header "Content-Type: application/json" \
+  --data '{"loginName":"maxmustermann","password":"AmLtoD3r8lVdnwoLN1Nn"}' \
+  http://localhost:8080/api/auth/token | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
+```
+
+Use the token in a follow-up write request; the same rules apply (here a moderator creates a POS):
+
+```shell
+curl -i --request POST --header "Authorization: Bearer $TOKEN" --header "Content-Type: application/json" \
+  --data '{"name":"Token Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"1","postalCode":"69117","city":"Heidelberg"}' \
+  http://localhost:8080/api/pos
+```
+
+The token expires after 15 minutes; after that, request a new one. A bearer token authenticates you as
+the same user as Basic credentials do, so a `USER`'s token still cannot create a POS (`403`).
+
+## 7. Second demo: deploy the solution to Google Cloud Run
+
+The same walkthrough runs against a public deployment in the prod profile (`compose.prod.yaml`). In prod
+the application enforces authentication, Swagger and the `/api/dev` endpoints are off, and the JWT secret
+comes from the environment with no fallback. The prod profile loads the fixture data on startup, so the
+demo has content without the dev endpoints. Cloud Run serves it over HTTPS, so the Basic credentials and
+the JWT are encrypted in transit.
+
+> The starter has no in-app authentication, so the README tells you to deploy it privately
+> (`--no-allow-unauthenticated`) or to treat the deployment as throwaway. The solution instead grants
+> public invocation (below), because app-level authentication is what makes a public deployment safe.
+
+### Deploy
+
+You need the `gcloud` CLI (provided via `mise.toml`), a Google Cloud project with billing enabled, and
+the `beta` component. Set the project and a region up front so the deploy runs non-interactively:
+
+```shell
+gcloud components install beta
+gcloud auth login
+gcloud config set project <your-project-id>
+gcloud config set run/region <region>   # e.g. europe-west3
+```
+
+Build and deploy from source. This creates **one** Cloud Run service (named after the Compose project,
+`campus-coffee-prod`) that runs the app and PostgreSQL as **sidecar containers** sharing one network
+namespace — which is why `compose.prod.yaml` reaches the database at `localhost`, not the Compose service
+name `db` (`DB_HOST` defaults to `localhost`; see the file's comments):
+
+```shell
+gcloud beta run compose up compose.prod.yaml
+```
+
+`compose up` builds the image and creates the service (IAM-gated, i.e. private), but it does **not**
+interpolate `${JWT_SECRET}` from your shell. The prod profile has no fallback secret, so the container
+cannot start and **this first deploy ends with `Deployment failed`** (`the user-provided container failed
+to start and listen on the port`; the revision log shows `jwt.secret must be at least 32 bytes`). That is
+expected. First set the secret, which rolls out a healthy revision:
+
+```shell
+gcloud run services update campus-coffee-prod --update-env-vars JWT_SECRET=$(openssl rand -hex 32)
+```
+
+Then grant public invocation, so the app's own authentication (not Cloud Run's IAM layer) gates requests:
+
+```shell
+gcloud run services add-iam-policy-binding campus-coffee-prod \
+  --member=allUsers --role=roles/run.invoker
+```
+
+Read the service URL into a variable, with `/api` appended for the API base path:
+
+```shell
+export BASE=$(gcloud run services describe campus-coffee-prod --format='value(status.url)')/api
+```
+
+### Run the same demo over HTTPS
+
+The prod profile loads the fixture data on startup, so go straight to the calls. Set `$BASE` first (the
+block above); in a fresh shell it is unset, and `curl` against an empty `$BASE` fails. It must end in
+`/api`, and every endpoint lives under it: a request to the bare service host (without `/api`) returns
+`404 No endpoint found`. Run the blocks one at a time; they are reads or are rejected before anything is
+written, so the demo re-runs cleanly against the fixture data without creating duplicates.
+
+A read request is public:
+
+```shell
+curl $BASE/pos
+```
+
+A write request needs authentication. An unauthenticated `POST` is `401`, and nothing is created:
+
+```shell
+curl -i --request POST --header "Content-Type: application/json" \
+  --data '{"posId":3,"review":"Hello from the cloud"}' $BASE/reviews
+```
+
+Listing users is `ADMIN`-only. The same endpoint under three identities walks the whole auth ladder
+without writing anything:
+
+```shell
+curl -i $BASE/users                                       # unauthenticated -> 401
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 $BASE/users   # a USER          -> 403
+curl -i -u jane_doe:aaaMbnPdFYDqkOpS3fVA  $BASE/users     # an ADMIN        -> 200 (the user list, with emails)
+```
+
+Curating a POS needs `MODERATOR`; a plain `USER` is rejected before anything is created:
+
+```shell
+curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --header "Content-Type: application/json" \
+  --data '{"name":"Cloud Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' \
+  $BASE/pos                                               # USER -> 403
+```
+
+A bearer token carries the same authorities as Basic credentials. Log in once and keep the token in an
+environment variable; it persists across the blocks below in the same shell:
+
+```shell
+export TOKEN=$(curl -s --request POST --header "Content-Type: application/json" \
+  --data '{"loginName":"jane_doe","password":"aaaMbnPdFYDqkOpS3fVA"}' \
+  $BASE/auth/token | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
+echo "$TOKEN"   # the JWT: header.payload.signature
+```
+
+The payload (the middle segment) carries the authorization data. Decode it to see how roles are encoded:
+the `roles` claim holds the bare role names, which the `JwtAuthenticationConverter` maps to `ROLE_*`
+authorities on the way in:
+
+```shell
+echo "$TOKEN" | cut -d. -f2 | python3 -c 'import sys,base64,json; p=sys.stdin.read().strip(); p+="="*(-len(p)%4); print(json.dumps(json.loads(base64.urlsafe_b64decode(p)),indent=2))'
+# -> {"sub":"jane_doe","exp":...,"iat":...,"roles":["ADMIN","MODERATOR","USER"]}
+```
+
+Reuse the token in a follow-up request. `jane_doe` is an `ADMIN`, so the listing is `200` under Bearer too:
+
+```shell
+curl -i --header "Authorization: Bearer $TOKEN" $BASE/users
+```
+
+A `USER`'s token is exactly as limited as their Basic credentials: redo the two token blocks with
+`student2023:ZwTwB8Hn8VkNLZec7bR1`, and the same `GET $BASE/users` returns `403`. The token expires after
+15 minutes; request a new one after that. A successful write request (for example `POST $BASE/reviews` with
+credentials) returns `201` and is authored by the caller, but it inserts a row, so repeating it for the
+same author and POS returns `409`. The prod database is ephemeral and reloads the fixtures on a cold start.
+Sending credentials over the public URL is safe only because Cloud Run terminates TLS.
+
+### Notes for a real deployment
+
+This is a throwaway demo; a real deployment differs in a few ways:
+
+- **Database.** `compose.prod.yaml` runs PostgreSQL as a sidecar container sharing the app's network
+  namespace (reached at `localhost`), which Cloud Run treats as ephemeral: a cold start brings up an empty
+  database, and the startup loader reloads the fixture data. That suits a demo but keeps nothing. For
+  persistence, point the app at a managed database such as Cloud SQL and set
+  `campus-coffee.fixtures.load-on-startup` to `false`.
+- **Secret.** The prod profile has no fallback `JWT_SECRET`, so a deploy that forgets to set it fails at
+  startup rather than booting with a known key. Supply it from Secret Manager (a Cloud Run secret
+  reference), not the `gcloud run services update --update-env-vars` shown above, which is fine for a demo
+  but writes the secret into the service's plain environment.
+- **Exposure.** The prod profile keeps Swagger and the `/api/dev` endpoints off, and Cloud Run serves the
+  app over HTTPS, so the Basic credentials and the JWT are encrypted in transit.
+
+### Tear it down
+
+Delete the deployment when you are done:
+
+```shell
+gcloud run services delete campus-coffee-prod
+```
+
+## Reset the local demo
+
+`PUT /api/dev/data` clears and reloads the fixture data, so you can rerun the local walkthrough from a
+clean state. The Cloud Run deployment loads its data on startup, so redeploy it to reset.

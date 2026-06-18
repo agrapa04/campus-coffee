@@ -38,6 +38,11 @@ enum class Operation(
                 isErrorResponse = true
             ),
             CrudResponseSpecification(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication is required, except when creating a user.",
+                isErrorResponse = true
+            ),
+            CrudResponseSpecification(
                 HttpStatus.CONFLICT,
                 "A %s with the same value for a unique field already exists.",
                 isErrorResponse = true
@@ -51,6 +56,16 @@ enum class Operation(
             CrudResponseSpecification(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed (e.g., IDs in path and body do not match, bean validation error).",
+                isErrorResponse = true
+            ),
+            CrudResponseSpecification(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication is required.",
+                isErrorResponse = true
+            ),
+            CrudResponseSpecification(
+                HttpStatus.FORBIDDEN,
+                "The authenticated user may not update this %s (e.g., not the owner, or lacks the role).",
                 isErrorResponse = true
             ),
             CrudResponseSpecification(
@@ -69,6 +84,16 @@ enum class Operation(
         { params -> "Delete ${params.resourceName} by ID." },
         listOf(
             CrudResponseSpecification(HttpStatus.NO_CONTENT, "The %s was successfully deleted."),
+            CrudResponseSpecification(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication is required.",
+                isErrorResponse = true
+            ),
+            CrudResponseSpecification(
+                HttpStatus.FORBIDDEN,
+                "The authenticated user may not delete this %s (e.g., not the owner or a moderator/admin).",
+                isErrorResponse = true
+            ),
             CrudResponseSpecification(
                 HttpStatus.NOT_FOUND,
                 "No %s with the provided ID could be found.",
@@ -101,6 +126,16 @@ enum class Operation(
         },
         listOf(
             CrudResponseSpecification(HttpStatus.CREATED, "The imported %s as a JSON object."),
+            CrudResponseSpecification(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication is required.",
+                isErrorResponse = true
+            ),
+            CrudResponseSpecification(
+                HttpStatus.FORBIDDEN,
+                "The authenticated user lacks the role required to import a %s.",
+                isErrorResponse = true
+            ),
             CrudResponseSpecification(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed or the external %s is invalid.",

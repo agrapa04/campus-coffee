@@ -7,20 +7,28 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import de.seuhd.campuscoffee.api.dtos.PosDto
 import de.seuhd.campuscoffee.domain.model.enums.PosType
+import de.seuhd.campuscoffee.tests.SystemTestUtils.Credentials
+import de.seuhd.campuscoffee.tests.SystemTestUtils.MODERATOR
+import de.seuhd.campuscoffee.tests.SystemTestUtils.USER
+import de.seuhd.campuscoffee.tests.SystemTestUtils.basicAuthHeader
 import de.seuhd.campuscoffee.tests.SystemTestUtils.client
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 
 /**
  * System tests for importing a POS from an OpenStreetMap node. The external OSM HTTP API is stubbed
  * with WireMock, and the OSM client is pointed at the stub through the `osm.api.base-url` property.
- * The server starts before the Spring context so the client resolves the stub URL.
+ * The server starts before the Spring context so the client resolves the stub URL. The import is a POS
+ * write request, so it requires a moderator; each call authenticates as the moderator fixture, and one test
+ * pins that a plain USER is forbidden.
  */
 class OsmImportSystemTests : AbstractSystemTest() {
     @BeforeEach
@@ -39,12 +47,7 @@ class OsmImportSystemTests : AbstractSystemTest() {
             )
         )
 
-        val result =
-            client()
-                .post()
-                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-                .exchange()
-                .returnResult<PosDto>()
+        val result = importNode(MODERATOR).returnResult<PosDto>()
 
         assertThat(result.status.value()).isEqualTo(HttpStatus.CREATED.value())
         val imported = result.responseBody!!
@@ -68,25 +71,11 @@ class OsmImportSystemTests : AbstractSystemTest() {
             )
         )
 
-        val firstStatus =
-            client()
-                .post()
-                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-                .exchange()
-                .returnResult<ByteArray>()
-                .status
-                .value()
+        val firstStatus = importNode(MODERATOR).returnResult<ByteArray>().status.value()
         assertThat(firstStatus).isEqualTo(HttpStatus.CREATED.value())
 
         // the second import hits the unique POS name; there is no update-by-import
-        val secondStatus =
-            client()
-                .post()
-                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-                .exchange()
-                .returnResult<ByteArray>()
-                .status
-                .value()
+        val secondStatus = importNode(MODERATOR).returnResult<ByteArray>().status.value()
         assertThat(secondStatus).isEqualTo(HttpStatus.CONFLICT.value())
     }
 
@@ -97,14 +86,7 @@ class OsmImportSystemTests : AbstractSystemTest() {
                 .willReturn(aResponse().withStatus(HttpStatus.SERVICE_UNAVAILABLE.value()))
         )
 
-        val status =
-            client()
-                .post()
-                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-                .exchange()
-                .returnResult<ByteArray>()
-                .status
-                .value()
+        val status = importNode(MODERATOR).returnResult<ByteArray>().status.value()
 
         assertThat(status).isEqualTo(HttpStatus.BAD_GATEWAY.value())
     }
@@ -115,14 +97,7 @@ class OsmImportSystemTests : AbstractSystemTest() {
             get(urlEqualTo("/node/$NODE_ID")).willReturn(aResponse().withStatus(HttpStatus.NOT_FOUND.value()))
         )
 
-        val status =
-            client()
-                .post()
-                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-                .exchange()
-                .returnResult<ByteArray>()
-                .status
-                .value()
+        val status = importNode(MODERATOR).returnResult<ByteArray>().status.value()
 
         assertThat(status).isEqualTo(HttpStatus.NOT_FOUND.value())
     }
@@ -139,19 +114,37 @@ class OsmImportSystemTests : AbstractSystemTest() {
             )
         )
 
-        val status =
-            client()
-                .post()
-                .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
-                .exchange()
-                .returnResult<ByteArray>()
-                .status
-                .value()
+        val status = importNode(MODERATOR).returnResult<ByteArray>().status.value()
 
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
     }
 
+    @Test
+    fun `importing an OSM node as a plain USER returns 403 Forbidden`() {
+        wireMock.stubFor(
+            get(urlEqualTo("/node/$NODE_ID")).willReturn(
+                aResponse()
+                    .withStatus(HttpStatus.OK.value())
+                    .withHeader("Content-Type", "application/xml")
+                    .withBody(osmXml(NODE_ID, validTags()))
+            )
+        )
+
+        // the import is a POS write request, so a user without MODERATOR is forbidden before the OSM call happens
+        val status = importNode(USER).returnResult<ByteArray>().status.value()
+
+        assertThat(status).isEqualTo(HttpStatus.FORBIDDEN.value())
+    }
+
     // helpers ---------------------------------------------------------------------
+
+    /** Imports [NODE_ID] for the INF campus, authenticating with the given credentials. */
+    private fun importNode(credentials: Credentials): RestTestClient.ResponseSpec =
+        client()
+            .post()
+            .uri("/api/pos/import/osm/{nodeId}?campus_type={campus}", NODE_ID, "INF")
+            .header(HttpHeaders.AUTHORIZATION, basicAuthHeader(credentials))
+            .exchange()
 
     private fun validTags(): MutableMap<String, String> =
         linkedMapOf(

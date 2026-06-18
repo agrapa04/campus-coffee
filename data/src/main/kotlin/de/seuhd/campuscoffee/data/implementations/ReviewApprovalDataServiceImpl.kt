@@ -45,11 +45,6 @@ class ReviewApprovalDataServiceImpl(
 
     override fun countByReviewId(reviewId: Long): Long = repository.countByReviewId(reviewId)
 
-    override fun existsByReviewIdAndUserId(
-        reviewId: Long,
-        userId: Long
-    ): Boolean = repository.existsByReviewIdAndUserId(reviewId, userId)
-
     override fun clear() {
         repository.deleteAllInBatch()
         repository.flush()

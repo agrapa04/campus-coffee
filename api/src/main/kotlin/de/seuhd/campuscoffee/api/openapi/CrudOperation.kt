@@ -7,11 +7,15 @@ package de.seuhd.campuscoffee.api.openapi
  * @property operation         the type of CRUD operation
  * @property resource          the resource being operated on (handles singular/plural automatically)
  * @property externalResource  optional external resource for IMPORT operations
+ * @property roleRestricted    the operation needs a specific role, so an authenticated caller without
+ *                             that role gets 403; used where this varies by resource (e.g., creating a
+ *                             POS needs MODERATOR, but registering a user is open)
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class CrudOperation(
     val operation: Operation,
     val resource: Resource,
-    val externalResource: Resource = Resource.NONE
+    val externalResource: Resource = Resource.NONE,
+    val roleRestricted: Boolean = false
 )

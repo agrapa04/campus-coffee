@@ -11,11 +11,15 @@ import de.seuhd.campuscoffee.api.openapi.Operation.GET_ALL
 import de.seuhd.campuscoffee.api.openapi.Operation.GET_BY_ID
 import de.seuhd.campuscoffee.api.openapi.Operation.UPDATE
 import de.seuhd.campuscoffee.api.openapi.Resource.REVIEW
+import de.seuhd.campuscoffee.api.security.CurrentUserProvider
 import de.seuhd.campuscoffee.domain.model.objects.Review
+import de.seuhd.campuscoffee.domain.model.objects.persistedId
 import de.seuhd.campuscoffee.domain.ports.api.CrudService
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -31,13 +35,18 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * Controller for handling reviews for POS, authored by users.
+ *
+ * Unlike the generic CRUD controllers, the review write operations take the acting user from the
+ * authenticated principal via [CurrentUserProvider] and pass it into the domain, where ownership and
+ * roles combine (the author or a moderator may edit or delete) and the self-approval ban are decided.
  */
 @Tag(name = "Reviews", description = "Operations for managing reviews for points of sale.")
 @Controller
 @RequestMapping("/reviews")
 class ReviewController(
     private val reviewService: ReviewService,
-    private val reviewDtoMapper: ReviewDtoMapper
+    private val reviewDtoMapper: ReviewDtoMapper,
+    private val currentUserProvider: CurrentUserProvider
 ) : CrudController<Review, ReviewDto, Long>() {
     override fun service(): CrudService<Review, Long> = reviewService
 
@@ -62,10 +71,21 @@ class ReviewController(
     @CrudOperation(operation = CREATE, resource = REVIEW)
     @PostMapping("")
     override fun create(
-        @Parameter(description = "Data of the review to create.", required = true)
+        @Parameter(description = "Data of the review to create. The author is the authenticated user.", required = true)
         @RequestBody
         @Valid dto: ReviewDto
-    ): ResponseEntity<ReviewDto> = super.create(dto)
+    ): ResponseEntity<ReviewDto> {
+        // the server assigns the id and takes the author from the authenticated user; a body carrying
+        // either is rejected (400), so a client cannot post a review as someone else or pick an id
+        require(dto.id == null) { "ID must not be set when creating a new resource." }
+        require(dto.authorId == null) { "Author must not be set; the author is the authenticated user." }
+        val actingUser = currentUserProvider.currentUser()
+        val created =
+            reviewDtoMapper.fromDomain(
+                reviewService.create(reviewDtoMapper.toDomain(dto, actingUser), actingUser)
+            )
+        return ResponseEntity.created(getLocation(created.persistedId)).body(created)
+    }
 
     @Operation
     @CrudOperation(operation = UPDATE, resource = REVIEW)
@@ -76,7 +96,15 @@ class ReviewController(
         @Parameter(description = "Data of the review to update.", required = true)
         @RequestBody
         @Valid dto: ReviewDto
-    ): ResponseEntity<ReviewDto> = super.update(id, dto)
+    ): ResponseEntity<ReviewDto> {
+        require(id == dto.id) { "ID in path and body do not match." }
+        val actingUser = currentUserProvider.currentUser()
+        // the author cannot change on update; the acting user fills the mapper's author slot, but the
+        // domain pins the original author and rejects the update with 403 unless the caller is the
+        // author or a moderator
+        val updated = reviewService.update(reviewDtoMapper.toDomain(dto, actingUser), actingUser)
+        return ResponseEntity.ok(reviewDtoMapper.fromDomain(updated))
+    }
 
     @Operation
     @CrudOperation(operation = DELETE, resource = REVIEW)
@@ -84,7 +112,10 @@ class ReviewController(
     override fun delete(
         @Parameter(description = "Unique identifier of the review to delete.", required = true)
         @PathVariable id: Long
-    ): ResponseEntity<Void> = super.delete(id)
+    ): ResponseEntity<Void> {
+        reviewService.delete(id, currentUserProvider.currentUser())
+        return ResponseEntity.noContent().build()
+    }
 
     @Operation
     @CrudOperation(operation = FILTER, resource = REVIEW)
@@ -97,14 +128,22 @@ class ReviewController(
     ): ResponseEntity<List<ReviewDto>> =
         ResponseEntity.ok(reviewService.filter(posId, approved).map { reviewDtoMapper.fromDomain(it) })
 
-    // TODO (Exercise 5): the approver is the authenticated user, not a `user_id` query parameter; drop the
-    //  parameter and resolve the caller via CurrentUserProvider so nobody can approve as someone else.
-    @Operation(summary = "Approve a review by ID.")
+    @Operation(summary = "Approve a review by ID. The approver is the authenticated user (never the author).")
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "The review with its recomputed approval state."),
+            ApiResponse(responseCode = "400", description = "The authenticated user is the review's own author."),
+            ApiResponse(responseCode = "401", description = "Authentication is required."),
+            ApiResponse(responseCode = "404", description = "No review with the provided ID could be found."),
+            ApiResponse(responseCode = "409", description = "The authenticated user already approved this review.")
+        ]
+    )
     @PutMapping("/{id}/approve")
     fun approve(
         @Parameter(description = "Unique identifier of the review to approve.", required = true)
-        @PathVariable id: Long,
-        @Parameter(description = "Unique identifier of the user approving the review.", required = true)
-        @RequestParam("user_id") userId: Long
-    ): ResponseEntity<ReviewDto> = ResponseEntity.ok(reviewDtoMapper.fromDomain(reviewService.approve(id, userId)))
+        @PathVariable id: Long
+    ): ResponseEntity<ReviewDto> =
+        ResponseEntity.ok(
+            reviewDtoMapper.fromDomain(reviewService.approve(id, currentUserProvider.currentUser()))
+        )
 }

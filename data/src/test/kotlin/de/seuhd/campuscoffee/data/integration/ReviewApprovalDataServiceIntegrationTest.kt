@@ -15,8 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * Integration tests for the review approval data service against a real PostgreSQL container: recording
- * approvals, counting and existence checks, the "one approval per user per review" uniqueness constraint
- * mapped to a [DuplicationException], and the clear/reset behavior.
+ * approvals, counting them, the "one approval per user per review" uniqueness constraint mapped to a
+ * [DuplicationException], and the clear/reset behavior.
  */
 class ReviewApprovalDataServiceIntegrationTest : AbstractDataIntegrationTest() {
     @Autowired
@@ -49,17 +49,16 @@ class ReviewApprovalDataServiceIntegrationTest : AbstractDataIntegrationTest() {
     }
 
     @Test
-    fun `record persists an approval and count and exists reflect it`() {
+    fun `record persists an approval and the count reflects it`() {
         val (reviewId, approverId) = seedReview()
 
-        assertThat(reviewApprovalDataService.existsByReviewIdAndUserId(reviewId, approverId)).isFalse()
+        assertThat(reviewApprovalDataService.countByReviewId(reviewId)).isEqualTo(0L)
 
         val recorded = reviewApprovalDataService.record(ReviewApproval(reviewId = reviewId, userId = approverId))
 
         assertThat(recorded.id).isNotNull()
         assertThat(recorded.createdAt).isNotNull()
         assertThat(reviewApprovalDataService.countByReviewId(reviewId)).isEqualTo(1L)
-        assertThat(reviewApprovalDataService.existsByReviewIdAndUserId(reviewId, approverId)).isTrue()
     }
 
     @Test

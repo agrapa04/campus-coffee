@@ -24,7 +24,7 @@ class CrudDataServiceOptimisticLockTest {
         val mapper = mock<PosEntityMapper>()
         val service = PosDataServiceImpl(repository, mapper)
 
-        val existing = TestFixtures.getPosFixtures().first() // has a non-null id, so upsert takes the update path
+        val existing = TestFixtures.anyPos() // has a non-null id, so upsert takes the update path
         val id = existing.id!!
         whenever(repository.findById(id)).thenReturn(Optional.of(PosEntity()))
         whenever(repository.saveAndFlush(any<PosEntity>()))

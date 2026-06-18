@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import org.springdoc.core.customizers.OperationCustomizer
 import org.springframework.core.ResolvableType
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import org.springframework.web.method.HandlerMethod
@@ -33,7 +34,7 @@ class CrudOperationCustomizer : OperationCustomizer {
                     crudOperation.externalResource.takeIf { it != NONE }
                 )
             operation.summary = crudOperation.operation.summaryTemplate(params)
-            operation.responses = createResponses(params, handlerMethod)
+            operation.responses = createResponses(params, handlerMethod, crudOperation.roleRestricted)
         }
         return operation
     }
@@ -44,7 +45,8 @@ class CrudOperationCustomizer : OperationCustomizer {
      */
     fun createResponses(
         params: Parameters,
-        handlerMethod: HandlerMethod
+        handlerMethod: HandlerMethod,
+        roleRestricted: Boolean
     ): ApiResponses {
         val responses = ApiResponses()
         for (spec in params.operation.responseSpecifications) {
@@ -53,6 +55,19 @@ class CrudOperationCustomizer : OperationCustomizer {
                 if (spec.isErrorResponse) createErrorResponseContent() else createSuccessResponseContent(handlerMethod)
             )
             responses.addApiResponse(spec.httpStatus.value().toString(), response)
+        }
+        // A role-restricted operation also answers 403 when the caller is authenticated but lacks the
+        // role. Whether that applies depends on the resource (creating a POS needs MODERATOR, but
+        // registering a user or creating a review does not), so it is declared per method via
+        // @CrudOperation rather than baked into the shared operation spec.
+        val forbidden = HttpStatus.FORBIDDEN.value().toString()
+        if (roleRestricted && !responses.containsKey(forbidden)) {
+            responses.addApiResponse(
+                forbidden,
+                ApiResponse()
+                    .description("The authenticated user lacks the role required for this operation.")
+                    .content(createErrorResponseContent())
+            )
         }
         return responses
     }

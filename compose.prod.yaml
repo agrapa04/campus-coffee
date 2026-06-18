@@ -5,7 +5,7 @@ name: campus-coffee-prod
 # profile loads the fixture data on startup, so the demo has content without the /api/dev endpoints.
 #
 # Local: export JWT_SECRET=$(openssl rand -base64 32) && DB_HOST=db docker compose -f compose.prod.yaml up
-# Cloud Run: see the README's Deployment section.
+# Cloud Run: see INSTRUCTOR.md, step 7.
 #
 # DB_HOST defaults to localhost for Cloud Run: `gcloud run compose up` deploys the app and db as sidecar
 # containers in one service that share a network namespace and talk over localhost (no service-name DNS,

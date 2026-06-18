@@ -1,5 +1,6 @@
 package de.seuhd.campuscoffee.api.dtos
 
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
@@ -16,6 +17,10 @@ private const val MAX_REVIEW_LENGTH = 5000
  * DTO for a review. Properties are nullable, so a request body that omits a field deserializes and is
  * then rejected by bean validation; the controller validates the DTO before it is mapped to a
  * [de.seuhd.campuscoffee.domain.model.objects.Review].
+ *
+ * [authorId] is read-only. It appears in responses, but the author of a created review is taken from
+ * the authenticated user, never from the request body. A `POST` carrying an [authorId] is rejected with
+ * 400, exactly as a client-supplied [id] is, so a client cannot post a review as someone else.
  */
 data class ReviewDto(
     override val id: Long? = null,
@@ -23,10 +28,8 @@ data class ReviewDto(
     val updatedAt: LocalDateTime? = null,
     @field:NotNull(message = "POS ID cannot be null.")
     val posId: Long?,
-    // TODO (Exercise 2): the author is the authenticated user, so authorId is read-only (server-set, shown
-    //  in responses); a POST/PUT that supplies an authorId must be rejected rather than trusted.
-    @field:NotNull(message = "Author ID cannot be null.")
-    val authorId: Long?,
+    @field:Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    val authorId: Long? = null,
     @field:NotBlank(message = "Review text cannot be empty.")
     @field:Size(
         min = MIN_REVIEW_LENGTH,

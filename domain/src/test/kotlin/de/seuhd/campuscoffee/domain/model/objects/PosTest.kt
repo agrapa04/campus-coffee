@@ -38,9 +38,7 @@ class PosTest {
         assertThrows<ValidationException> { posWithHouseNumber(houseNumber) }
     }
 
-    private fun posWithPostalCode(postalCode: String): Pos =
-        TestFixtures.getPosFixtures().first().copy(postalCode = postalCode)
+    private fun posWithPostalCode(postalCode: String): Pos = TestFixtures.anyPos().copy(postalCode = postalCode)
 
-    private fun posWithHouseNumber(houseNumber: String): Pos =
-        TestFixtures.getPosFixtures().first().copy(houseNumber = houseNumber)
+    private fun posWithHouseNumber(houseNumber: String): Pos = TestFixtures.anyPos().copy(houseNumber = houseNumber)
 }

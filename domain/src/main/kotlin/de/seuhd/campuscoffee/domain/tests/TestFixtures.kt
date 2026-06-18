@@ -69,6 +69,18 @@ object TestFixtures {
                 lastName = "Lee",
                 roles = setOf(Role.USER),
                 password = "lG6v9dGKZA5kfOHTFLNR"
+            ),
+            User(
+                id = 5L,
+                createdAt = DATE_TIME,
+                updatedAt = DATE_TIME,
+                loginName = "olivia_admin",
+                emailAddress = "olivia.admin@uni-heidelberg.de",
+                firstName = "Olivia",
+                lastName = "Admin",
+                // an admin who is not a moderator: administers users but cannot moderate content
+                roles = setOf(Role.USER, Role.ADMIN),
+                password = "Qp7r2sV9xKmN4bLdTtYw"
             )
         )
 
@@ -129,7 +141,7 @@ object TestFixtures {
         )
 
     // Each review's approvers (APPROVERS_BY_REVIEW_INDEX) are non-authors, and every non-zero count has
-    // matching approver rows. With four users, review 1 reaches the quorum of MIN_APPROVAL_COUNT = 3 and
+    // matching approver rows. Review 1 reaches the quorum of MIN_APPROVAL_COUNT = 3 and
     // is approved; review 3 has no approvals, so the instructor demo can drive it to approval.
     private val REVIEW_LIST =
         listOf(
@@ -181,25 +193,50 @@ object TestFixtures {
 
     fun getUserFixtures(): List<User> = USER_LIST
 
-    // TODO (Exercise 4): use these credentials in the token-endpoint system test.
+    /** A fixture user holding exactly [Role.USER] (no moderator or admin grant). */
+    fun plainUser(): User = getUserFixtures().first { it.roles == setOf(Role.USER) }
+
+    /** A fixture user granted [Role.MODERATOR] but not [Role.ADMIN] (a content moderator). */
+    fun moderator(): User = getUserFixtures().first { Role.MODERATOR in it.roles && Role.ADMIN !in it.roles }
+
+    /** A fixture user granted [Role.ADMIN] (user administration). */
+    fun admin(): User = getUserFixtures().first { Role.ADMIN in it.roles }
+
+    /** A fixture user granted [Role.ADMIN] but not [Role.MODERATOR] (administers users, cannot moderate). */
+    fun adminWithoutModeration(): User =
+        getUserFixtures().first { Role.ADMIN in it.roles && Role.MODERATOR !in it.roles }
 
     /**
-     * The login name and raw password of the fixture user whose highest role is [role].
+     * The login name and raw password of a fixture user with [role]: [Role.USER] a plain user,
+     * [Role.MODERATOR] a moderator, and [Role.ADMIN] the fixture that holds every role. This is the single
+     * source of the fixture credentials, reused by the dev endpoint, the startup loader, and the system
+     * tests, so a password is defined in exactly one place.
      */
     fun rawCredentialsFor(role: Role): Pair<String, String> =
-        getUserFixtures()
-            .first { user -> user.roles.maxByOrNull { it.ordinal } == role }
-            .let { requireNotNull(it.loginName) to requireNotNull(it.password) }
+        when (role) {
+            Role.USER -> plainUser()
+            Role.MODERATOR -> moderator()
+            Role.ADMIN -> getUserFixtures().first { it.roles.containsAll(Role.entries) }
+        }.let { requireNotNull(it.loginName) to requireNotNull(it.password) }
 
     fun getUserFixturesForInsertion(): List<User> =
         getUserFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
     fun getPosFixtures(): List<Pos> = POS_LIST
 
+    /** Any fixture POS, for tests that need one without caring which. */
+    fun anyPos(): Pos = getPosFixtures().first()
+
     fun getPosFixturesForInsertion(): List<Pos> =
         getPosFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
     fun getReviewFixtures(): List<Review> = REVIEW_LIST
+
+    /** A fixture review that has reached the approval quorum. */
+    fun approvedReview(): Review = getReviewFixtures().first { it.approved }
+
+    /** A fixture review with no approvals yet. */
+    fun unapprovedReview(): Review = getReviewFixtures().first { !it.approved && it.approvalCount == 0 }
 
     fun getReviewFixturesForInsertion(): List<Review> =
         getReviewFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }

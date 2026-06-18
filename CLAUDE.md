@@ -305,8 +305,8 @@ Base URL: `http://localhost:8080/api`.
 
 Notes on semantics:
 - `POST` rejects a request body that carries an `id` (400); the server assigns ids.
-- `PUT /reviews/{id}` may change the review text; the POS and author of a review are fixed at creation
-  (changing them returns 400), and the approval state (`approvalCount`/`approved`) is owned by the
+- `PUT /reviews/{id}` may change the review text (the author or a moderator may edit it); a review's POS is fixed at creation (re-pointing it returns 400) and its author is fixed
+  (an update keeps the original author), and the approval state (`approvalCount`/`approved`) is owned by the
   approval workflow, so an update keeps it.
 - Creating a second review for the same POS by the same author returns 409 (`DuplicationException`,
   backed by the `uq_reviews_pos_author` database constraint, which also closes the concurrent-create race).

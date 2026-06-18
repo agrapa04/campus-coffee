@@ -2,21 +2,13 @@
 
 A Spring Boot teaching application for managing points of sale (POS) — cafés, bakeries, vending machines, and the like — on campus, with users and reviews. It follows a hexagonal (ports-and-adapters) architecture enforced by ArchUnit, built with Gradle (Kotlin DSL) on Java 25.
 
-## Scope: no authentication (yet)
+## Authentication and authorization
 
-CampusCoffee is a teaching application and currently has no authentication or authorization. User
-identity is client-asserted: `POST /api/reviews` takes the author id in the request body, and
-`PUT /api/reviews/{id}/approve?user_id=...` takes the approver id as a query parameter. Every endpoint is
-open, including the destructive ones, and `GET /api/users` returns all users with their email addresses.
-Authentication and authorization will be added in a later iteration of the course material.
-
-Until then, do not run the application on a publicly reachable host with real data. If you deploy the
-demo (see [Deployment](#deployment)), restrict access — e.g., deploy to Cloud Run with
-`--no-allow-unauthenticated` — or treat the deployment as throwaway.
-
-The approval workflow inherits this gap: approvals are anonymous counts, so the same user can approve
-a review repeatedly (see [Approve reviews](#approve-reviews)). The rework, tracking approvers per user, only becomes meaningful once identity is trustworthy. It is
-therefore deferred to the same iteration and marked as `TODO (Exercise 5)` in `ReviewServiceImpl`.
+Every write request requires authentication, and user data (login names, emails, roles) is readable only by that user or an admin; the POS directory and reviews stay publicly readable. Authenticate with HTTP Basic (`-u login:password`)
+or a JWT bearer token from `POST /api/auth/token`. The roles `USER`, `MODERATOR`, and `ADMIN` control who
+can change what: moderators manage points of sale and moderate reviews, admins manage users, and a review can
+be edited or deleted by its author or a moderator. See `INSTRUCTOR.md` for a full walkthrough; the fixture
+credentials are listed under [Dev endpoints](#dev-endpoints-apidev).
 
 ## Prerequisites
 
@@ -100,8 +92,10 @@ curl --request PUT http://localhost:8080/api/dev/data
 curl --request DELETE http://localhost:8080/api/dev/data
 ```
 
-The fixture dataset includes four users with known passwords and cumulative role sets (an admin is also a
-moderator and a user). Passwords are stored only as hashes and are never returned in any response.
+The fixture dataset includes five users with known passwords. `USER` is the base and is always held (an
+admin cannot strip it); `MODERATOR` (content moderation) and `ADMIN` (user administration) are independent
+grants on top, so a user holds whichever capabilities they were given. For example, `jane_doe` holds all three, while `olivia_admin` is an admin who
+is not a moderator. Passwords are stored only as hashes and are never returned in any response.
 
 | Login name      | Password               | Roles                        |
 | --------------- | ---------------------- | ---------------------------- |
@@ -109,10 +103,11 @@ moderator and a user). Passwords are stored only as hashes and are never returne
 | `maxmustermann` | `AmLtoD3r8lVdnwoLN1Nn` | `USER`, `MODERATOR`          |
 | `student2023`   | `ZwTwB8Hn8VkNLZec7bR1` | `USER`                       |
 | `lisa_lee`      | `lG6v9dGKZA5kfOHTFLNR` | `USER`                       |
+| `olivia_admin`  | `Qp7r2sV9xKmN4bLdTtYw` | `USER`, `ADMIN`              |
 
-The fixture data also records `review_approvals` rows consistent with each review's approval count, so no
-review has a non-zero count without matching approver rows. Security is currently permissive
-(every endpoint is open); enforcing authentication and authorization is the subject of the assignment.
+The fixture data records `review_approvals` rows consistent with each review's approval count; review 1 reaches
+the quorum, so it starts out approved. Write requests require authentication, so pass one of these credentials, e.g.
+`-u jane_doe:aaaMbnPdFYDqkOpS3fVA`.
 
 #### POS endpoints (/api/pos)
 
@@ -138,13 +133,13 @@ curl 'http://localhost:8080/api/pos/filter?name=Schmelzpunkt' # add valid POS na
 Create a POS based on a JSON object provided in the request body:
 
 ```shell
-curl --request POST --header "Content-Type: application/json" --data '{"name":"New Café","description":"Description","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos
+curl --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" --data '{"name":"New Café","description":"Description","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos
 ```
 
 Create a POS based on an OpenStreetMap node:
 
 ```shell
-curl --request POST 'http://localhost:8080/api/pos/import/osm/5589879349?campus_type=ALTSTADT' # set a valid OSM node ID here
+curl --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn 'http://localhost:8080/api/pos/import/osm/5589879349?campus_type=ALTSTADT' # set a valid OSM node ID here
 ```
 
 IDs for testing:
@@ -155,21 +150,21 @@ IDs for testing:
 See bean validation in action:
 
 ```shell
-curl --header "Content-Type: application/json" --request POST -i --data '{"name":"","description":"","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos
+curl --header "Content-Type: application/json" --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn -i --data '{"name":"","description":"","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos
 ```
 
 ##### Update POS
 
 Update title and description:
 ```shell
-curl --header "Content-Type: application/json" --request PUT --data '{"id":4,"name":"New coffee","description":"Great croissants","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"95","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos/4 # set correct POS id here and in the body
+curl --header "Content-Type: application/json" --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --data '{"id":4,"name":"New coffee","description":"Great croissants","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"95","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos/4 # set correct POS id here and in the body
 ```
 
 ##### Delete POS
 
 Delete POS by ID:
 ```shell
-curl --request DELETE -i http://localhost:8080/api/pos/1 # set existing POS ID here
+curl --request DELETE -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn -i http://localhost:8080/api/pos/1 # set existing POS ID here
 ```
 
 **Note:** A POS that still has reviews cannot be deleted; the API answers `409 Conflict`. With the
@@ -197,7 +192,7 @@ curl 'http://localhost:8080/api/users/filter?login_name=jane_doe' # add valid us
 ##### Create users
 
 ```shell
-curl --header "Content-Type: application/json" --request POST --data '{"loginName":"other_login_name","emailAddress":"other.person@uni-heidelberg.de","firstName":"New","lastName":"Person"}' http://localhost:8080/api/users
+curl --header "Content-Type: application/json" --request POST --data '{"loginName":"other_login_name","emailAddress":"other.person@uni-heidelberg.de","firstName":"New","lastName":"Person","password":"demo-password"}' http://localhost:8080/api/users
 ```
 
 See bean validation in action:
@@ -209,14 +204,14 @@ curl --header "Content-Type: application/json" --request POST -i --data '{"login
 
 Update the login name and the email address:
 ```shell
-curl --header "Content-Type: application/json" --request PUT --data '{"id":1,"createdAt":"2025-06-03T12:00:00","updatedAt":"2025-06-03T12:00:00","loginName":"jane_doe_new","emailAddress":"jane.doe.new@uni-heidelberg.de","firstName":"Jane","lastName":"Doe"}' http://localhost:8080/api/users/1 # set correct user id here and in the body
+curl --header "Content-Type: application/json" --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA --data '{"id":1,"createdAt":"2025-06-03T12:00:00","updatedAt":"2025-06-03T12:00:00","loginName":"jane_doe_new","emailAddress":"jane.doe.new@uni-heidelberg.de","firstName":"Jane","lastName":"Doe"}' http://localhost:8080/api/users/1 # set correct user id here and in the body
 ```
 
 ##### Delete user
 
 Delete user by ID:
 ```shell
-curl --request DELETE -i http://localhost:8080/api/users/1 # set existing user ID here
+curl --request DELETE -u jane_doe:aaaMbnPdFYDqkOpS3fVA -i http://localhost:8080/api/users/1 # set existing user ID here
 ```
 
 **Note:** A user who still has reviews cannot be deleted; the API answers `409 Conflict`. With the
@@ -243,36 +238,28 @@ curl 'http://localhost:8080/api/reviews/filter?pos_id=1&approved=true' # add val
 
 ##### Create reviews
 
+The author is the authenticated user, so a create needs Basic auth and the body carries no `authorId`:
 ```shell
-curl --header "Content-Type: application/json" --request POST --data '{"posId":2,"authorId":1,"review":"Great place!"}' http://localhost:8080/api/reviews # use existing IDs for posId and authorId
+curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":2,"review":"Great place to study."}' http://localhost:8080/api/reviews
 ```
 
-Users cannot create more than one review per POS (the second request returns `409 Conflict`):
+A user cannot review the same POS twice (the second request returns `409 Conflict`):
 ```shell
-curl --header "Content-Type: application/json" --request POST --data '{"posId":2,"authorId":1,"review":"Great place!"}' http://localhost:8080/api/reviews # use existing IDs for posId and authorId
+curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":2,"review":"Great place to study."}' http://localhost:8080/api/reviews
 ```
 
 ##### Approve reviews
 
-Users cannot approve their own reviews:
+The approver is the authenticated user (there is no `user_id` parameter), and a user cannot approve their
+own review:
 ```shell
-curl --request PUT 'http://localhost:8080/api/reviews/4/approve?user_id=1' # use existing review ID and user ID (of the author)
+curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/3/approve # student2023 authored review 3, so this returns 400
 ```
 
-However, users can approve the same review multiple times. This is a known limitation of the current
-implementation: The system only counts approvals and never records *who* approved, and without
-authentication the approver id is client-asserted anyway. The fix — recording approvers in a
-`review_approvals` table with a unique `(review_id, user_id)` constraint — is tracked as `TODO (Exercise 5)`
-in `ReviewServiceImpl` and lands together with authentication/authorization (see
-[Scope](#scope-no-authentication-yet)):
+Another user can approve it, but only once — a repeat returns `409 Conflict`:
 ```shell
-curl --request PUT 'http://localhost:8080/api/reviews/4/approve?user_id=2' # use existing review ID and user ID (different from author)
-```
-```shell
-curl --request PUT 'http://localhost:8080/api/reviews/4/approve?user_id=2' # use existing review ID and user ID (different from author)
-```
-```shell
-curl --request PUT 'http://localhost:8080/api/reviews/4/approve?user_id=2' # use existing review ID and user ID (different from author)
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve # 200
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve # again: 409 Conflict
 ```
 
 ## Docker
@@ -314,7 +301,7 @@ Build container image:
 docker compose build
 ```
 
-Delete existing DB container (if you manually created it before):
+Delete the existing DB container (if you manually created it before):
 
 ```shell
 docker rm -f db 2>/dev/null || true
@@ -340,13 +327,11 @@ The `db` service has no named volume, so `docker compose down` discards its data
 ### Deploy CampusCoffee to Google Cloud Run
 
 We use the `gcloud` CLI (see [`mise.toml`](mise.toml)) to build CampusCoffee from source with Cloud Build
-and deploy it to Cloud Run, using [`compose.yaml`](compose.yaml) (the `dev` profile).
-
-> **Keep this deployment private.** The `dev` profile exposes Swagger and the unauthenticated `/api/dev`
-> data endpoints, and — until you finish the assignment — write requests need no credentials. Do not expose it on
-> the public internet: leave the service **IAM-gated** (the default below), or treat it as throwaway. Once
-> your solution enforces authentication, the prod profile ([`compose.prod.yaml`](compose.prod.yaml)) is
-> the one designed for a public URL.
+and deploy it to Cloud Run. We deploy the **prod profile** via [`compose.prod.yaml`](compose.prod.yaml):
+authentication is enforced, Swagger and the `/api/dev` endpoints are off, and the JWT secret comes from
+the environment (no insecure fallback). The prod profile loads the fixture data on startup, so the demo
+has content without the dev endpoints, and Cloud Run terminates TLS, so the Basic credentials and the JWT
+are encrypted in transit. App-level authentication is what makes a public URL safe.
 
 Deploying from Compose is [still in preview](https://docs.cloud.google.com/run/docs/deploy-run-compose),
 so install the `beta` component first (`gcloud` prompts to install any other required components on first
@@ -360,29 +345,49 @@ gcloud config set run/region <region>   # e.g. europe-west3; otherwise compose u
 ```
 
 Build and deploy from source. This creates **one** Cloud Run service (named after the Compose project,
-`campus-coffee`) that runs the app and PostgreSQL as **sidecar containers** sharing one network namespace —
-which is why `compose.yaml` reaches the database at `localhost`, not the Compose service name `db`
-(`DB_HOST` defaults to `localhost`; see the file's comments):
+`campus-coffee-prod`) that runs the app and PostgreSQL as **sidecar containers** sharing one network
+namespace — which is why `compose.prod.yaml` reaches the database at `localhost` (`DB_HOST` defaults to
+`localhost`; Docker Compose uses the service name `db` instead — see the file's comments):
 
 ```shell
-gcloud beta run compose up compose.yaml
+gcloud beta run compose up compose.prod.yaml
 ```
 
-`compose up` deploys the service IAM-gated (not publicly invocable), which is what we want here. Read its
-URL and reach it with your own identity token:
+`compose up` builds and creates the service (private), but does **not** interpolate `${JWT_SECRET}` from
+your shell — and the prod profile has no fallback, so the container cannot start and **this first deploy
+reports `Deployment failed`**. That is expected: set the secret to roll out a healthy revision, then allow
+public invocation, so the **app's own** authentication — not Cloud Run's IAM layer — gates requests:
 
 ```shell
-URL=$(gcloud run services describe campus-coffee --format='value(status.url)')
-curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" "$URL/api/pos"
+gcloud run services update campus-coffee-prod --update-env-vars JWT_SECRET=$(openssl rand -hex 32)
+gcloud run services add-iam-policy-binding campus-coffee-prod \
+  --member=allUsers --role=roles/run.invoker
 ```
+
+Read the service URL (with `/api` appended for the API base path) and exercise it:
+
+```shell
+export BASE=$(gcloud run services describe campus-coffee-prod --format='value(status.url)')/api
+curl "$BASE/pos"                                                              # public read -> 200
+curl -i --request POST --header "Content-Type: application/json" \
+  --data '{"posId":3,"review":"Hello from the cloud"}' "$BASE/reviews"        # no creds -> 401
+curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 \
+  --header "Content-Type: application/json" \
+  --data '{"posId":3,"review":"Hello from the cloud"}' "$BASE/reviews"        # with creds -> 201
+```
+
+Every call from the [Authentication and authorization](#authentication-and-authorization) section works
+the same way against `$BASE`, including the role checks and the JWT flow (`POST $BASE/auth/token`).
 
 This is a throwaway demo. Running PostgreSQL as a sidecar container next to the app is fine for a demo but
 not how you would run it in production: Cloud Run treats the container as ephemeral, so a cold start
-brings up an empty database. A real cloud deployment points the app at a **managed (hosted) database** —
-e.g., Cloud SQL — instead of a self-managed Postgres container. Delete the deployment when you are done:
+brings up an empty database that the startup loader reseeds. A real cloud deployment points the app at a
+**managed (hosted) database** — e.g., Cloud SQL — instead of a self-managed Postgres container, sets
+`campus-coffee.fixtures.load-on-startup` to `false`, and supplies `JWT_SECRET` from Secret Manager rather
+than a generated value. Delete the deployment when you are done:
 
 ```shell
-gcloud run services delete campus-coffee
+gcloud run services delete campus-coffee-prod
 ```
 
 ## Code coverage and mutation testing

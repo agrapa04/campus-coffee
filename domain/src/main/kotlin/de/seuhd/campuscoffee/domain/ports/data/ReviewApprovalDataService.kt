@@ -28,18 +28,6 @@ interface ReviewApprovalDataService {
      */
     fun countByReviewId(reviewId: Long): Long
 
-    /**
-     * Checks whether a user has already approved a review.
-     *
-     * @param reviewId the review in question
-     * @param userId   the potential approver
-     * @return true if the user already approved the review
-     */
-    fun existsByReviewIdAndUserId(
-        reviewId: Long,
-        userId: Long
-    ): Boolean
-
     /** Removes all approvals (used by the dev reset, mirroring the other data services' clear). */
     fun clear()
 }

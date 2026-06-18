@@ -2,18 +2,25 @@ package de.seuhd.campuscoffee.tests.system
 
 import de.seuhd.campuscoffee.api.dtos.PosDto
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
+import de.seuhd.campuscoffee.tests.SystemTestUtils.ADMIN_NO_MOD
+import de.seuhd.campuscoffee.tests.SystemTestUtils.MODERATOR
+import de.seuhd.campuscoffee.tests.SystemTestUtils.USER
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringIdAndTimestamps
 import de.seuhd.campuscoffee.tests.SystemTestUtils.assertEqualsIgnoringTimestamps
+import de.seuhd.campuscoffee.tests.SystemTestUtils.basicAuthHeader
 import de.seuhd.campuscoffee.tests.SystemTestUtils.client
 import de.seuhd.campuscoffee.tests.SystemTestUtils.posRequests
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.returnResult
 
 /**
- * System tests for the operations related to POS (Point of Sale).
+ * System tests for the operations related to POS (Point of Sale). Curating a POS requires a moderator,
+ * so the create/update/delete helpers authenticate as the admin fixture (which holds MODERATOR) by
+ * default; the role-gate test below pins the 401/403/2xx outcomes per the access-control matrix.
  */
 class PosSystemTests : AbstractSystemTest() {
     @Test
@@ -35,6 +42,7 @@ class PosSystemTests : AbstractSystemTest() {
             client()
                 .post()
                 .uri("/api/pos")
+                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader(MODERATOR))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(dto)
                 .exchange()
@@ -42,6 +50,38 @@ class PosSystemTests : AbstractSystemTest() {
 
         assertThat(result.status.value()).isEqualTo(HttpStatus.CREATED.value())
         assertThat(result.responseHeaders.location.toString()).endsWith("/api/pos/${result.responseBody!!.id}")
+    }
+
+    @Test
+    fun `curating a POS returns 403 for a USER or non-moderator admin and succeeds for a MODERATOR`() {
+        val dto = posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first())
+
+        // an unauthenticated write request is rejected before it reaches the controller
+        assertThat(posRequests.createUnauthenticatedAndReturnStatusCode(dto))
+            .isEqualTo(HttpStatus.UNAUTHORIZED.value())
+
+        // a plain USER lacks MODERATOR, so the create is forbidden
+        assertThat(posRequests.createAndReturnStatusCodes(listOf(dto), USER).first())
+            .isEqualTo(HttpStatus.FORBIDDEN.value())
+
+        // an admin who is not also a moderator cannot moderate content either (roles are orthogonal)
+        assertThat(posRequests.createAndReturnStatusCodes(listOf(dto), ADMIN_NO_MOD).first())
+            .isEqualTo(HttpStatus.FORBIDDEN.value())
+
+        // a moderator may create the POS
+        val created = posRequests.create(listOf(dto), MODERATOR).first()
+
+        // a USER also cannot update or delete it, while a moderator can
+        assertThat(
+            posRequests.updateAndReturnStatusCodes(listOf(created.copy(description = "Edited by a USER")), USER).first()
+        ).isEqualTo(HttpStatus.FORBIDDEN.value())
+        assertThat(posRequests.deleteAndReturnStatusCodes(listOf(created.id!!), USER).first())
+            .isEqualTo(HttpStatus.FORBIDDEN.value())
+
+        val updated = posRequests.update(listOf(created.copy(description = "Edited by a moderator")), MODERATOR).first()
+        assertThat(updated.description).isEqualTo("Edited by a moderator")
+        assertThat(posRequests.deleteAndReturnStatusCodes(listOf(created.id!!), MODERATOR).first())
+            .isEqualTo(HttpStatus.NO_CONTENT.value())
     }
 
     @Test

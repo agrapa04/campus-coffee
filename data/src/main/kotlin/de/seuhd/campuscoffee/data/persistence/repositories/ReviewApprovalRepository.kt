@@ -10,9 +10,4 @@ interface ReviewApprovalRepository :
     JpaRepository<ReviewApprovalEntity, Long>,
     ResettableSequenceRepository {
     fun countByReviewId(reviewId: Long): Long
-
-    fun existsByReviewIdAndUserId(
-        reviewId: Long,
-        userId: Long
-    ): Boolean
 }

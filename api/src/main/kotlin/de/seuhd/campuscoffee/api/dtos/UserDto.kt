@@ -3,6 +3,7 @@ package de.seuhd.campuscoffee.api.dtos
 import com.fasterxml.jackson.annotation.JsonProperty
 import de.seuhd.campuscoffee.domain.model.objects.Role
 import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
@@ -13,9 +14,10 @@ import java.time.LocalDateTime
  * is then rejected by bean validation; the controller validates the DTO before it is mapped to a
  * [de.seuhd.campuscoffee.domain.model.objects.User].
  *
- * [password] is write-only: a client may send it on create/update but it is never serialized in a
- * response (and the stored hash is never exposed at all). It is optional in the starter; the assignment
- * (Exercise 1) makes it required with a minimum length. [roles] is returned in responses.
+ * [password] is write-only: required when creating a user (at least 8 characters), optional on update,
+ * where omitting it keeps the current password. No response serializes it (and the stored hash is never
+ * exposed at all). [roles] appears in responses; in a request body it is ignored at registration (a new
+ * account is always a plain USER) and can be changed only by an admin (both enforced in the domain).
  */
 data class UserDto(
     override val id: Long? = null,
@@ -36,8 +38,9 @@ data class UserDto(
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "Last name must be between 1 and 255 characters long.")
     val lastName: String?,
-    // TODO (Exercise 1): make the password required and at least 8 characters (firstName and lastName
-    //  above show the bean-validation pattern to follow).
+    @field:NotNull(groups = [OnCreate::class], message = "Password is required.")
+    @field:NotBlank(groups = [OnCreate::class], message = "Password must not be blank.")
+    @field:Size(min = 8, max = 255, message = "Password must be between 8 and 255 characters long.")
     @field:JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     val password: String? = null,
     val roles: Set<Role>? = null

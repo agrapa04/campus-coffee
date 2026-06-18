@@ -61,7 +61,7 @@ class PosController(
     ): ResponseEntity<PosDto> = super.getById(id)
 
     @Operation
-    @CrudOperation(operation = CREATE, resource = POS)
+    @CrudOperation(operation = CREATE, resource = POS, roleRestricted = true)
     @PostMapping("")
     override fun create(
         @Parameter(description = "Data of the POS to create.", required = true)
