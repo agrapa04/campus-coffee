@@ -24,6 +24,11 @@ dependencies {
     // generate spring-configuration-metadata.json for JwtProperties so the IDE resolves the jwt.* keys
     kapt(libs.spring.boot.configuration.processor)
 
+    // The JDBC driver reaches the runtime classpath transitively via data, but declaring it on the
+    // deployable module makes the runtime dependency explicit and lets the IDE resolve the
+    // driver-class-name in application.yaml.
+    runtimeOnly(libs.postgresql)
+
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.assertj.core)
     testImplementation(libs.junit.platform.suite)
