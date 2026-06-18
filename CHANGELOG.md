@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Restrict the Spring Boot Actuator endpoints. `/actuator/health` stays publicly readable (it reports only an `UP`/`DOWN` status, no component detail), `/actuator/metrics` now requires `ADMIN`, and the access rules precede the public `GET` catch-all in `SecurityConfig` so the catch-all no longer exposes them anonymously. The `prod` profile drops `env` from the exposed set, so the environment endpoint is unreachable in production (it stays exposed in `dev`).
+
 ## [0.2.0] - 2026-06-17
 
 - Add authentication and authorization. Every write request requires an authenticated principal; the POS directory and reviews stay publicly readable, while user data (login names, emails, roles) is readable only by that user or an `ADMIN` (listing all users is admin-only). Authentication is stateless via HTTP Basic or a JWT bearer token, both resolving to the same principal (login name + `ROLE_*` authorities); `SecurityConfig` disables CSRF and server-side sessions and renders auth failures as the app's JSON `ErrorResponse` (`401`/`403`). A new Flyway migration (`V7`) adds the `password_hash` column and the `user_roles` table, and passwords are hashed with BCrypt via a `CampusUserDetailsService`.
