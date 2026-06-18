@@ -8,5 +8,5 @@ build
 **/build
 .idea
 *.iml
-docs
+doc
 *.log
