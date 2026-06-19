@@ -17,7 +17,7 @@ import org.springframework.http.HttpStatus
  * authentication), so the CRUD tests register *new* users with distinct login names rather than the
  * fixture ones, which would clash.
  */
-class UsersSystemTests : AbstractSystemTest() {
+open class UsersSystemTests : AbstractSystemTest() {
     @Test
     fun `registering a user works without credentials and returns it without a password or hash`() {
         // registration is the one open write request; the create helper sends no Authorization header for it

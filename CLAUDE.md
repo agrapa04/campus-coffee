@@ -35,6 +35,23 @@ Service **implementations**:
 - API services in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/implementation/`.
 - Data services in `data/src/main/kotlin/de/seuhd/campuscoffee/data/implementations/`.
 
+### Two Interchangeable Data Adapters (Persistence Mode)
+
+The data ports have **two adapters**, selected by `campus-coffee.persistence.mode`:
+
+- **`relational`** (default): the plain `@Service` implementations write straight to the tables.
+- **`event-sourcing`**: event-sourced **Decorators** (the design pattern) in
+  `data/src/main/kotlin/de/seuhd/campuscoffee/data/persistence/eventsourcing/` wrap the relational impls
+  (`: PosDataService by delegate`, so the read and query methods auto-delegate). Both the decorator and the
+  relational impl are adapters for the same domain port. They are
+  `@Primary @ConditionalOnProperty(... "event-sourcing")`, so the domain binds to them only when the mode
+  is on. An append-only **event log** (`events` table) is the source of truth and the relational tables are
+  a **read model** projected from it: each write request appends one full-state event (`EventStore`) and
+  projects it into the tables (`ReadModelProjector`) in one transaction, so a constraint violation rolls
+  both back and the log never holds an invalid event. The projection reuses the MapStruct mappers and
+  preserves the id and timestamps from the event body. The `domain` and `api` layers are unchanged; read
+  requests are served from the materialized tables (no replay on read).
+
 ### Generic Base Classes
 
 The codebase uses extensive generics to reduce duplication:
@@ -107,6 +124,21 @@ The `dev` profile:
 The fixture load on startup happens in the `dev` and `prod` profiles (both set
 `campus-coffee.fixtures.load-on-startup`); the database persists across application restarts, and the
 loader skips when users already exist.
+
+### Run in event-sourcing mode
+
+The default persistence mode is relational. To run with the event-first event-sourcing adapters instead
+(the event log becomes the source of truth and the tables a read model projected from it):
+
+```shell
+gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=event-sourcing'
+```
+
+Behavior is identical. Every write is now recorded in the `events` table
+(`SELECT change_type, entity_type FROM events ORDER BY seq`). To migrate an existing relational database
+into the log, restart once with `--campus-coffee.persistence.data-to-events-on-startup=true` (appends one
+INSERT event per row), then rebuild the tables from the log with
+`--campus-coffee.persistence.events-to-data-on-startup=true`.
 
 ### Run Tests
 
@@ -187,6 +219,12 @@ Dependencies and tools are kept current automatically:
 
 Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql`, `V2__create_users_table.sql`).
 
+`V8__create_events_table.sql` adds the `events` table for the event-sourcing mode. It always runs and the
+`EventEntity` is always mapped (the table exists in both modes); in relational mode nothing writes to it.
+The table is append-only: an application-assigned `uuid` id, a database-assigned monotonic `seq` (the
+replay order, since the UUID id is not monotonic), `change_type`, `entity_type`, `entity_version`, a `jsonb`
+`body`, and `created_at`.
+
 ## Testing Strategy
 
 - **Unit and Integration Tests**: In `domain/src/test/kotlin/` (e.g., `PosServiceTest`, `ReviewServiceTest`)
@@ -199,6 +237,13 @@ Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql
   - Step definitions in `CucumberPosSteps.kt` and `CucumberReviewSteps.kt`
 - **Architecture Tests**: In `application/src/test/kotlin/de/seuhd/campuscoffee/tests/architecture/`
   - ArchUnit tests enforce hexagonal architecture rules
+- **Both persistence modes** run in one `gradle build`, so the aggregate coverage gate sees both. System
+  tests are persistence-agnostic, so the same suites run on both backends: the thin subclasses in
+  `EventSourcingSystemTests.kt` (e.g. `EventSourcingPosSystemTests : PosSystemTests()`) re-run the existing
+  suites unchanged with `campus-coffee.persistence.mode=event-sourcing`, which forks a separate Spring
+  context. The event-sourcing-specific behavior (event writing, rollback, replay, adopt/rebuild runners,
+  per-mode bean selection) is covered by the data-layer integration and wiring tests under
+  `data/.../persistence/eventsourcing/`, which extend `AbstractEventSourcingDataIntegrationTest`.
 
 ### Test Naming
 
@@ -291,7 +336,30 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
     Required and must be >= 1; binding fails at startup otherwise.
   - `campus-coffee.id.seed`: Seed for the application-assigned entity UUIDs. A number (the default) makes
     the assigned ids deterministic and reproducible (so the loaded fixture data has stable ids); `random`
-    (e.g., `CAMPUS_COFFEE_ID_SEED=random`) uses random UUIDs instead.
+    (e.g., `CAMPUS_COFFEE_ID_SEED=random`) uses random UUIDs instead. A separate generator with its own
+    seed (`campus-coffee.id.event-seed`, default `100`) assigns the event log's ids, so enabling event
+    sourcing leaves the entity ids unchanged.
+  - `campus-coffee.persistence.mode`: `relational` (the default) or `event-sourcing`. Selects the data
+    adapter (see Ports & Adapters). An unknown mode value fails binding at startup.
+  - `campus-coffee.persistence.data-to-events-on-startup`: when `true`, seed the event log from the existing
+    rows on startup (adopt a relational database into the log; appends one INSERT event per row,
+    idempotent per type). Off by default.
+  - `campus-coffee.persistence.events-to-data-on-startup`: when `true`, rebuild the relational tables from
+    the event log on startup (clear the tables and replay the whole log). Acts only in event-sourcing mode;
+    logs and skips in relational mode. Off by default.
+
+The design is honest about its claims: in event-sourcing mode the events are the source of truth and the
+tables are a materialized read model rebuilt from the log. The `events` table retains `passwordHash` in a
+user event (the same sensitivity as the `users` table, so a login survives a rebuild) but never the raw
+`password`, and a review event stores its POS and author as ids, so no hash leaks through a review.
+
+Deleting a review appends one `Review` DELETE event; the dependent `review_approvals` rows are removed by
+the database's `ON DELETE CASCADE`, not by per-approval DELETE events. This stays consistent on a rebuild
+because the replay applies the `Review` DELETE in append order (after the approval was inserted), so the
+projection cascades the approval away again. The startup migration runners carry their `@Order` on the
+`@EventListener` method (Spring ignores a class-level `@Order` for an event-listener method), and the
+events-to-data rebuild refuses to run against an empty log, so it can never clear a populated read model it
+has nothing to replay.
 
 ## REST API Endpoints
 

@@ -1,0 +1,77 @@
+package de.seuhd.campuscoffee.data.persistence.eventsourcing
+
+import de.seuhd.campuscoffee.data.persistence.repositories.PosRepository
+import de.seuhd.campuscoffee.data.persistence.repositories.ReviewApprovalRepository
+import de.seuhd.campuscoffee.data.persistence.repositories.ReviewRepository
+import de.seuhd.campuscoffee.data.persistence.repositories.UserRepository
+import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.event.EventListener
+import org.springframework.core.annotation.Order
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+
+/**
+ * Rebuilds the relational read tables from the event log on startup, when
+ * `campus-coffee.persistence.events-to-data-on-startup` is true: clears the tables and replays every event
+ * in append order through the [ReadModelProjector]. It runs only in event-sourcing mode (where the log is
+ * the source of truth); in relational mode it logs and skips, since the tables are authoritative there and
+ * replaying would delete their contents. It also skips when the log is empty, so it cannot clear a
+ * populated read model with nothing to replay back into it.
+ *
+ * The `@Order` is on the listener method, not the class: Spring resolves the order of an `@EventListener`
+ * from the method, so a class-level annotation would be ignored and the adopt-before-rebuild order would
+ * not hold.
+ *
+ * The replay writes the ids and the `createdAt`/`updatedAt` from the event bodies. The reviews'
+ * optimistic-locking version column restarts from zero, which has no effect because nothing compares a
+ * version across a rebuild.
+ */
+@Component
+@ConditionalOnProperty(name = ["campus-coffee.persistence.events-to-data-on-startup"], havingValue = "true")
+class EventsToDataRunner(
+    private val properties: PersistenceProperties,
+    private val eventRepository: EventRepository,
+    private val projector: ReadModelProjector,
+    private val posRepository: PosRepository,
+    private val userRepository: UserRepository,
+    private val reviewRepository: ReviewRepository,
+    private val reviewApprovalRepository: ReviewApprovalRepository
+) {
+    @EventListener(ApplicationReadyEvent::class)
+    @Order(ORDER)
+    @Transactional
+    fun rebuildFromLog() {
+        if (properties.mode != PersistenceMode.EVENT_SOURCING) {
+            log.info(
+                "Skipping the events-to-data rebuild: persistence mode is {}, not event-sourcing.",
+                properties.mode
+            )
+            return
+        }
+        if (eventRepository.count() == 0L) {
+            // an empty log against possibly-populated tables: rebuilding would only wipe them, so refuse
+            log.warn("Skipping the events-to-data rebuild: the event log is empty; not clearing the read tables.")
+            return
+        }
+        clearReadTables()
+        val events = eventRepository.findAllByOrderBySeqAsc()
+        events.forEach { projector.apply(it) }
+        log.info("Rebuilt the read model from {} events in the log.", events.size)
+    }
+
+    private fun clearReadTables() {
+        // approvals and reviews carry the foreign keys, so clear them before the POS and users they reference
+        reviewApprovalRepository.deleteAllInBatch()
+        reviewRepository.deleteAllInBatch()
+        posRepository.deleteAllInBatch()
+        userRepository.deleteAllInBatch()
+    }
+
+    companion object {
+        /** Runs after [DataToEventsRunner], so a rebuild sees the events that adoption may have just added. */
+        const val ORDER = 100
+        private val log = LoggerFactory.getLogger(EventsToDataRunner::class.java)
+    }
+}

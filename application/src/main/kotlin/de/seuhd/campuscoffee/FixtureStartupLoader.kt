@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 
 /**
@@ -24,7 +25,11 @@ class FixtureStartupLoader(
     private val reviewService: ReviewService,
     private val reviewApprovalDataService: ReviewApprovalDataService
 ) {
+    // Runs after the event-sourcing startup migrations (adopt = 0, rebuild = 100), so when both run in the
+    // same startup the fixture guard sees the rebuilt users and does not double-seed. The @Order is on the
+    // method because Spring resolves an @EventListener's order from the method, not the class.
     @EventListener(ApplicationReadyEvent::class)
+    @Order(FIXTURE_LOAD_ORDER)
     fun loadOnStartup() {
         if (userService.getAll().isNotEmpty()) {
             log.info("Skipping the fixture load: the database already has users.")
@@ -36,6 +41,8 @@ class FixtureStartupLoader(
     }
 
     private companion object {
+        // after the data-to-events (0) and events-to-data (100) startup migrations
+        private const val FIXTURE_LOAD_ORDER = 200
         private val log = LoggerFactory.getLogger(FixtureStartupLoader::class.java)
     }
 }

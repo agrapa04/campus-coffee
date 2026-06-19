@@ -55,6 +55,8 @@ flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 jackson-dataformat-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
+# Jackson 3 (tools.jackson) Kotlin module for the event-sourcing JSON bodies; version from the Jackson 3 BOM.
+jackson3-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
 assertj-core = { module = "org.assertj:assertj-core" }
 junit-platform-suite = { module = "org.junit.platform:junit-platform-suite" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

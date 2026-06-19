@@ -7,6 +7,7 @@ import de.seuhd.campuscoffee.api.mapper.UserDtoMapper
 import de.seuhd.campuscoffee.domain.ports.api.PosService
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
+import de.seuhd.campuscoffee.domain.ports.data.ReviewApprovalDataService
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import de.seuhd.campuscoffee.tests.SystemTestUtils.configureClient
 import de.seuhd.campuscoffee.tests.SystemTestUtils.configurePostgresContainers
@@ -40,6 +41,9 @@ abstract class AbstractSystemTest {
     protected lateinit var reviewService: ReviewService
 
     @Autowired
+    protected lateinit var reviewApprovalDataService: ReviewApprovalDataService
+
+    @Autowired
     protected lateinit var posDtoMapper: PosDtoMapper
 
     @Autowired
@@ -53,10 +57,7 @@ abstract class AbstractSystemTest {
 
     @BeforeEach
     fun beforeEach() {
-        // reviews reference POS and users via foreign keys, so they must be cleared first
-        reviewService.clear()
-        posService.clear()
-        userService.clear()
+        clearAll()
         // seed the fixture users (with known passwords and their role sets) so a write request can
         // authenticate over HTTP Basic; every write request now requires an authenticated user
         seededAuthUsers = TestFixtures.createUserFixtures(userService)
@@ -65,6 +66,14 @@ abstract class AbstractSystemTest {
 
     @AfterEach
     fun afterEach() {
+        clearAll()
+    }
+
+    // Clears in foreign-key order: approvals reference reviews and users, reviews reference POS and users.
+    // Clearing approvals explicitly also removes their events in event-sourcing mode (where it is harmless
+    // in relational mode), so the same base resets both backends.
+    private fun clearAll() {
+        reviewApprovalDataService.clear()
         reviewService.clear()
         posService.clear()
         userService.clear()

@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.flyway.core)
     runtimeOnly(libs.flyway.database.postgresql)
     implementation(libs.jackson.dataformat.xml)
+    // Jackson 3 Kotlin module for the event-sourcing JSON bodies (Jackson 3 databind bundles java.time).
+    implementation(libs.jackson3.module.kotlin)
     // BCrypt/delegating password encoder for the PasswordHasher adapter (small, dependency-free).
     implementation(libs.spring.security.crypto)
 

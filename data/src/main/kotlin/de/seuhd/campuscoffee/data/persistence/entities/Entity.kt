@@ -1,39 +1,20 @@
 package de.seuhd.campuscoffee.data.persistence.entities
 
 import jakarta.persistence.Column
-import jakarta.persistence.Id
 import jakarta.persistence.MappedSuperclass
-import jakarta.persistence.PostLoad
-import jakarta.persistence.PostPersist
 import jakarta.persistence.PrePersist
 import jakarta.persistence.PreUpdate
 import jakarta.persistence.Transient
-import org.springframework.data.domain.Persistable
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.UUID
 
 /**
- * Base class for the JPA entities. It holds the id and the createdAt / updatedAt timestamps. The JPA
- * lifecycle callbacks set the timestamps when the row is written, and the data layer assigns the id
- * (a [UUID] from the `IdGenerator`) before the insert.
- *
- * The id has no `@GeneratedValue`, so the entity tells Spring Data whether it is new by implementing
- * [Persistable]: [isNew] is true until the row is loaded or persisted. `repository.save()` can then
- * insert a new entity without first running a SELECT to check whether it already exists.
- *
- * The id is a private field, read and written through the `getId()`/`setId()` methods, because a Kotlin
- * property named `id` would compile to the same `getId()` method as the [Persistable] override and clash
- * with it.
- * Callers still write `entity.id`, because Kotlin exposes a Java interface's `getId()`/`setId()` as a
- * property.
+ * Base class for the relational read-model entities. On top of [PersistableEntity]'s assigned id, it adds
+ * the createdAt / updatedAt timestamps and sets them through the JPA lifecycle callbacks when a row is
+ * written.
  */
 @MappedSuperclass
-abstract class Entity : Persistable<UUID> {
-    @field:Id
-    @field:Column(name = "id")
-    private var entityId: UUID? = null
-
+abstract class Entity : PersistableEntity() {
     @field:Column(name = "created_at")
     var createdAt: LocalDateTime? = null
 
@@ -41,24 +22,25 @@ abstract class Entity : Persistable<UUID> {
     var updatedAt: LocalDateTime? = null
 
     @field:Transient
-    private var persisted = false
+    private var timestampsPreassigned = false
 
-    override fun getId(): UUID? = entityId
-
-    fun setId(value: UUID?) {
-        entityId = value
-    }
-
-    override fun isNew(): Boolean = !persisted
-
-    @PostLoad
-    @PostPersist
-    protected fun markPersisted() {
-        persisted = true
+    /**
+     * Marks the timestamps as already set, so the callbacks below leave [createdAt]/[updatedAt] untouched
+     * and the caller's values are written as-is. The event-sourcing read-model projector calls this before
+     * persisting a row, because in event-sourcing mode the authoritative timestamps live in the event body
+     * and must be written exactly so a rebuilt row matches the event. The default relational path never
+     * calls it, so the callbacks set the timestamps as usual. It is a method, not a property, so the
+     * MapStruct mappers do not treat it as a mappable field.
+     */
+    fun markTimestampsPreassigned() {
+        timestampsPreassigned = true
     }
 
     @PrePersist
     protected fun onCreate() {
+        if (timestampsPreassigned) {
+            return
+        }
         val now = LocalDateTime.now(ZoneId.of("UTC"))
         createdAt = now
         updatedAt = now
@@ -66,6 +48,9 @@ abstract class Entity : Persistable<UUID> {
 
     @PreUpdate
     protected fun onUpdate() {
+        if (timestampsPreassigned) {
+            return
+        }
         updatedAt = LocalDateTime.now(ZoneId.of("UTC"))
     }
 }

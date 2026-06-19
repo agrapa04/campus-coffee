@@ -24,6 +24,10 @@ services:
       # name, so run it as: DB_HOST=db docker compose up
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST:-localhost}:5432/postgres
       - SPRING_PROFILES_ACTIVE=dev
+      # Forward the persistence controls so the event-sourcing demo can opt in (defaults keep relational).
+      - CAMPUS_COFFEE_PERSISTENCE_MODE=${CAMPUS_COFFEE_PERSISTENCE_MODE:-relational}
+      - CAMPUS_COFFEE_DATA_TO_EVENTS_ON_STARTUP=${CAMPUS_COFFEE_DATA_TO_EVENTS_ON_STARTUP:-false}
+      - CAMPUS_COFFEE_EVENTS_TO_DATA_ON_STARTUP=${CAMPUS_COFFEE_EVENTS_TO_DATA_ON_STARTUP:-false}
 
   db:
     image: 'postgres:17-alpine'

@@ -23,7 +23,7 @@ import java.util.UUID
  * so the create/update/delete helpers authenticate as the admin fixture (which holds MODERATOR) by
  * default; the role-gate test below pins the 401/403/2xx outcomes per the access-control matrix.
  */
-class PosSystemTests : AbstractSystemTest() {
+open class PosSystemTests : AbstractSystemTest() {
     @Test
     fun `creating a POS returns it with the same field values`() {
         val posToCreate = TestFixtures.getPosFixturesForInsertion().first()

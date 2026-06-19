@@ -34,6 +34,22 @@ campus-coffee:
     # Seed for the application-assigned entity UUIDs. A number makes the assigned ids deterministic, so a
     # fixture load assigns the same ids every time. Set CAMPUS_COFFEE_ID_SEED=random for random UUIDs.
     seed: ${CAMPUS_COFFEE_ID_SEED:42}
+    # Separate seed for the event log's own ids in event-sourcing mode. A different value from the entity
+    # seed, so an event id never coincides with an entity id.
+    event-seed: ${CAMPUS_COFFEE_ID_EVENT_SEED:100}
+  persistence:
+    # Persistence mode: 'relational' (default) writes straight to the tables; 'event-sourcing' makes the
+    # event log the source of truth and the tables a read model projected from it. The events table is
+    # always present; in relational mode nothing writes to it. An unknown mode value fails startup.
+    mode: ${CAMPUS_COFFEE_PERSISTENCE_MODE:relational}
+    # One-off startup migrations between the two representations (both off by default). Both are
+    # DESTRUCTIVE and run automatically on the next startup, so enable one only deliberately:
+    #   data-to-events: append one INSERT event per existing row, adopting a relational database into the
+    #     log (skipped per type once that type already has events).
+    #   events-to-data: DELETE every row in the read tables and rebuild them by replaying the whole log
+    #     (event-sourcing mode only; the log becomes authoritative for the table contents).
+    data-to-events-on-startup: ${CAMPUS_COFFEE_DATA_TO_EVENTS_ON_STARTUP:false}
+    events-to-data-on-startup: ${CAMPUS_COFFEE_EVENTS_TO_DATA_ON_STARTUP:false}
   approval:
     min-count: 3
   fixtures:

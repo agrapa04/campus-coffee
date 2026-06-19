@@ -398,6 +398,27 @@ Delete the deployment when you are done:
 gcloud run services delete campus-coffee-prod
 ```
 
+## Inspecting the event-sourcing persistence mode
+
+The application can run in an event-first **event-sourcing** mode (`campus-coffee.persistence.mode`), where
+an append-only event log is the source of truth and the relational tables are a read model projected from
+it. The API behaves exactly the same; this step shows the events that each write request records.
+
+Start the app in event-sourcing mode (locally, set `CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing` before
+`docker compose up`, or pass `--campus-coffee.persistence.mode=event-sourcing` to a `bootRun` run). The
+fixture load on startup writes through the event log, so the `events` table is already populated:
+
+```shell
+# every fixture row, plus any write request you make, is recorded as an event (seq is the append order)
+docker exec -it db psql -U postgres -c \
+  "SELECT seq, change_type, entity_type FROM events ORDER BY seq;"
+```
+
+Make a write request (e.g., approve a review as in step 5) and re-run the query: a new `INSERT`/`UPDATE`
+event appears, while the `reviews` table still serves the read request. The ids and timestamps in the
+`body` column match the rows, because the read model is projected from exactly these events. The seeded
+entity ids are unchanged from the relational mode (the event ids come from a separate generator).
+
 ## Reset the local demo
 
 The dev app loads the fixture data on startup, and `PUT /api/dev/data` clears and reloads it, reassigning

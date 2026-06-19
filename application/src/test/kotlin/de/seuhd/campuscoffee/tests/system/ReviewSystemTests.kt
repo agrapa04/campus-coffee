@@ -24,7 +24,7 @@ import java.util.UUID
  * acts when creating/updating their review, and each approver acts under their own credentials so the
  * recorded approver is the caller.
  */
-class ReviewSystemTests : AbstractSystemTest() {
+open class ReviewSystemTests : AbstractSystemTest() {
     @Autowired
     private lateinit var approvalConfiguration: ApprovalConfiguration
 
