@@ -53,17 +53,25 @@ replay-on-read. Default mode stays relational; the `domain` and `api` layers are
   entity `IdGenerator`). A `PersistenceProperties @ConfigurationProperties("campus-coffee.persistence")`
   holds `mode`, `dataToEventsOnStartup`, `eventsToDataOnStartup` (an unknown mode fails startup, since it
   cannot bind to the enum); the runners read it.
-- **events → data** (rebuild): a flag-gated (`events-to-data-on-startup`) `ApplicationReadyEvent`
-  data-component runs only in event-sourcing mode and skips an empty log (so it never clears a populated
-  read model with nothing to replay back). Otherwise it clears the tables and replays the whole log in
-  append order (`findAllByOrderBySeqAsc`) through the `ReadModelProjector`, preserving ids + `createdAt`/
-  `updatedAt`; the `@Version` counter restarts from zero, which has no effect. No `api` involvement.
-- **data → events** (adopt an existing database): a flag-gated, `@Transactional` `ApplicationReadyEvent`
-  component that runs only in event-sourcing mode; it reads the current rows and appends one INSERT event
-  each in FK order (users/pos → reviews → approvals; **approvals via `ReviewApprovalRepository.findAll()`**
-  since that port has no `getAll`); idempotent per type (skip when the type's log is non-empty). Both
-  runners carry their `@Order` on the `@EventListener` method (Spring ignores a class-level `@Order` there),
-  so adoption runs before a rebuild.
+- **events → data** (rebuild): a flag-gated (`events-to-data-on-startup`) data-component runs only in
+  event-sourcing mode and skips an empty log (so it never clears a populated read model with nothing to
+  replay back). Otherwise it clears the tables and replays the whole log in append order
+  (`findAllByOrderBySeqAsc`) through the `ReadModelProjector`, preserving ids + `createdAt`/`updatedAt`; the
+  `@Version` counter restarts from zero, which has no effect. No `api` involvement.
+- **data → events** (import an existing database): a flag-gated, `@Transactional` component that runs only
+  in event-sourcing mode; it reads the current rows and appends one INSERT event each in FK order (users/pos
+  → reviews → approvals; **approvals via `ReviewApprovalRepository.findAll()`** since that port has no
+  `getAll`); idempotent per type (skip when the type's log is non-empty).
+- **Startup ordering — run before the web server accepts requests.** The import and rebuild runners and the
+  application's `FixtureStartupLoader` each implement a `StartupTask` domain port (`val order`; `fun run()`).
+  A `StartupDataInitializer` (a `SmartInitializingSingleton` in the application module) injects
+  `List<StartupTask>` and runs them in ascending `order` during context refresh — import (0) → rebuild (100)
+  → fixtures (200) — which, for a servlet app, is before `finishRefresh()` binds the Tomcat connectors. This
+  replaces the original per-runner `@EventListener(ApplicationReadyEvent)` triggers, which fired after the
+  connectors already accept and left a cold-start window where a request saw the empty tables. The
+  coordinator depends only on the domain port (not the concrete `data` runners), so the application keeps its
+  `runtimeOnly` dependency on `data`. Import runs before rebuild so a rebuild sees the imported events;
+  fixtures run last so the load guard sees the rebuilt users and does not double-load.
 - **Migration V8** creates the `events` table (`id uuid` PK, `seq bigint` identity for the replay order,
   `change_type`, `entity_type`, `entity_version`, `body jsonb`, `created_at`). Always runs (the entity is
   always mapped).
@@ -83,12 +91,18 @@ All in one `gradle build`, so the aggregate coverage gate (95% line / 82% branch
   hash via reviews; `clear()` empties both the read tables and the log; `data → events` seeds one INSERT per
   existing row in FK order (idempotent); `events → data` reconstructs ids, business fields, and timestamps
   (compared to the pre-run `getAll`).
-- **Startup-runner tests (for the thin branch margin):** boot a context with each flag on so the gated
-  `@EventListener(ApplicationReadyEvent)` bodies and branches execute — `data-to-events-on-startup=true` in
-  ES mode (happy path) and run twice for the idempotent skip; `events-to-data-on-startup=true` in ES mode
-  (rebuild) and once in **relational** mode for the log-and-skip branch; and a both-flags-set boot for the
-  ordering. (Fallback if booting is awkward: keep each runner a thin shell delegating to an already-covered
-  method.)
+- **Startup-runner tests (for the thin branch margin):** boot a context with each flag on and drive the
+  runner through its `StartupTask.run()` entry point so the gated bodies and branches execute —
+  `data-to-events-on-startup=true` in ES mode (happy path) and run twice for the idempotent skip;
+  `events-to-data-on-startup=true` in ES mode (rebuild) and once in **relational** mode for the log-and-skip
+  branch; a both-flags-set boot asserts the import runner is ordered before the rebuild.
+  `StartupDataInitializerTest` (a unit test) asserts the coordinator runs tasks in ascending order
+  regardless of injection order and tolerates an empty list.
+- **Startup-before-serving test:** `StartupDataInitializerIntegrationTest` boots the application with the
+  fixture load and both migrations enabled and records the user count at `WebServerInitializedEvent` (which
+  fires as the connectors bind); it asserts the fixtures are already present then, so it fails under the old
+  `ApplicationReadyEvent` timing — a regression guard for the cold-start fix — and pins the fixtures-last
+  order.
 - **`PersistenceModeWiringTest`:** the injected `*DataService` beans are the relational impls in default
   mode and the `EventSourced*` decorators under `mode=event-sourcing`.
 - **System tests run on both backends, not reimplemented.** System tests are persistence-agnostic, so the
@@ -111,9 +125,10 @@ ArchUnit: the new code is in the `data` layer and imports only `domain` + Spring
   (the three `campus-coffee.persistence.*` properties). Note the design honestly: events = source of truth,
   the tables = a materialized read model rebuilt from the log; the events table retains `passwordHash` (same
   sensitivity as the `users` table) but never the raw `password`.
-- **`README.md`:** add the ES run line (`--campus-coffee.persistence.mode=event-sourcing`) and the
-  data-to-events → events-to-data adoption flow. **`INSTRUCTOR.md`:** add a demo step (switch to ES mode,
-  inspect the `events` table) or note it is intentionally omitted.
+- **`README.md`:** add the ES run line (`--campus-coffee.persistence.mode=event-sourcing`), the
+  data-to-events → events-to-data import/rebuild flow, and (under Deployment) deploying the ES mode to Google
+  Cloud Run. **`INSTRUCTOR.md`:** a demo step that switches to ES mode and inspects the `events` table, plus
+  the Cloud Run ES-deploy variant.
 - **PITest:** no glob change; `de.seuhd.campuscoffee.data.*` already matches `data.persistence.eventsourcing.*`.
 
 ## Risks / verify first
@@ -136,7 +151,7 @@ ArchUnit: the new code is in the `data` layer and imports only `domain` + Spring
 
 `gradle build` green (both modes). Relational run unchanged. ES run
 (`--campus-coffee.persistence.mode=event-sourcing`): same behavior; `SELECT seq, change_type, entity_type
-FROM events ORDER BY seq` shows every write recorded. Adopt-on-existing-DB: with data present, restart with
+FROM events ORDER BY seq` shows every write recorded. Import-on-existing-DB: with data present, restart with
 `--campus-coffee.persistence.data-to-events-on-startup=true`, then with
 `--campus-coffee.persistence.events-to-data-on-startup=true`, and confirm the tables are rebuilt from the
 log (matching ids, business fields, and timestamps; the internal `@Version` counter resets).

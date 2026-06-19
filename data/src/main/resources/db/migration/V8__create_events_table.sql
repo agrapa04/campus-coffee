@@ -28,6 +28,6 @@ CREATE TABLE events (
 CREATE INDEX idx_events_seq ON events (seq);
 
 -- Look up the events of one domain object by the id embedded in the body (e.g., to inspect an entity's
--- history); also speeds up checking whether a domain type already has events (so adoption can skip it).
+-- history); also speeds up checking whether a domain type already has events (so the import can skip it).
 CREATE INDEX idx_events_entity_type ON events (entity_type);
 CREATE INDEX idx_events_body_id ON events ((body ->> 'id'));

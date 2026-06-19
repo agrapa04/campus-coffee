@@ -44,7 +44,7 @@ campus-coffee:
     mode: ${CAMPUS_COFFEE_PERSISTENCE_MODE:relational}
     # One-off startup migrations between the two representations (both off by default). Both are
     # DESTRUCTIVE and run automatically on the next startup, so enable one only deliberately:
-    #   data-to-events: append one INSERT event per existing row, adopting a relational database into the
+    #   data-to-events: append one INSERT event per existing row, importing a relational database into the
     #     log (skipped per type once that type already has events).
     #   events-to-data: DELETE every row in the read tables and rebuild them by replaying the whole log
     #     (event-sourcing mode only; the log becomes authoritative for the table contents).

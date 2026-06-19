@@ -13,17 +13,15 @@ import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.model.objects.ReviewApproval
 import de.seuhd.campuscoffee.domain.model.objects.User
+import de.seuhd.campuscoffee.domain.ports.StartupTask
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.event.ApplicationReadyEvent
-import org.springframework.context.event.EventListener
-import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import kotlin.reflect.KClass
 
 /**
- * Adopts an existing relational database into the event log on startup, when
+ * Imports an existing relational database into the event log on startup, when
  * `campus-coffee.persistence.data-to-events-on-startup` is true: reads the current rows and appends one
  * INSERT event per row, so a database populated before event sourcing was enabled gets a log it can later
  * be rebuilt from. Idempotent per type: a type whose log already holds events is skipped, so repeated
@@ -32,11 +30,11 @@ import kotlin.reflect.KClass
  * The rows are read in foreign-key order (users and POS, then reviews, then approvals) so a later
  * events-to-data replay applies them in an order where a review's POS and author already exist.
  *
- * It runs only in event-sourcing mode (matching [EventsToDataRunner]): adopting rows in relational mode
+ * It runs only in event-sourcing mode (matching [EventsToDataRunner]): importing rows in relational mode
  * would record a one-time snapshot that later write requests then diverge from, which a rebuild could
- * replay over current data. The `@Order` is on the listener method, not the class, because Spring resolves
- * an `@EventListener`'s order from the method; it runs before the rebuild runner, so when both flags are
- * set the log is seeded from the existing rows before the rebuild replays it.
+ * replay over current data. The application's startup initializer invokes the runners in their `ORDER`
+ * sequence (before the web server accepts requests); this runs before the rebuild runner, so when both flags
+ * are set the log is seeded from the existing rows before the rebuild replays it.
  */
 @Component
 @ConditionalOnProperty(name = ["campus-coffee.persistence.data-to-events-on-startup"], havingValue = "true")
@@ -51,36 +49,39 @@ class DataToEventsRunner(
     private val userMapper: UserEntityMapper,
     private val reviewMapper: ReviewEntityMapper,
     private val reviewApprovalMapper: ReviewApprovalEntityMapper
-) {
-    @EventListener(ApplicationReadyEvent::class)
-    @Order(ORDER)
+) : StartupTask {
+    override val order = ORDER
+
     @Transactional
-    fun seedLogFromRows() {
+    override fun run() = importRowsAsEvents()
+
+    @Transactional
+    fun importRowsAsEvents() {
         if (properties.mode != PersistenceMode.EVENT_SOURCING) {
             log.info(
-                "Skipping the data-to-events adoption: persistence mode is {}, not event-sourcing.",
+                "Skipping the data-to-events import: persistence mode is {}, not event-sourcing.",
                 properties.mode
             )
             return
         }
-        seedType(User::class) { userRepository.findAll().map(userMapper::fromEntity) }
-        seedType(Pos::class) { posRepository.findAll().map(posMapper::fromEntity) }
-        seedType(Review::class) { reviewRepository.findAll().map(reviewMapper::fromEntity) }
-        seedType(ReviewApproval::class) { reviewApprovalRepository.findAll().map(reviewApprovalMapper::fromEntity) }
+        importType(User::class) { userRepository.findAll().map(userMapper::fromEntity) }
+        importType(Pos::class) { posRepository.findAll().map(posMapper::fromEntity) }
+        importType(Review::class) { reviewRepository.findAll().map(reviewMapper::fromEntity) }
+        importType(ReviewApproval::class) { reviewApprovalRepository.findAll().map(reviewApprovalMapper::fromEntity) }
     }
 
-    private fun seedType(
+    private fun importType(
         domainType: KClass<out DomainModel<*>>,
         readRows: () -> List<DomainModel<*>>
     ) {
         val entityType = eventStore.entityTypeOf(domainType)
         if (eventStore.hasEventsFor(entityType)) {
-            log.info("Skipping {} adoption: the event log already has {} events.", entityType, entityType)
+            log.info("Skipping {} import: the event log already has {} events.", entityType, entityType)
             return
         }
         val rows = readRows()
         rows.forEach { eventStore.appendInsert(it) }
-        log.info("Adopted {} {} rows into the event log as INSERT events.", rows.size, entityType)
+        log.info("Imported {} {} rows into the event log as INSERT events.", rows.size, entityType)
     }
 
     companion object {

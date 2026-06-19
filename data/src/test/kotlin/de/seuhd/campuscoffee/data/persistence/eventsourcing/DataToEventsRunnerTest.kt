@@ -8,10 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 
 /**
- * Tests the data-to-events adoption runner. Both the `data-to-events-on-startup` and
- * `events-to-data-on-startup` flags are set, so both runner beans exist; the test then drives the adoption
- * runner directly over a prepared "adopted database" state (the read tables hold rows but the event log is
- * empty) and asserts the two runners are ordered adopt-before-rebuild.
+ * Tests the data-to-events import runner. Both the `data-to-events-on-startup` and
+ * `events-to-data-on-startup` flags are set, so both runner beans exist; the test then drives the import
+ * runner directly over a prepared pre-event-sourcing state (the read tables hold rows but the event log is
+ * empty) and asserts the two runners are ordered import-before-rebuild.
  */
 @TestPropertySource(
     properties = [
@@ -27,35 +27,36 @@ class DataToEventsRunnerTest : AbstractEventSourcingDataIntegrationTest() {
     private lateinit var eventsToDataRunner: EventsToDataRunner
 
     @Test
-    fun `adopts existing rows as INSERT events and skips a type whose log already has events`() {
-        seedAdoptedDatabaseRows()
+    fun `imports existing rows as INSERT events and skips a type whose log already has events`() {
+        seedRowsToImport()
 
-        dataToEventsRunner.seedLogFromRows()
+        // drive it through the StartupTask entry point the initializer uses
+        dataToEventsRunner.run()
 
         // one INSERT event per existing row (a user, a POS, a review)
         assertThat(eventRepository.findAll()).allMatch { it.changeType == ChangeType.INSERT }
-        val seeded = eventRepository.count()
-        assertThat(seeded).isEqualTo(3L)
+        val imported = eventRepository.count()
+        assertThat(imported).isEqualTo(3L)
 
         // a second run is idempotent: every type's log is non-empty, so nothing is appended again
-        dataToEventsRunner.seedLogFromRows()
-        assertThat(eventRepository.count()).isEqualTo(seeded)
+        dataToEventsRunner.importRowsAsEvents()
+        assertThat(eventRepository.count()).isEqualTo(imported)
     }
 
     @Test
-    fun `both startup runners are wired and the adopt runner is ordered before the rebuild runner`() {
+    fun `both startup runners are wired and the import runner is ordered before the rebuild runner`() {
         assertThat(dataToEventsRunner).isNotNull
         assertThat(eventsToDataRunner).isNotNull
-        assertThat(DataToEventsRunner.ORDER).isLessThan(EventsToDataRunner.ORDER)
+        assertThat(dataToEventsRunner.order).isLessThan(eventsToDataRunner.order)
     }
 
     /** Creates rows through the decorators, then drops the events to mimic a database that predates event sourcing. */
-    private fun seedAdoptedDatabaseRows() {
+    private fun seedRowsToImport() {
         val pos = posDataService.upsert(TestFixtures.getPosFixturesForInsertion().first())
         val author =
             userDataService.upsert(
                 TestFixtures.getUserFixturesForInsertion().first().copy(
-                    passwordHash = "{bcrypt}\$2a\$10\$adopthashvalue000000"
+                    passwordHash = "{bcrypt}\$2a\$10\$importhashvalue00000"
                 )
             )
         reviewDataService.upsert(

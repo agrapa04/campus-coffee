@@ -20,7 +20,7 @@ enum class PersistenceMode {
  *
  * @property mode the persistence mode; relational by default.
  * @property dataToEventsOnStartup when true, seed the event log from the existing relational rows on
- *   startup (adopt an existing database into the log). Appends one INSERT event per row, idempotently.
+ *   startup (import an existing database into the log). Appends one INSERT event per row, idempotently.
  * @property eventsToDataOnStartup when true, rebuild the relational tables from the event log on startup
  *   (clear the tables and replay every event). Only active in event-sourcing mode.
  */

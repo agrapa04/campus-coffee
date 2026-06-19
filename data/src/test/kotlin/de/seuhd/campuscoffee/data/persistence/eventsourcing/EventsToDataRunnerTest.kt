@@ -38,7 +38,8 @@ class EventsToDataRunnerTest : AbstractEventSourcingDataIntegrationTest() {
         val usersBefore = userDataService.getAll().sortedBy { it.loginName }
         val reviewsBefore = reviewDataService.getAll().sortedBy { it.review }
 
-        runner.rebuildFromLog()
+        // drive it through the StartupTask entry point the initializer uses
+        runner.run()
 
         // the tables were cleared and rebuilt from the log, so the rows reappear unchanged (compared by
         // content, not just count, so a rebuild that corrupted a field would be caught)

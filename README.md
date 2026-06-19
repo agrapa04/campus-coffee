@@ -81,7 +81,7 @@ Inspect the log (its `seq` column is the append order):
 SELECT seq, change_type, entity_type FROM events ORDER BY seq;
 ```
 
-To adopt an existing relational database into the log and then rebuild the tables from it, run these once
+To import an existing relational database into the log and then rebuild the tables from it, run these once
 each (they are one-off startup migrations, off by default):
 
 ```shell
@@ -388,16 +388,45 @@ namespace — which is why `compose.prod.yaml` reaches the database at `localhos
 gcloud beta run compose up compose.prod.yaml
 ```
 
-`compose up` builds and creates the service (private), but does **not** interpolate `${JWT_SECRET}` from
-your shell — and the prod profile has no fallback, so the container cannot start and **this first deploy
-reports `Deployment failed`**. That is expected: set the secret to roll out a healthy revision, then allow
-public invocation, so the **app's own** authentication — not Cloud Run's IAM layer — gates requests:
+`compose up` builds the image and (re)creates the service from the Compose file. It **never** interpolates
+`${JWT_SECRET}` from your shell, and the prod profile has no fallback secret, so the revision it creates
+cannot start and the command **always reports `Deployment failed`** — on the first deploy *and on every
+redeploy*, because each `compose up` rewrites the service from the secret-less Compose file. **This is
+expected, not a real error.** Treat `compose up` and the `services update` below as **one two-step recipe,
+always run together**: the `services update` immediately rolls out a healthy revision and is where the
+secret (and the persistence mode) live, so it must be re-applied after every `compose up`. The
+`add-iam-policy-binding` grants public invocation, so the **app's own** authentication — not Cloud Run's IAM
+layer — gates requests; it is a one-time, service-level grant that survives redeploys. The service has two
+containers (the app and the PostgreSQL sidecar), so the env-var update targets the app container by name
+with `--container`:
 
 ```shell
-gcloud run services update campus-coffee-prod --update-env-vars JWT_SECRET=$(openssl rand -hex 32)
+gcloud run services update campus-coffee-prod --container campus-coffee-app-prod \
+  --update-env-vars JWT_SECRET=$(openssl rand -hex 32)
 gcloud run services add-iam-policy-binding campus-coffee-prod \
   --member=allUsers --role=roles/run.invoker
 ```
+
+The deploy above runs the default **relational** persistence mode. To deploy the **event-sourcing** mode
+instead (the append-only event log becomes the source of truth and the tables a read model projected from
+it), add `CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing` to that same `services update` step
+(`compose.prod.yaml` does not forward the variable):
+
+```shell
+gcloud run services update campus-coffee-prod --container campus-coffee-app-prod \
+  --update-env-vars JWT_SECRET=$(openssl rand -hex 32),CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing
+gcloud run services add-iam-policy-binding campus-coffee-prod \
+  --member=allUsers --role=roles/run.invoker
+```
+
+The API behaves identically; the prod fixture load on startup now writes through the event log, so the
+`events` table is populated and the relational tables are projected from it. Every call below works the
+same way.
+
+**Redeploying after a code change** repeats the same two steps: `gcloud beta run compose up
+compose.prod.yaml` (which rebuilds the image and again reports `Deployment failed`), then the same
+`services update` to restore `JWT_SECRET` (and `CAMPUS_COFFEE_PERSISTENCE_MODE` for event-sourcing). The
+public-invocation binding persists across redeploys, so you do not re-grant it.
 
 Read the service URL (with `/api` appended for the API base path) and exercise it:
 

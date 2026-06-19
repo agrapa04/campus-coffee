@@ -241,7 +241,7 @@ replay order, since the UUID id is not monotonic), `change_type`, `entity_type`,
   tests are persistence-agnostic, so the same suites run on both backends: the thin subclasses in
   `EventSourcingSystemTests.kt` (e.g. `EventSourcingPosSystemTests : PosSystemTests()`) re-run the existing
   suites unchanged with `campus-coffee.persistence.mode=event-sourcing`, which forks a separate Spring
-  context. The event-sourcing-specific behavior (event writing, rollback, replay, adopt/rebuild runners,
+  context. The event-sourcing-specific behavior (event writing, rollback, replay, import/rebuild runners,
   per-mode bean selection) is covered by the data-layer integration and wiring tests under
   `data/.../persistence/eventsourcing/`, which extend `AbstractEventSourcingDataIntegrationTest`.
 
@@ -342,7 +342,7 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
   - `campus-coffee.persistence.mode`: `relational` (the default) or `event-sourcing`. Selects the data
     adapter (see Ports & Adapters). An unknown mode value fails binding at startup.
   - `campus-coffee.persistence.data-to-events-on-startup`: when `true`, seed the event log from the existing
-    rows on startup (adopt a relational database into the log; appends one INSERT event per row,
+    rows on startup (import a relational database into the log; appends one INSERT event per row,
     idempotent per type). Off by default.
   - `campus-coffee.persistence.events-to-data-on-startup`: when `true`, rebuild the relational tables from
     the event log on startup (clear the tables and replay the whole log). Acts only in event-sourcing mode;
@@ -356,10 +356,12 @@ user event (the same sensitivity as the `users` table, so a login survives a reb
 Deleting a review appends one `Review` DELETE event; the dependent `review_approvals` rows are removed by
 the database's `ON DELETE CASCADE`, not by per-approval DELETE events. This stays consistent on a rebuild
 because the replay applies the `Review` DELETE in append order (after the approval was inserted), so the
-projection cascades the approval away again. The startup migration runners carry their `@Order` on the
-`@EventListener` method (Spring ignores a class-level `@Order` for an event-listener method), and the
-events-to-data rebuild refuses to run against an empty log, so it can never clear a populated read model it
-has nothing to replay.
+projection cascades the approval away again. The fixture load and the two startup migration runners
+(import, rebuild) each implement the `StartupTask` domain port and run before the embedded web server
+accepts requests, not on `ApplicationReadyEvent`: the `StartupDataInitializer` (a
+`SmartInitializingSingleton`) runs every registered `StartupTask` in `order` during context refresh, so the
+API is never served before its data is loaded. The events-to-data rebuild refuses to run against an empty
+log, so it can never clear a populated read model it has nothing to replay.
 
 ## REST API Endpoints
 

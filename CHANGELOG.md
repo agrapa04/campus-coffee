@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Load the fixture data and run the event-sourcing import/rebuild startup migrations before the embedded web server accepts requests, so a cold start no longer serves the API before its data is loaded. The fixture loader and the two migration runners implement a `StartupTask` port that a new `StartupDataInitializer` runs in order during context refresh, instead of each triggering itself on `ApplicationReadyEvent` (after the server already accepted).
+- Document deploying the event-sourcing persistence mode to Google Cloud Run, and correct the relational `gcloud run services update` command to target the app container with `--container campus-coffee-app-prod` (the deployed service also runs a PostgreSQL sidecar).
+
 ## [0.3.0] - 2026-06-19
 
 - Make the seeded `IdGenerator` thread-safe: `SeededUuidGenerator.newId()` and `reset()` are now mutually exclusive under a lock, so a `reset()` running concurrently with id generation (for example the dev `PUT /api/dev/data` reload while a write is in flight) cannot hand out an id from a half-replaced generator, and the deterministic id sequence holds under concurrency.

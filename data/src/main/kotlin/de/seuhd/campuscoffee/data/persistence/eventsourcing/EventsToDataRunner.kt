@@ -4,11 +4,9 @@ import de.seuhd.campuscoffee.data.persistence.repositories.PosRepository
 import de.seuhd.campuscoffee.data.persistence.repositories.ReviewApprovalRepository
 import de.seuhd.campuscoffee.data.persistence.repositories.ReviewRepository
 import de.seuhd.campuscoffee.data.persistence.repositories.UserRepository
+import de.seuhd.campuscoffee.domain.ports.StartupTask
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.event.ApplicationReadyEvent
-import org.springframework.context.event.EventListener
-import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,9 +18,9 @@ import org.springframework.transaction.annotation.Transactional
  * replaying would delete their contents. It also skips when the log is empty, so it cannot clear a
  * populated read model with nothing to replay back into it.
  *
- * The `@Order` is on the listener method, not the class: Spring resolves the order of an `@EventListener`
- * from the method, so a class-level annotation would be ignored and the adopt-before-rebuild order would
- * not hold.
+ * The application's startup initializer invokes the runners in their `ORDER` sequence (before the web server
+ * accepts requests), so the import-before-rebuild order holds and a rebuild sees the events that the import
+ * may have just added.
  *
  * The replay writes the ids and the `createdAt`/`updatedAt` from the event bodies. The reviews'
  * optimistic-locking version column restarts from zero, which has no effect because nothing compares a
@@ -38,9 +36,12 @@ class EventsToDataRunner(
     private val userRepository: UserRepository,
     private val reviewRepository: ReviewRepository,
     private val reviewApprovalRepository: ReviewApprovalRepository
-) {
-    @EventListener(ApplicationReadyEvent::class)
-    @Order(ORDER)
+) : StartupTask {
+    override val order = ORDER
+
+    @Transactional
+    override fun run() = rebuildFromLog()
+
     @Transactional
     fun rebuildFromLog() {
         if (properties.mode != PersistenceMode.EVENT_SOURCING) {
@@ -70,7 +71,7 @@ class EventsToDataRunner(
     }
 
     companion object {
-        /** Runs after [DataToEventsRunner], so a rebuild sees the events that adoption may have just added. */
+        /** Runs after [DataToEventsRunner], so a rebuild sees the events that the import may have just added. */
         const val ORDER = 100
         private val log = LoggerFactory.getLogger(EventsToDataRunner::class.java)
     }

@@ -41,7 +41,7 @@ class EventStore(
     /** Removes every event for the given domain type. Part of the per-type clear, alongside the read table. */
     fun clear(entityType: String) = eventRepository.deleteByEntityType(entityType)
 
-    /** Whether the log already holds an event for the given domain type, so adoption can skip that type. */
+    /** Whether the log already holds an event for the given domain type, so the import can skip that type. */
     fun hasEventsFor(entityType: String): Boolean = eventRepository.existsByEntityType(entityType)
 
     /** The event's entity-type label, the domain class's simple name (`Pos`, `User`, `Review`, ...). */
