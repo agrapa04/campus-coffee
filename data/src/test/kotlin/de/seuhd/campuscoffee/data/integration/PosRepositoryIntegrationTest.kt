@@ -18,7 +18,8 @@ class PosRepositoryIntegrationTest : AbstractDataIntegrationTest() {
 
     @Test
     fun `findByName returns the matching POS and null when none matches`() {
-        val saved = posRepository.save(posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()))
+        val entity = posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()).withGeneratedId()
+        val saved = posRepository.save(entity)
 
         assertThat(posRepository.findByName(saved.name!!)?.id).isEqualTo(saved.id)
         assertThat(posRepository.findByName("No Such POS")).isNull()
@@ -27,9 +28,10 @@ class PosRepositoryIntegrationTest : AbstractDataIntegrationTest() {
     @Test
     fun `saving two POS with the same name throws DataIntegrityViolationException`() {
         val pos = TestFixtures.getPosFixturesForInsertion().first()
-        posRepository.saveAndFlush(posEntityMapper.toEntity(pos))
+        posRepository.saveAndFlush(posEntityMapper.toEntity(pos).withGeneratedId())
 
-        assertThatThrownBy { posRepository.saveAndFlush(posEntityMapper.toEntity(pos)) }
+        // a distinct id, so it is the unique-name constraint that trips (not the primary key)
+        assertThatThrownBy { posRepository.saveAndFlush(posEntityMapper.toEntity(pos).withGeneratedId()) }
             .isInstanceOf(DataIntegrityViolationException::class.java)
     }
 }

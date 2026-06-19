@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.UUID
 
 /**
  * Unit and integration tests for the operations related to POS (Point of Sale).
@@ -25,6 +26,8 @@ class PosServiceTest {
     private lateinit var posDataService: PosDataService
 
     private lateinit var posService: PosServiceImpl
+
+    private val testId = UUID(0L, 1L)
 
     @BeforeEach
     fun setUp() {
@@ -50,10 +53,10 @@ class PosServiceTest {
     fun `getById propagates NotFoundException from the data service`() {
         // a literal id, not a matcher: the service under test is a real object, and passing a matcher
         // as a method argument corrupts Mockito's matcher stack
-        whenever(posDataService.getById(1L)).thenThrow(NotFoundException(Pos::class.java, 1L))
+        whenever(posDataService.getById(testId)).thenThrow(NotFoundException(Pos::class.java, testId))
 
-        assertThrows<NotFoundException> { posService.getById(1L) }
-        verify(posDataService).getById(1L)
+        assertThrows<NotFoundException> { posService.getById(testId) }
+        verify(posDataService).getById(testId)
     }
 
     @Test
@@ -81,7 +84,7 @@ class PosServiceTest {
     @Test
     fun `upsert of a new POS delegates to the data service`() {
         val pos = TestFixtures.anyPos().copy(id = null)
-        whenever(posDataService.upsert(pos)).thenReturn(pos.copy(id = 1L))
+        whenever(posDataService.upsert(pos)).thenReturn(pos.copy(id = testId))
 
         posService.upsert(pos)
 

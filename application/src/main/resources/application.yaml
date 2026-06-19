@@ -30,6 +30,10 @@ osm:
   api:
     base-url: https://www.openstreetmap.org/api/0.6
 campus-coffee:
+  id:
+    # Seed for the application-assigned entity UUIDs. A number makes the assigned ids deterministic, so a
+    # fixture load assigns the same ids every time. Set CAMPUS_COFFEE_ID_SEED=random for random UUIDs.
+    seed: ${CAMPUS_COFFEE_ID_SEED:42}
   approval:
     min-count: 3
   fixtures:
@@ -72,6 +76,11 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /api/swagger-ui.html
+campus-coffee:
+  fixtures:
+    # The local dev app loads the fixture data on startup (when the database has no users yet), so it
+    # comes up ready with the seeded ids. Use the /api/dev endpoints to inspect, replace, or clear it.
+    load-on-startup: true
 
 ---
 spring:

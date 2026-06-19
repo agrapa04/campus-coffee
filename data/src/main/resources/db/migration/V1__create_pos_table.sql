@@ -1,9 +1,7 @@
 SET TIME ZONE 'UTC';
 
-CREATE SEQUENCE pos_seq START WITH 1 INCREMENT BY 1;
-
 CREATE TABLE pos (
-    id bigint NOT NULL PRIMARY KEY,
+    id uuid NOT NULL PRIMARY KEY,
     created_at timestamp NOT NULL,
     updated_at timestamp NOT NULL,
     name varchar(255) NOT NULL CHECK (name <> ''),

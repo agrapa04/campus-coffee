@@ -17,6 +17,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.returnResult
+import java.util.UUID
 
 /**
  * System tests that pin the HTTP status codes produced by the global exception handler:
@@ -124,7 +125,7 @@ class ErrorPathSystemTests : AbstractSystemTest() {
                 .create(listOf(posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first())))
                 .first()
 
-        val statusCode = posRequests.updateWithPathIdAndReturnStatusCode(created.id!! + 1, created)
+        val statusCode = posRequests.updateWithPathIdAndReturnStatusCode(MISSING_ID, created)
 
         assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST.value())
     }
@@ -174,7 +175,7 @@ class ErrorPathSystemTests : AbstractSystemTest() {
     fun `creating a review with text that is too short returns 400 Bad Request`() {
         // an empty review is rejected by bean validation; this pins the controller-to-400 mapping for a
         // validation failure without depending on the exact length bounds
-        val invalid = ReviewDto(posId = 1L, review = "")
+        val invalid = ReviewDto(posId = MISSING_ID, review = "")
 
         assertThat(reviewRequests.createAndReturnStatusCodes(listOf(invalid)).first())
             .isEqualTo(HttpStatus.BAD_REQUEST.value())
@@ -193,7 +194,7 @@ class ErrorPathSystemTests : AbstractSystemTest() {
     fun `creating a review with an authorId in the body returns 400 Bad Request`() {
         // the author is the authenticated caller; a body carrying an authorId is rejected like a
         // client-supplied id, so a client cannot post a review as someone else
-        val withAuthorId = ReviewDto(posId = 1L, authorId = 1L, review = "Valid length review text.")
+        val withAuthorId = ReviewDto(posId = MISSING_ID, authorId = MISSING_ID, review = "Valid length review text.")
 
         assertThat(reviewRequests.createAndReturnStatusCodes(listOf(withAuthorId)).first())
             .isEqualTo(HttpStatus.BAD_REQUEST.value())
@@ -262,6 +263,7 @@ class ErrorPathSystemTests : AbstractSystemTest() {
     }
 
     private companion object {
-        const val MISSING_ID = 9999L
+        // an id no entity carries (well beyond the deterministic test generator's range)
+        val MISSING_ID: UUID = UUID(0L, 1_000_000L)
     }
 }

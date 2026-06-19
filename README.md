@@ -26,7 +26,7 @@ Then, to build the application, run the following command in the command line (o
 ```shell
 gradle build
 ```
-**Note:** The application does not load any data on startup. In the `dev` profile you can load or reset it on demand — see [Dev endpoints](#dev-endpoints-apidev).
+**Note:** In the `dev` profile the application loads the fixture dataset on startup; the [Dev endpoints](#dev-endpoints-apidev) let you inspect, reload, or clear it.
 
 You can use the quiet mode to suppress most log messages:
 
@@ -61,8 +61,8 @@ gradle :application:bootRun --args='--spring.profiles.active=dev'
 ```
 **Note:** The data source is configured via the [`application.yaml`](application/src/main/resources/application.yaml) file.
 
-The application starts with an empty database. Load the fixture dataset so the examples below
-have data to work with — see [Dev endpoints](#dev-endpoints-apidev).
+In the `dev` profile the application loads the fixture dataset on startup, so the examples below have data
+to work with; the [Dev endpoints](#dev-endpoints-apidev) let you reload or clear it.
 
 ## Explore the REST API
 
@@ -77,9 +77,9 @@ You can use `curl` in the command line to send HTTP requests to the REST API.
 
 #### Dev endpoints (/api/dev)
 
-The application does not load any data on startup (in any profile), and the database persists across
-application restarts. In the `dev` profile, three endpoints let you inspect, replace, and clear the
-data on demand (they are not registered outside `dev`):
+In the `dev` profile the application loads the fixture dataset on startup (when the database has no users
+yet), and the database persists across application restarts. Three endpoints let you inspect, replace, and
+clear the data on demand (they are not registered outside `dev`):
 
 ```shell
 # report the current counts ({users, pos, reviews})
@@ -105,9 +105,14 @@ is not a moderator. Passwords are stored only as hashes and are never returned i
 | `lisa_lee`      | `lG6v9dGKZA5kfOHTFLNR` | `USER`                       |
 | `olivia_admin`  | `Qp7r2sV9xKmN4bLdTtYw` | `USER`, `ADMIN`              |
 
-The fixture data records `review_approvals` rows consistent with each review's approval count; review 1 reaches
-the quorum, so it starts out approved. Write requests require authentication, so pass one of these credentials, e.g.
-`-u jane_doe:aaaMbnPdFYDqkOpS3fVA`.
+The fixture data records `review_approvals` rows consistent with each review's approval count. `jane_doe`'s
+review of `Schmelzpunkt` reaches the quorum, so it starts out approved. Write requests require authentication,
+so pass one of these credentials, e.g. `-u jane_doe:aaaMbnPdFYDqkOpS3fVA`.
+
+Resource ids are `UUID`s the server assigns on creation. With the default seed (`campus-coffee.id.seed` =
+`42`), a freshly loaded fixture dataset always gets the same ids, so the examples below use the concrete
+fixture ids, each with a `#` comment naming the entity. If you have changed the data, read the current id
+from a list or filter response (e.g., `GET /api/pos` or `GET /api/users/filter?login_name=jane_doe`).
 
 #### POS endpoints (/api/pos)
 
@@ -120,7 +125,7 @@ curl http://localhost:8080/api/pos
 
 POS by ID:
 ```shell
-curl http://localhost:8080/api/pos/1 # add valid POS id here
+curl http://localhost:8080/api/pos/eb5910f1-26e6-bc6f-6fbd-df557096b883 # Schmelzpunkt
 ```
 
 POS by name:
@@ -157,18 +162,19 @@ curl --header "Content-Type: application/json" --request POST -u maxmustermann:A
 
 Update title and description:
 ```shell
-curl --header "Content-Type: application/json" --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --data '{"id":4,"name":"New coffee","description":"Great croissants","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"95","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos/4 # set correct POS id here and in the body
+curl --header "Content-Type: application/json" --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --data '{"id":"eb5910f1-26e6-bc6f-6fbd-df557096b883","name":"New coffee","description":"Great croissants","type":"CAFE","campus":"ALTSTADT","street":"Hauptstraße","houseNumber":"95","postalCode":"69117","city":"Heidelberg"}' http://localhost:8080/api/pos/eb5910f1-26e6-bc6f-6fbd-df557096b883 # Schmelzpunkt; the path and body id must match
 ```
 
 ##### Delete POS
 
 Delete POS by ID:
 ```shell
-curl --request DELETE -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn -i http://localhost:8080/api/pos/1 # set existing POS ID here
+curl --request DELETE -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn -i http://localhost:8080/api/pos/bff9d9d5-ee3d-d852-62f6-0bdbcc5c8305 # Bäcker Görtz (no reviews)
 ```
 
 **Note:** A POS that still has reviews cannot be deleted; the API answers `409 Conflict`. With the
-fixture data, POS 1 has reviews. Delete its reviews first or pick a POS without reviews (e.g., 3).
+fixture data, `Schmelzpunkt` has reviews. Delete its reviews first or pick a POS without reviews (e.g.,
+`Bäcker Görtz` or `Café Botanik`).
 
 #### Users endpoints (/api/users)
 
@@ -181,7 +187,7 @@ curl http://localhost:8080/api/users
 
 User by ID:
 ```shell
-curl http://localhost:8080/api/users/1 # add valid user id here
+curl http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028 # jane_doe
 ```
 
 User by login name:
@@ -204,18 +210,19 @@ curl --header "Content-Type: application/json" --request POST -i --data '{"login
 
 Update the login name and the email address:
 ```shell
-curl --header "Content-Type: application/json" --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA --data '{"id":1,"createdAt":"2025-06-03T12:00:00","updatedAt":"2025-06-03T12:00:00","loginName":"jane_doe_new","emailAddress":"jane.doe.new@uni-heidelberg.de","firstName":"Jane","lastName":"Doe"}' http://localhost:8080/api/users/1 # set correct user id here and in the body
+curl --header "Content-Type: application/json" --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA --data '{"id":"ba419d35-0dfe-8af7-aee7-bbe10c45c028","createdAt":"2025-06-03T12:00:00","updatedAt":"2025-06-03T12:00:00","loginName":"jane_doe_new","emailAddress":"jane.doe.new@uni-heidelberg.de","firstName":"Jane","lastName":"Doe"}' http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028 # jane_doe; the path and body id must match
 ```
 
 ##### Delete user
 
 Delete user by ID:
 ```shell
-curl --request DELETE -u jane_doe:aaaMbnPdFYDqkOpS3fVA -i http://localhost:8080/api/users/1 # set existing user ID here
+curl --request DELETE -u jane_doe:aaaMbnPdFYDqkOpS3fVA -i http://localhost:8080/api/users/5e688e99-61b3-5c88-4697-6cf7b0bfbe20 # lisa_lee (no reviews)
 ```
 
 **Note:** A user who still has reviews cannot be deleted; the API answers `409 Conflict`. With the
-fixture data, users 1-3 have authored reviews. Delete their reviews first or create a fresh user.
+fixture data, `jane_doe`, `maxmustermann`, and `student2023` have authored reviews. Delete their reviews
+first or create a fresh user.
 
 #### Reviews endpoint (/api/reviews)
 
@@ -228,38 +235,38 @@ curl http://localhost:8080/api/reviews
 
 Review by ID:
 ```shell
-curl http://localhost:8080/api/reviews/1 # add valid user id here
+curl http://localhost:8080/api/reviews/2c167999-289d-95fa-9661-a43246302cd9 # jane_doe's review of Schmelzpunkt
 ```
 
 Get approved reviews for a POS:
 ```shell
-curl 'http://localhost:8080/api/reviews/filter?pos_id=1&approved=true' # add valid POS id here; quote the URL so the shell does not treat & as a job control operator
+curl 'http://localhost:8080/api/reviews/filter?pos_id=eb5910f1-26e6-bc6f-6fbd-df557096b883&approved=true' # Schmelzpunkt; quote the URL so the shell does not treat & as a job control operator
 ```
 
 ##### Create reviews
 
 The author is the authenticated user, so a create needs Basic auth and the body carries no `authorId`:
 ```shell
-curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":2,"review":"Great place to study."}' http://localhost:8080/api/reviews
+curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Great place to study."}' http://localhost:8080/api/reviews # Café Botanik
 ```
 
 A user cannot review the same POS twice (the second request returns `409 Conflict`):
 ```shell
-curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":2,"review":"Great place to study."}' http://localhost:8080/api/reviews
+curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Great place to study."}' http://localhost:8080/api/reviews # Café Botanik
 ```
 
 ##### Approve reviews
 
 The approver is the authenticated user (there is no `user_id` parameter), and a user cannot approve their
-own review:
+own review. The review below is the one `student2023` authored (of `New Vending Machine`):
 ```shell
-curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/3/approve # student2023 authored review 3, so this returns 400
+curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # student2023 is the author, so this returns 400
 ```
 
 Another user can approve it, but only once — a repeat returns `409 Conflict`:
 ```shell
-curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve # 200
-curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve # again: 409 Conflict
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # 200
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # again: 409 Conflict
 ```
 
 ## Docker
@@ -370,10 +377,10 @@ Read the service URL (with `/api` appended for the API base path) and exercise i
 export BASE=$(gcloud run services describe campus-coffee-prod --format='value(status.url)')/api
 curl "$BASE/pos"                                                              # public read -> 200
 curl -i --request POST --header "Content-Type: application/json" \
-  --data '{"posId":3,"review":"Hello from the cloud"}' "$BASE/reviews"        # no creds -> 401
+  --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Hello from the cloud"}' "$BASE/reviews"        # no creds -> 401
 curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 \
   --header "Content-Type: application/json" \
-  --data '{"posId":3,"review":"Hello from the cloud"}' "$BASE/reviews"        # with creds -> 201
+  --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Hello from the cloud"}' "$BASE/reviews"        # with creds -> 201
 ```
 
 Every call from the [Authentication and authorization](#authentication-and-authorization) section works

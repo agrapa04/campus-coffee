@@ -22,6 +22,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.UUID
 
 /**
  * Unit and integration tests for the operations related to reviews.
@@ -29,6 +30,9 @@ import org.mockito.kotlin.whenever
 @ExtendWith(MockitoExtension::class)
 class ReviewServiceTest {
     private val approvalConfiguration = TestFixtures.getApprovalConfiguration()
+
+    // an id no fixture review carries, for the "update a missing review" case
+    private val missingReviewId = UUID(0L, 9999L)
 
     @Mock
     private lateinit var reviewDataService: ReviewDataService
@@ -298,9 +302,10 @@ class ReviewServiceTest {
         val persistedReview = TestFixtures.getReviewFixtures().first()
         val pos = persistedReview.pos
         val posId = requireNotNull(pos.id)
-        val update = persistedReview.copy(id = 9999L)
+        val update = persistedReview.copy(id = missingReviewId)
         whenever(posDataService.getById(posId)).thenReturn(pos)
-        whenever(reviewDataService.getById(9999L)).thenThrow(NotFoundException(Review::class.java, 9999L))
+        whenever(reviewDataService.getById(missingReviewId))
+            .thenThrow(NotFoundException(Review::class.java, missingReviewId))
 
         assertThrows<NotFoundException> { reviewService.upsert(update) }
         verify(reviewDataService, never()).upsert(any<Review>())

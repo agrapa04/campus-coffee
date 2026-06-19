@@ -18,6 +18,7 @@ import de.seuhd.campuscoffee.domain.ports.data.UserDataService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
 
 /**
  * Implementation of the Review service that handles business logic related to review entities.
@@ -29,9 +30,9 @@ class ReviewServiceImpl(
     private val posDataService: PosDataService,
     private val reviewApprovalDataService: ReviewApprovalDataService,
     private val approvalConfiguration: ApprovalConfiguration
-) : CrudServiceImpl<Review, Long>(Review::class.java),
+) : CrudServiceImpl<Review, UUID>(Review::class.java),
     ReviewService {
-    override fun dataService(): CrudDataService<Review, Long> = reviewDataService
+    override fun dataService(): CrudDataService<Review, UUID> = reviewDataService
 
     @Transactional
     override fun upsert(domainObject: Review): Review {
@@ -98,7 +99,7 @@ class ReviewServiceImpl(
 
     @Transactional
     override fun delete(
-        reviewId: Long,
+        reviewId: UUID,
         actingUser: User
     ) {
         val existing = reviewDataService.getById(reviewId)
@@ -124,13 +125,13 @@ class ReviewServiceImpl(
 
     @Transactional(readOnly = true)
     override fun filter(
-        posId: Long,
+        posId: UUID,
         approved: Boolean
     ): List<Review> = reviewDataService.filter(posDataService.getById(posId), approved)
 
     @Transactional
     override fun approve(
-        reviewId: Long,
+        reviewId: UUID,
         actingUser: User
     ): Review {
         val approverId = actingUser.persistedId

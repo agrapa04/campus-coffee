@@ -3,6 +3,7 @@ package de.seuhd.campuscoffee.domain.ports.data
 import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.model.objects.User
+import java.util.UUID
 
 /**
  * Data service interface for review persistence operations.
@@ -11,7 +12,7 @@ import de.seuhd.campuscoffee.domain.model.objects.User
  * and implemented by the data layer. Extends [CrudDataService] to inherit common CRUD
  * operations and adds review-specific operations.
  */
-interface ReviewDataService : CrudDataService<Review, Long> {
+interface ReviewDataService : CrudDataService<Review, UUID> {
     /**
      * Retrieves all reviews for a specific point of sale that are approved/unapproved.
      *

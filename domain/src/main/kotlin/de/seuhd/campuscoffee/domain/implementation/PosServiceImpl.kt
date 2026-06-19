@@ -12,6 +12,7 @@ import de.seuhd.campuscoffee.domain.ports.data.OsmDataService
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 /**
  * Implementation of the POS service that handles business logic related to POS entities.
@@ -20,9 +21,9 @@ import org.springframework.stereotype.Service
 class PosServiceImpl(
     private val posDataService: PosDataService,
     private val osmDataService: OsmDataService
-) : CrudServiceImpl<Pos, Long>(Pos::class.java),
+) : CrudServiceImpl<Pos, UUID>(Pos::class.java),
     PosService {
-    override fun dataService(): CrudDataService<Pos, Long> = posDataService
+    override fun dataService(): CrudDataService<Pos, UUID> = posDataService
 
     override fun getByName(name: String): Pos {
         log.debug("Retrieving POS with name: {}", name)

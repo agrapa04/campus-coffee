@@ -48,10 +48,13 @@ class ReviewRepositoryIntegrationTest : AbstractDataIntegrationTest() {
         assertThat(reviewRepository.findAllByPosAndAuthor(pos, otherAuthor)).isEmpty()
     }
 
-    private fun persistFirstPos(): PosEntity =
-        posRepository.save(posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()))
+    private fun persistFirstPos(): PosEntity {
+        val entity = posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()).withGeneratedId()
+        return posRepository.save(entity)
+    }
 
-    private fun persistUser(user: User): UserEntity = userRepository.save(userEntityMapper.toEntity(user))
+    private fun persistUser(user: User): UserEntity =
+        userRepository.save(userEntityMapper.toEntity(user).withGeneratedId())
 
     private fun persistReview(
         pos: PosEntity,
@@ -59,13 +62,14 @@ class ReviewRepositoryIntegrationTest : AbstractDataIntegrationTest() {
         approved: Boolean
     ): ReviewEntity {
         val entity =
-            ReviewEntity().apply {
-                this.pos = pos
-                this.author = author
-                review = "A review with enough characters."
-                approvalCount = if (approved) 3 else 0
-                this.approved = approved
-            }
+            ReviewEntity()
+                .apply {
+                    this.pos = pos
+                    this.author = author
+                    review = "A review with enough characters."
+                    approvalCount = if (approved) 3 else 0
+                    this.approved = approved
+                }.withGeneratedId()
         return reviewRepository.save(entity)
     }
 }

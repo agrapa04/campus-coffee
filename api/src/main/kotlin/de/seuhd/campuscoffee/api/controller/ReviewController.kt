@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import java.util.UUID
 
 /**
  * Controller for handling reviews for POS, authored by users.
@@ -47,8 +48,8 @@ class ReviewController(
     private val reviewService: ReviewService,
     private val reviewDtoMapper: ReviewDtoMapper,
     private val currentUserProvider: CurrentUserProvider
-) : CrudController<Review, ReviewDto, Long>() {
-    override fun service(): CrudService<Review, Long> = reviewService
+) : CrudController<Review, ReviewDto, UUID>() {
+    override fun service(): CrudService<Review, UUID> = reviewService
 
     override fun mapper(): DtoMapper<Review, ReviewDto> = reviewDtoMapper
 
@@ -62,7 +63,7 @@ class ReviewController(
     @GetMapping("/{id}")
     override fun getById(
         @Parameter(description = "Unique identifier of the review to retrieve.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<ReviewDto> = super.getById(id)
 
     // TODO (Exercise 2): the author of a created review must be the authenticated user (resolve it via
@@ -92,7 +93,7 @@ class ReviewController(
     @PutMapping("/{id}")
     override fun update(
         @Parameter(description = "Unique identifier of the review to update.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: UUID,
         @Parameter(description = "Data of the review to update.", required = true)
         @RequestBody
         @Valid dto: ReviewDto
@@ -111,7 +112,7 @@ class ReviewController(
     @DeleteMapping("/{id}")
     override fun delete(
         @Parameter(description = "Unique identifier of the review to delete.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<Void> {
         reviewService.delete(id, currentUserProvider.currentUser())
         return ResponseEntity.noContent().build()
@@ -122,7 +123,7 @@ class ReviewController(
     @GetMapping("/filter")
     fun filter(
         @Parameter(description = "Unique identifier of the POS to retrieve approved reviews for.", required = true)
-        @RequestParam("pos_id") posId: Long,
+        @RequestParam("pos_id") posId: UUID,
         @Parameter(description = "The approval status of the reviews to retrieve.", required = true)
         @RequestParam("approved") approved: Boolean
     ): ResponseEntity<List<ReviewDto>> =
@@ -141,7 +142,7 @@ class ReviewController(
     @PutMapping("/{id}/approve")
     fun approve(
         @Parameter(description = "Unique identifier of the review to approve.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<ReviewDto> =
         ResponseEntity.ok(
             reviewDtoMapper.fromDomain(reviewService.approve(id, currentUserProvider.currentUser()))

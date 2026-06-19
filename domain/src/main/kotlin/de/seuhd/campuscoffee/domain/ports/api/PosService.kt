@@ -9,6 +9,7 @@ import de.seuhd.campuscoffee.domain.model.enums.CampusType
 import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.ports.data.OsmDataService
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService
+import java.util.UUID
 
 /**
  * Service interface for POS (Point of Sale) operations.
@@ -19,7 +20,7 @@ import de.seuhd.campuscoffee.domain.ports.data.PosDataService
  *
  * Extends [CrudService] to inherit common CRUD operations and adds POS-specific operations.
  */
-interface PosService : CrudService<Pos, Long> {
+interface PosService : CrudService<Pos, UUID> {
     /**
      * Retrieves a specific Point of Sale by its unique name.
      *

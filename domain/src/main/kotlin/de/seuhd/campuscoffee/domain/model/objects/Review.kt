@@ -1,13 +1,14 @@
 package de.seuhd.campuscoffee.domain.model.objects
 
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Immutable review domain model. A review is approved once it reaches a configurable number of
  * approvals; [approvalCount] and [approved] are maintained by the domain module.
  */
 data class Review(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
     val pos: Pos,
@@ -15,4 +16,4 @@ data class Review(
     val review: String,
     val approvalCount: Int,
     val approved: Boolean
-) : DomainModel<Long>
+) : DomainModel<UUID>

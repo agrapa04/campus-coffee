@@ -22,7 +22,7 @@ class PosEntityMapperRoundTripTest : AbstractDataIntegrationTest() {
     @Test
     fun `persisting and reloading a POS preserves the house number suffix`() {
         val pos = TestFixtures.getPosFixturesForInsertion().first().copy(houseNumber = "99a")
-        val id = posRepository.saveAndFlush(posEntityMapper.toEntity(pos)).id!!
+        val id = posRepository.saveAndFlush(posEntityMapper.toEntity(pos).withGeneratedId()).id!!
 
         // detach everything so the read comes from the database, not the persistence context
         entityManager.clear()

@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.domain.ports.data
 
 import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
 import de.seuhd.campuscoffee.domain.model.objects.ReviewApproval
+import java.util.UUID
 
 /**
  * Port for persisting review approvals (who approved which review).
@@ -26,7 +27,7 @@ interface ReviewApprovalDataService {
      * @param reviewId the review to count approvals for
      * @return the number of approvals
      */
-    fun countByReviewId(reviewId: Long): Long
+    fun countByReviewId(reviewId: UUID): Long
 
     /** Removes all approvals (used by the dev reset, mirroring the other data services' clear). */
     fun clear()

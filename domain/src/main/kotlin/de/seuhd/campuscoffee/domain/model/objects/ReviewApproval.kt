@@ -1,6 +1,7 @@
 package de.seuhd.campuscoffee.domain.model.objects
 
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Immutable record of a single user's approval of a review. Backed by the `review_approvals` table whose
@@ -11,9 +12,9 @@ import java.time.LocalDateTime
  * approval count.
  */
 data class ReviewApproval(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
-    val reviewId: Long,
-    val userId: Long
-) : DomainModel<Long>
+    val reviewId: UUID,
+    val userId: UUID
+) : DomainModel<UUID>

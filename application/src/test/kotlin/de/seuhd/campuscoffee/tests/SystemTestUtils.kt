@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
-import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID
 import java.lang.reflect.Array as ReflectArray
 
 /**
@@ -168,7 +168,7 @@ object SystemTestUtils {
     class Requests<T : Any>(
         private val basePath: String,
         private val dtoClass: Class<T>,
-        private val idGetter: (T) -> Long?,
+        private val idGetter: (T) -> UUID?,
         private val requestBody: (T) -> Any = { it }
     ) {
         /** The DTO body of a response, after asserting the expected status. */
@@ -221,7 +221,7 @@ object SystemTestUtils {
             )
 
         fun retrieveById(
-            id: Long,
+            id: UUID,
             credentials: Credentials? = null
         ): T =
             body(
@@ -326,7 +326,7 @@ object SystemTestUtils {
             }
 
         fun deleteAndReturnStatusCodes(
-            idList: List<Long>,
+            idList: List<UUID>,
             credentials: Credentials = defaultCredentials
         ): List<Int> =
             idList.map { id ->
@@ -354,7 +354,7 @@ object SystemTestUtils {
 
         /** Retrieves by id and returns the raw status code (to assert a 404, or a 401/403 on a guarded read). */
         fun retrieveByIdStatusCode(
-            id: Long,
+            id: UUID,
             credentials: Credentials? = null
         ): Int =
             status(
@@ -368,7 +368,7 @@ object SystemTestUtils {
 
         /** Updates with an explicit path id that may differ from the body id (to assert a 400 on mismatch). */
         fun updateWithPathIdAndReturnStatusCode(
-            pathId: Long,
+            pathId: UUID,
             dto: T,
             credentials: Credentials = defaultCredentials
         ): Int =
@@ -401,7 +401,7 @@ object SystemTestUtils {
 
         /** Approves an entity as the authenticated user via PUT /{id}/approve (the approver is the caller). */
         fun approve(
-            id: Long,
+            id: UUID,
             credentials: Credentials = defaultCredentials
         ): T =
             body(
@@ -415,7 +415,7 @@ object SystemTestUtils {
 
         /** Approves and returns the raw status code (to assert a 400 self-approval, 404, or 409 repeat). */
         fun approveAndReturnStatusCode(
-            id: Long,
+            id: UUID,
             credentials: Credentials = defaultCredentials
         ): Int =
             status(
@@ -428,7 +428,7 @@ object SystemTestUtils {
 
         /** Approves with a raw bearer token (to assert a JWT-authenticated write request or an expired/forged 401). */
         fun approveWithBearerAndReturnStatusCode(
-            id: Long,
+            id: UUID,
             token: String
         ): Int =
             status(

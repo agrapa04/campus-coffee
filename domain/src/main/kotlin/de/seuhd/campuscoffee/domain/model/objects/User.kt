@@ -1,6 +1,7 @@
 package de.seuhd.campuscoffee.domain.model.objects
 
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Immutable user domain model. Fields are validated in the API layer via the DTOs.
@@ -11,7 +12,7 @@ import java.time.LocalDateTime
  * serialized to a client. [roles] is the user's set of authorization roles.
  */
 data class User(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
     val loginName: String,
@@ -21,4 +22,4 @@ data class User(
     val roles: Set<Role> = emptySet(),
     val passwordHash: String? = null,
     val password: String? = null
-) : DomainModel<Long>
+) : DomainModel<UUID>

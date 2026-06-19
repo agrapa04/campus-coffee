@@ -4,13 +4,12 @@ import de.seuhd.campuscoffee.data.persistence.entities.PosEntity
 import de.seuhd.campuscoffee.data.persistence.entities.ReviewEntity
 import de.seuhd.campuscoffee.data.persistence.entities.UserEntity
 import org.springframework.data.jpa.repository.JpaRepository
+import java.util.UUID
 
 /**
  * Repository for persisting review entities.
  */
-interface ReviewRepository :
-    JpaRepository<ReviewEntity, Long>,
-    ResettableSequenceRepository {
+interface ReviewRepository : JpaRepository<ReviewEntity, UUID> {
     fun findAllByPosAndApproved(
         pos: PosEntity,
         approved: Boolean

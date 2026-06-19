@@ -15,15 +15,14 @@ HTTPS URL.
 `compose.yaml` builds the application image and runs it with a PostgreSQL container in the dev profile:
 
 ```shell
-# build the image and start the app and the database
+# build the image and start the app and the database; the dev profile loads the fixture
+# data (users, POS, reviews) on startup
 docker compose up --build
-
-# in another shell, load the fixture data (users, POS, reviews); the dev endpoints need no credentials
-curl --request PUT http://localhost:8080/api/dev/data
 ```
 
 The base URL is `http://localhost:8080/api`. Swagger UI is at
-`http://localhost:8080/api/swagger-ui.html`.
+`http://localhost:8080/api/swagger-ui.html`. The `/api/dev` endpoints (no credentials needed) let you
+reload or clear the fixture data; see "Reset the local demo" below.
 
 To run without Docker, start a PostgreSQL container and use Gradle instead:
 
@@ -48,6 +47,14 @@ while `olivia_admin` holds `USER` and `ADMIN` but not `MODERATOR`. The same list
 
 `curl` sends Basic credentials with `-u <login>:<password>`.
 
+Resource ids are `UUID`s the server assigns on creation. With the default seed (`campus-coffee.id.seed` =
+`42`), a freshly loaded fixture dataset always gets the same ids, so the commands below use the concrete
+fixture ids: `jane_doe` is `ba419d35-0dfe-8af7-aee7-bbe10c45c028`, `student2023` is
+`aa616abe-1761-0c9a-e743-67bd738597dc`, the `Café Botanik` POS is `2d68ad16-268a-478c-9827-50f4569b5949`,
+and the review `student2023` authored (of `New Vending Machine`) is `947c82ee-1735-c9ed-c0a4-7deecc7229ce`.
+If you have changed the data, read the current ids from `GET /api/users`, `GET /api/pos`, or
+`GET /api/reviews`.
+
 ## 3. Authentication: read requests are public, write requests need credentials
 
 A read request is public and needs no credentials:
@@ -60,7 +67,7 @@ An unauthenticated write request is rejected with `401` (use `-i` to see the sta
 
 ```shell
 curl -i --request POST --header "Content-Type: application/json" \
-  --data '{"posId":3,"review":"Great flat white!"}' \
+  --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Great flat white!"}' \
   http://localhost:8080/api/reviews
 # -> HTTP/1.1 401 Unauthorized, JSON ErrorResponse body
 ```
@@ -79,7 +86,7 @@ no `authorId` in the body:
 
 ```shell
 curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --header "Content-Type: application/json" \
-  --data '{"posId":3,"review":"Great flat white!"}' \
+  --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Great flat white!"}' \
   http://localhost:8080/api/reviews
 # -> 201 Created; "author" is student2023
 ```
@@ -88,7 +95,7 @@ A wrong password is rejected with `401`:
 
 ```shell
 curl -i --request POST -u student2023:wrong-password --header "Content-Type: application/json" \
-  --data '{"posId":3,"review":"..."}' \
+  --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"..."}' \
   http://localhost:8080/api/reviews
 # -> 401 Unauthorized
 ```
@@ -135,15 +142,15 @@ Managing other users requires `ADMIN`. Any admin (`jane_doe` or `olivia_admin`) 
 including their roles, or delete one:
 
 ```shell
-# a moderator trying to edit another user -> 403
+# a moderator trying to edit another user (jane_doe) -> 403
 curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
-  --data '{"id":1,"loginName":"jane_doe","emailAddress":"jane.doe@uni-heidelberg.de","firstName":"Jane","lastName":"Doe","roles":["USER"]}' \
-  http://localhost:8080/api/users/1
+  --data '{"id":"ba419d35-0dfe-8af7-aee7-bbe10c45c028","loginName":"jane_doe","emailAddress":"jane.doe@uni-heidelberg.de","firstName":"Jane","lastName":"Doe","roles":["USER"]}' \
+  http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028
 
-# the admin succeeds (this grants MODERATOR to student2023, user id 3)
+# the admin succeeds (this grants MODERATOR to student2023)
 curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA --header "Content-Type: application/json" \
-  --data '{"id":3,"loginName":"student2023","emailAddress":"student2023@study.org","firstName":"Student","lastName":"Example","roles":["USER","MODERATOR"]}' \
-  http://localhost:8080/api/users/3
+  --data '{"id":"aa616abe-1761-0c9a-e743-67bd738597dc","loginName":"student2023","emailAddress":"student2023@study.org","firstName":"Student","lastName":"Example","roles":["USER","MODERATOR"]}' \
+  http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc
 ```
 
 Any user may edit their *own* profile — name, email, and password; changing roles is an admin action. An
@@ -164,14 +171,14 @@ may read only their own account, and listing all users is admin-only:
 
 ```shell
 # reading a user without credentials is rejected -> 401
-curl -i http://localhost:8080/api/users/3
+curl -i http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc
 ```
 
 A plain `USER` may read their own account, but not another's:
 
 ```shell
-curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/3   # own account (id 3) -> 200
-curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/1   # another user (id 1) -> 403
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc   # own account -> 200
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028      # another user -> 403
 ```
 
 Listing all users is admin-only:
@@ -192,28 +199,31 @@ parameter: before authentication the client passed it to name the approver, and 
 authenticated user, which the client cannot forge. A user cannot approve their own review, and cannot
 approve the same review twice.
 
+The review approved below (`947c82ee-1735-c9ed-c0a4-7deecc7229ce`) is the one `student2023` authored.
+
 ```shell
-# self-approval is rejected -> 400 (student2023 is the author of review 3)
-curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/3/approve
+# self-approval is rejected -> 400 (student2023 is the author of this review)
+curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve
 ```
 
 Three distinct non-author users approve it; the third reaches the quorum of 3:
 
 ```shell
-curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve       # 200
-curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn http://localhost:8080/api/reviews/3/approve  # 200
-curl -i --request PUT -u lisa_lee:lG6v9dGKZA5kfOHTFLNR http://localhost:8080/api/reviews/3/approve       # 200, review 3 is now approved
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve       # 200
+curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve  # 200
+curl -i --request PUT -u lisa_lee:lG6v9dGKZA5kfOHTFLNR http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve       # 200, this review is now approved
 ```
 
 Any of them approving again is rejected as a duplicate:
 
 ```shell
 # -> 409 Conflict
-curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/3/approve
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve
 ```
 
 A review becomes `approved` once it reaches the quorum (`campus-coffee.approval.min-count` = 3) of
-distinct, non-author approvers. In the fixture data, review 1 is already approved.
+distinct, non-author approvers. In the fixture data, `jane_doe`'s review of `Schmelzpunkt` is already
+approved.
 
 ## 6. Stateless JWT bearer tokens
 
@@ -312,7 +322,7 @@ A write request needs authentication. An unauthenticated `POST` is `401`, and no
 
 ```shell
 curl -i --request POST --header "Content-Type: application/json" \
-  --data '{"posId":3,"review":"Hello from the cloud"}' $BASE/reviews
+  --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Hello from the cloud"}' $BASE/reviews
 ```
 
 Listing users is `ADMIN`-only. The same endpoint under three identities walks the whole auth ladder
@@ -390,5 +400,6 @@ gcloud run services delete campus-coffee-prod
 
 ## Reset the local demo
 
-`PUT /api/dev/data` clears and reloads the fixture data, so you can rerun the local walkthrough from a
-clean state. The Cloud Run deployment loads its data on startup, so redeploy it to reset.
+The dev app loads the fixture data on startup, and `PUT /api/dev/data` clears and reloads it, reassigning
+the same seeded ids, so you can rerun the local walkthrough from a clean state. The Cloud Run deployment
+loads its data on startup, so redeploy it to reset.

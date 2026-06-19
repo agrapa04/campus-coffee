@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import java.util.UUID
 
 /**
  * Controller for handling POS-related API requests.
@@ -42,8 +43,8 @@ import org.springframework.web.bind.annotation.RequestParam
 class PosController(
     private val posService: PosService,
     private val posDtoMapper: PosDtoMapper
-) : CrudController<Pos, PosDto, Long>() {
-    override fun service(): CrudService<Pos, Long> = posService
+) : CrudController<Pos, PosDto, UUID>() {
+    override fun service(): CrudService<Pos, UUID> = posService
 
     override fun mapper(): DtoMapper<Pos, PosDto> = posDtoMapper
 
@@ -57,7 +58,7 @@ class PosController(
     @GetMapping("/{id}")
     override fun getById(
         @Parameter(description = "Unique identifier of the POS to retrieve.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<PosDto> = super.getById(id)
 
     @Operation
@@ -74,7 +75,7 @@ class PosController(
     @PutMapping("/{id}")
     override fun update(
         @Parameter(description = "Unique identifier of the POS to update.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: UUID,
         @Parameter(description = "Data of the POS to update.", required = true)
         @RequestBody
         @Valid dto: PosDto
@@ -85,7 +86,7 @@ class PosController(
     @DeleteMapping("/{id}")
     override fun delete(
         @Parameter(description = "Unique identifier of the POS to delete.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<Void> = super.delete(id)
 
     @Operation

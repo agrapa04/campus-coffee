@@ -6,8 +6,10 @@ import de.seuhd.campuscoffee.data.persistence.entities.UserEntity
 import de.seuhd.campuscoffee.data.persistence.repositories.UserRepository
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.User
+import de.seuhd.campuscoffee.domain.ports.IdGenerator
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 /**
  * Data-layer adapter implementing the user data service port. Responsible for persistence;
@@ -16,8 +18,9 @@ import org.springframework.stereotype.Service
 @Service
 class UserDataServiceImpl(
     repository: UserRepository,
-    entityMapper: UserEntityMapper
-) : CrudDataServiceImpl<User, UserEntity, UserRepository, Long>(
+    entityMapper: UserEntityMapper,
+    idGenerator: IdGenerator
+) : CrudDataServiceImpl<User, UserEntity, UserRepository, UUID>(
         repository,
         entityMapper,
         User::class.java,
@@ -29,7 +32,8 @@ class UserDataServiceImpl(
                 UserEntity.EMAIL_ADDRESS_COLUMN,
                 UserEntity.EMAIL_ADDRESS_UNIQUE_CONSTRAINT
             )
-        )
+        ),
+        idGenerator
     ),
     UserDataService {
     /**

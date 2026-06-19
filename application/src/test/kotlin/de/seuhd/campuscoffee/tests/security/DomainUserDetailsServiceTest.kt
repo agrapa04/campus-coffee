@@ -13,6 +13,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
 import org.springframework.security.core.userdetails.UsernameNotFoundException
+import java.util.UUID
 
 /**
  * Unit tests for [DomainUserDetailsService], which adapts a domain [User] to a Spring Security
@@ -30,7 +31,7 @@ class DomainUserDetailsServiceTest {
         roles: Set<Role>,
         passwordHash: String?
     ) = User(
-        id = 1L,
+        id = UUID(0L, 1L),
         loginName = "jane_doe",
         emailAddress = "jane.doe@uni-heidelberg.de",
         firstName = "Jane",

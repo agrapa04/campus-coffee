@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import java.util.UUID
 
 /**
  * System tests for the operations related to reviews, including the approval workflow.
@@ -300,7 +301,7 @@ class ReviewSystemTests : AbstractSystemTest() {
 
         // the existence check runs before the author/role check, so a missing review is 404 (not a 403)
         // even for a plain non-author user
-        val ghost = existing.copy(id = 9999L)
+        val ghost = existing.copy(id = MISSING_ID)
         val statusCode = reviewRequests.updateAndReturnStatusCodes(listOf(ghost), USER).first()
 
         assertThat(statusCode).isEqualTo(HttpStatus.NOT_FOUND.value())
@@ -416,7 +417,7 @@ class ReviewSystemTests : AbstractSystemTest() {
     fun `approving a missing review returns 404 Not Found`() {
         val (_, approverCredentials) = createUser("approver", "approver@uni-heidelberg.de")
 
-        val statusCode = reviewRequests.approveAndReturnStatusCode(9999L, approverCredentials)
+        val statusCode = reviewRequests.approveAndReturnStatusCode(MISSING_ID, approverCredentials)
 
         assertThat(statusCode).isEqualTo(HttpStatus.NOT_FOUND.value())
     }
@@ -477,4 +478,9 @@ class ReviewSystemTests : AbstractSystemTest() {
         pos: Pos,
         text: String
     ): ReviewDto = ReviewDto(posId = pos.id, review = text)
+
+    private companion object {
+        // an id no review carries (well beyond the deterministic test generator's range)
+        val MISSING_ID: UUID = UUID(0L, 1_000_000L)
+    }
 }

@@ -4,6 +4,7 @@ import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
+import java.util.UUID
 
 /**
  * Service interface for user operations.
@@ -14,7 +15,7 @@ import de.seuhd.campuscoffee.domain.ports.data.UserDataService
  *
  * Extends [CrudService] to inherit common CRUD operations and adds user-specific operations.
  */
-interface UserService : CrudService<User, Long> {
+interface UserService : CrudService<User, UUID> {
     /**
      * Retrieves a specific user by their unique login name. This overload resolves the authenticated
      * principal itself (turning a login name into a [User]) and is therefore not subject to the
@@ -35,7 +36,7 @@ interface UserService : CrudService<User, Long> {
      * @throws ForbiddenException if [actingUser] is neither the target user nor an admin
      */
     fun getById(
-        id: Long,
+        id: UUID,
         actingUser: User
     ): User
 

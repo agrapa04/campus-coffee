@@ -12,7 +12,7 @@ ALTER TABLE users ADD COLUMN password_hash text;
 -- CHECK keeps the stored strings in step with the enum. Roles are an independent set of capabilities
 -- (USER is the base; MODERATOR and ADMIN are orthogonal grants), with no implied rank.
 CREATE TABLE user_roles (
-    user_id bigint NOT NULL,
+    user_id uuid NOT NULL,
     role varchar(20) NOT NULL CHECK (role IN ('USER', 'MODERATOR', 'ADMIN')),
     PRIMARY KEY (user_id, role),
     -- named so deleting a user cascades to their roles
@@ -22,13 +22,12 @@ CREATE TABLE user_roles (
 -- Records who approved a review (its own surrogate id mirrors the other tables). The named unique
 -- constraint on (review_id, user_id) is the authoritative "one approval per user per review" guard; the
 -- application maps a violation to a 409.
-CREATE SEQUENCE review_approvals_seq START WITH 1 INCREMENT BY 1;
 CREATE TABLE review_approvals (
-    id bigint NOT NULL PRIMARY KEY,
+    id uuid NOT NULL PRIMARY KEY,
     created_at timestamp NOT NULL,
     updated_at timestamp NOT NULL,
-    review_id bigint NOT NULL,
-    user_id bigint NOT NULL,
+    review_id uuid NOT NULL,
+    user_id uuid NOT NULL,
     CONSTRAINT uq_review_approvals_review_user UNIQUE (review_id, user_id),
     CONSTRAINT fk_review_approvals_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
     CONSTRAINT fk_review_approvals_user FOREIGN KEY (user_id) REFERENCES users(id)

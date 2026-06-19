@@ -11,6 +11,7 @@ import de.seuhd.campuscoffee.domain.ports.data.UserDataService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
 
 /**
  * Implementation of the User service that handles business logic related to user entities.
@@ -19,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional
 class UserServiceImpl(
     private val userDataService: UserDataService,
     private val passwordHasher: PasswordHasher
-) : CrudServiceImpl<User, Long>(User::class.java),
+) : CrudServiceImpl<User, UUID>(User::class.java),
     UserService {
-    override fun dataService(): CrudDataService<User, Long> = userDataService
+    override fun dataService(): CrudDataService<User, UUID> = userDataService
 
     /**
      * Normalizes the password before delegating to the generic upsert. A freshly supplied raw password is
@@ -90,7 +91,7 @@ class UserServiceImpl(
     }
 
     override fun getById(
-        id: Long,
+        id: UUID,
         actingUser: User
     ): User = userDataService.getById(id).also { requireMayView(it, actingUser) }
 

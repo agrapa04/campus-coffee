@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Inclusive bounds on the review text length, used by the `@Size` constraint below. They are part of
@@ -23,13 +24,13 @@ private const val MAX_REVIEW_LENGTH = 5000
  * 400, exactly as a client-supplied [id] is, so a client cannot post a review as someone else.
  */
 data class ReviewDto(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
     @field:NotNull(message = "POS ID cannot be null.")
-    val posId: Long?,
+    val posId: UUID?,
     @field:Schema(accessMode = Schema.AccessMode.READ_ONLY)
-    val authorId: Long? = null,
+    val authorId: UUID? = null,
     @field:NotBlank(message = "Review text cannot be empty.")
     @field:Size(
         min = MIN_REVIEW_LENGTH,
@@ -39,4 +40,4 @@ data class ReviewDto(
     val review: String?,
     // missing when creating a new review
     val approved: Boolean? = null
-) : Dto<Long>
+) : Dto<UUID>

@@ -44,7 +44,7 @@ The codebase uses extensive generics to reduce duplication:
 - **CrudDataService** / **CrudDataServiceImpl**: Generic data service interface and implementation.
 - **DtoMapper** / **EntityMapper**: Generic mapping interfaces using MapStruct.
 
-Domain-specific controllers/services extend these base classes (e.g., `PosController extends CrudController<Pos, PosDto, Long>`; the domain type comes first).
+Domain-specific controllers/services extend these base classes (e.g., `PosController extends CrudController<Pos, PosDto, UUID>`; the domain type comes first).
 
 ## Build and Run Commands
 
@@ -98,11 +98,15 @@ gradle :application:bootRun --args='--spring.profiles.active=dev'
 The `dev` profile:
 - Enables Swagger UI at `http://localhost:8080/api/swagger-ui.html`.
 - Enables API docs at `http://localhost:8080/api/api-docs`.
+- Loads the fixture dataset on startup (`campus-coffee.fixtures.load-on-startup: true`, when the database
+  has no users yet), so the app comes up with the seeded ids ready.
 - Registers the dev-only `DevController` (in the `api` layer) under `/api/dev`:
   `GET /api/dev/data` reports the counts, `PUT /api/dev/data` replaces the data with the fixture
-  dataset (clear + seed; idempotent), and `DELETE /api/dev/data` clears it.
+  dataset (clear + seed; idempotent, reassigning the same seeded ids), and `DELETE /api/dev/data` clears it.
 
-The application no longer loads any data on startup (in any profile); use the `dev` endpoints above.
+The fixture load on startup happens in the `dev` and `prod` profiles (both set
+`campus-coffee.fixtures.load-on-startup`); the database persists across application restarts, and the
+loader skips when users already exist.
 
 ### Run Tests
 
@@ -251,9 +255,23 @@ header cannot switch responses to XML (the OSM client parses XML with its own `X
 
 MapStruct runs as a Kotlin annotation processor via kapt, applied through the `de.seuhd.campuscoffee.kotlin-kapt-conventions` convention plugin (`build-logic/`); the `api` and `data` modules declare `kapt(mapstruct-processor)`. The generated `*MapperImpl` classes are excluded from the coverage and mutation gates.
 
-### Custom Sequence Generation
+### Identifier Generation
 
-JPA entities use custom sequence generators defined in `data/src/main/kotlin/de/seuhd/campuscoffee/data/persistence/generators/` to allow resetting sequences when running in the `dev` profile.
+Entity ids are application-assigned `UUID`s. The domain defines an `IdGenerator` port
+(`domain/.../ports/IdGenerator.kt`); the data-layer `IdGeneratorConfiguration` selects the adapter from the
+`campus-coffee.id.seed` property. A numeric seed (the default) yields a `SeededUuidGenerator` whose
+deterministic sequence makes the loaded fixture ids reproducible across runs, so the README and instructor
+examples can reference them. The fixtures load on startup in the dev and prod profiles (both set
+`campus-coffee.fixtures.load-on-startup`), and the dev `PUT /api/dev/data` reloads them on demand. The dev
+reload resets the generator first, so repeated loads reassign the same ids. The tests use the same seeded
+generator.
+Setting the seed to `random` (e.g., `CAMPUS_COFFEE_ID_SEED=random`) yields
+`UUID.randomUUID()` for a deployment that wants random ids. The id is assigned in the data-layer insert
+path (`CrudDataServiceImpl`, `ReviewApprovalDataServiceImpl`), so a null `domain.id` still means "create" and
+a non-null id means "update". The base `Entity` (`@MappedSuperclass`) implements Spring Data's
+`Persistable<UUID>` with an explicit transient new-entity flag (flipped in `@PostLoad`/`@PostPersist`), so
+`repository.save()` issues an INSERT for a freshly built entity with no preceding SELECT. There are no
+database sequences.
 
 ### OpenAPI Customization
 
@@ -271,6 +289,9 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
   - `osm.api.connect-timeout` / `osm.api.read-timeout`: HTTP timeouts of the OSM client (defaults: 5s/10s).
   - `campus-coffee.approval.min-count`: Minimum number of approvals needed for reviews to be approved.
     Required and must be >= 1; binding fails at startup otherwise.
+  - `campus-coffee.id.seed`: Seed for the application-assigned entity UUIDs. A number (the default) makes
+    the assigned ids deterministic and reproducible (so the loaded fixture data has stable ids); `random`
+    (e.g., `CAMPUS_COFFEE_ID_SEED=random`) uses random UUIDs instead.
 
 ## REST API Endpoints
 

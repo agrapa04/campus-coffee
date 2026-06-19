@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import java.util.UUID
 
 /**
  * Integration tests for the review approval data service against a real PostgreSQL container: recording
@@ -31,7 +32,7 @@ class ReviewApprovalDataServiceIntegrationTest : AbstractDataIntegrationTest() {
     @Autowired
     private lateinit var reviewApprovalDataService: ReviewApprovalDataService
 
-    private fun seedReview(): Pair<Long, Long> {
+    private fun seedReview(): Pair<UUID, UUID> {
         val pos = posDataService.upsert(TestFixtures.getPosFixturesForInsertion().first())
         val author = userDataService.upsert(TestFixtures.getUserFixturesForInsertion()[0])
         val approver = userDataService.upsert(TestFixtures.getUserFixturesForInsertion()[1])

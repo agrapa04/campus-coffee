@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * DTO for POS metadata. Properties are nullable, so a request body that omits a field deserializes and
@@ -14,7 +15,7 @@ import java.time.LocalDateTime
  * [de.seuhd.campuscoffee.domain.model.objects.Pos].
  */
 data class PosDto(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
     @field:NotBlank(message = "Name cannot be empty.")
@@ -37,4 +38,4 @@ data class PosDto(
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "City must be between 1 and 255 characters long.")
     val city: String?
-) : Dto<Long>
+) : Dto<UUID>

@@ -4,6 +4,7 @@ import de.seuhd.campuscoffee.domain.exceptions.ValidationException
 import de.seuhd.campuscoffee.domain.model.enums.CampusType
 import de.seuhd.campuscoffee.domain.model.enums.PosType
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Immutable POS (Point of Sale) domain model. The house number and postal code are validated here to
@@ -11,7 +12,7 @@ import java.time.LocalDateTime
  * the DTOs.
  */
 data class Pos(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
     val name: String,
@@ -22,7 +23,7 @@ data class Pos(
     val houseNumber: String,
     val postalCode: String,
     val city: String
-) : DomainModel<Long> {
+) : DomainModel<UUID> {
     init {
         if (!HOUSE_NUMBER_PATTERN.matches(houseNumber)) {
             throw ValidationException("Invalid house number '$houseNumber'.")

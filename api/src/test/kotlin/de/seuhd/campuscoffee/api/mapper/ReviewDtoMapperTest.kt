@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mapstruct.factory.Mappers
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.UUID
 
 /**
  * Tests [ReviewDtoMapper]. `toDomain` must resolve the POS by id, take the author from the authenticated
@@ -62,6 +63,6 @@ class ReviewDtoMapperTest {
     fun `the single-argument toDomain is unsupported because the author is the authenticated user`() {
         // the DtoMapper contract's single-arg toDomain cannot build a review (the author is the
         // authenticated user, not a DTO field), so it throws; the controller uses the two-arg overload
-        assertThrows<UnsupportedOperationException> { mapper.toDomain(ReviewDto(posId = 1L, review = "x")) }
+        assertThrows<UnsupportedOperationException> { mapper.toDomain(ReviewDto(posId = UUID(0L, 1L), review = "x")) }
     }
 }

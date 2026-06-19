@@ -25,21 +25,22 @@ class OptimisticLockingIntegrationTest : AbstractDataIntegrationTest() {
     fun `saving a review with a stale version throws ObjectOptimisticLockingFailureException`() {
         val savedAuthor =
             userRepository.saveAndFlush(
-                userEntityMapper.toEntity(TestFixtures.getUserFixturesForInsertion().first())
+                userEntityMapper.toEntity(TestFixtures.getUserFixturesForInsertion().first()).withGeneratedId()
             )
         val savedPos =
             posRepository.saveAndFlush(
-                posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first())
+                posEntityMapper.toEntity(TestFixtures.getPosFixturesForInsertion().first()).withGeneratedId()
             )
 
         val reviewEntity =
-            ReviewEntity().apply {
-                pos = savedPos
-                author = savedAuthor
-                review = "Great place!"
-                approvalCount = 0
-                approved = false
-            }
+            ReviewEntity()
+                .apply {
+                    pos = savedPos
+                    author = savedAuthor
+                    review = "Great place!"
+                    approvalCount = 0
+                    approved = false
+                }.withGeneratedId()
         val id = reviewRepository.saveAndFlush(reviewEntity).id!!
 
         // each lookup returns a detached entity, so these are two independent snapshots at the initial version

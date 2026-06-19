@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import java.util.UUID
 
 @Tag(name = "Users", description = "Operations related to user management.")
 @Controller
@@ -41,8 +42,8 @@ class UserController(
     private val userService: UserService,
     private val userDtoMapper: UserDtoMapper,
     private val currentUserProvider: CurrentUserProvider
-) : CrudController<User, UserDto, Long>() {
-    override fun service(): CrudService<User, Long> = userService
+) : CrudController<User, UserDto, UUID>() {
+    override fun service(): CrudService<User, UUID> = userService
 
     override fun mapper(): DtoMapper<User, UserDto> = userDtoMapper
 
@@ -58,7 +59,7 @@ class UserController(
     @GetMapping("/{id}")
     override fun getById(
         @Parameter(description = "Unique identifier of the user to retrieve.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<UserDto> =
         // user data is not public; the domain enforces that only the user themselves or an admin may read it
         ResponseEntity.ok(userDtoMapper.fromDomain(userService.getById(id, currentUserProvider.currentUser())))
@@ -87,7 +88,7 @@ class UserController(
     @PutMapping("/{id}")
     override fun update(
         @Parameter(description = "Unique identifier of the user to update.", required = true)
-        @PathVariable id: Long,
+        @PathVariable id: UUID,
         @Parameter(
             description =
                 "Data of the user to update. A user may edit only their own account (an admin " +
@@ -108,7 +109,7 @@ class UserController(
     @DeleteMapping("/{id}")
     override fun delete(
         @Parameter(description = "Unique identifier of the user to delete.", required = true)
-        @PathVariable id: Long
+        @PathVariable id: UUID
     ): ResponseEntity<Void> = super.delete(id)
 
     @Operation

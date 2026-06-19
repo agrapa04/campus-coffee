@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.domain.ports.data
 
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.Pos
+import java.util.UUID
 
 /**
  * Port interface for POS data operations.
@@ -10,7 +11,7 @@ import de.seuhd.campuscoffee.domain.model.objects.Pos
  * for persistence operations on Point of Sale entities. Extends the generic
  * [CrudDataService] to inherit common CRUD operations.
  */
-interface PosDataService : CrudDataService<Pos, Long> {
+interface PosDataService : CrudDataService<Pos, UUID> {
     /**
      * Retrieves a single POS entity by its unique name and returns it as a domain object.
      *

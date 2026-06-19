@@ -3,12 +3,12 @@ package de.seuhd.campuscoffee.data.implementations
 import de.seuhd.campuscoffee.data.constraints.ConstraintMapping
 import de.seuhd.campuscoffee.data.mapper.EntityMapper
 import de.seuhd.campuscoffee.data.persistence.entities.Entity
-import de.seuhd.campuscoffee.data.persistence.repositories.ResettableSequenceRepository
 import de.seuhd.campuscoffee.domain.exceptions.ConcurrentUpdateException
 import de.seuhd.campuscoffee.domain.exceptions.DeletionConflictException
 import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.DomainModel
+import de.seuhd.campuscoffee.domain.ports.IdGenerator
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService
 import org.hibernate.exception.ConstraintViolationException
 import org.springframework.dao.DataIntegrityViolationException
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * @param DOMAIN     the domain model type
  * @param ENTITY     the JPA entity type
- * @param REPOSITORY the repository type (extends both JpaRepository and ResettableSequenceRepository)
+ * @param REPOSITORY the repository type (a JpaRepository over the entity)
  * @param ID         the type of the unique identifier (e.g., Long, UUID, String)
  */
 abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, REPOSITORY, ID : Any>(
@@ -36,13 +36,14 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
      * to the domain field it guards, so a uniqueness violation is reported as a [DuplicationException]
      * on that field.
      */
-    protected val uniqueConstraints: Set<ConstraintMapping<DOMAIN>>
+    protected val uniqueConstraints: Set<ConstraintMapping<DOMAIN>>,
+    /** Generates the id for a new entity. */
+    private val idGenerator: IdGenerator
 ) : CrudDataService<DOMAIN, ID>
-    where REPOSITORY : JpaRepository<ENTITY, ID>, REPOSITORY : ResettableSequenceRepository {
+    where REPOSITORY : JpaRepository<ENTITY, ID> {
     override fun clear() {
         repository.deleteAllInBatch()
         repository.flush()
-        repository.resetSequence() // ensure consistent IDs after clearing (for local testing)
     }
 
     override fun getAll(): List<DOMAIN> = repository.findAll().map { mapper.fromEntity(it) }
@@ -60,8 +61,13 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
      */
     override fun upsert(domain: DOMAIN): DOMAIN {
         try {
-            // new entity (no id yet): insert and return
-            val id = domain.id ?: return mapper.fromEntity(repository.saveAndFlush(mapper.toEntity(domain)))
+            val id = domain.id
+            if (id == null) {
+                // new entity (no id yet): assign an id, then insert
+                val entity = mapper.toEntity(domain)
+                entity.id = idGenerator.newId()
+                return mapper.fromEntity(repository.saveAndFlush(entity))
+            }
 
             // update existing entity (timestamps are set by the @PreUpdate callback)
             val entity = repository.findByIdOrNull(id) ?: throw NotFoundException(domainClass, id)

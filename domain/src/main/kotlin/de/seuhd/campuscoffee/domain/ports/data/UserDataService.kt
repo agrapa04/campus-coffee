@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.domain.ports.data
 
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.User
+import java.util.UUID
 
 /**
  * Port interface for user data operations.
@@ -10,7 +11,7 @@ import de.seuhd.campuscoffee.domain.model.objects.User
  * for persistence operations on user entities. Extends the generic [CrudDataService]
  * to inherit common CRUD operations.
  */
-interface UserDataService : CrudDataService<User, Long> {
+interface UserDataService : CrudDataService<User, UUID> {
     /**
      * Retrieves a single user entity by its unique login name and returns it as a domain object.
      *

@@ -1,6 +1,7 @@
 package de.seuhd.campuscoffee.api.controller
 
 import de.seuhd.campuscoffee.api.dtos.DevSummaryDto
+import de.seuhd.campuscoffee.domain.ports.IdGenerator
 import de.seuhd.campuscoffee.domain.ports.api.PosService
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
@@ -27,7 +28,8 @@ class DevController(
     private val posService: PosService,
     private val userService: UserService,
     private val reviewService: ReviewService,
-    private val reviewApprovalDataService: ReviewApprovalDataService
+    private val reviewApprovalDataService: ReviewApprovalDataService,
+    private val idGenerator: IdGenerator
 ) {
     @Operation(summary = "Report the current number of users, POS, and reviews.")
     @GetMapping("/data")
@@ -39,6 +41,8 @@ class DevController(
     @Operation(summary = "Replace all data with the test fixtures (users, POS, reviews).")
     @PutMapping("/data")
     fun load(): ResponseEntity<DevSummaryDto> {
+        // restart the id sequence so a reload assigns the fixtures the same ids
+        idGenerator.reset()
         clearAll()
         val (users, pos, reviews) =
             TestFixtures.loadAll(userService, posService, reviewService, reviewApprovalDataService)

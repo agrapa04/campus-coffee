@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * DTO for user metadata. Properties are nullable, so a request body that omits a field deserializes and
@@ -20,7 +21,7 @@ import java.time.LocalDateTime
  * account is always a plain USER) and can be changed only by an admin (both enforced in the domain).
  */
 data class UserDto(
-    override val id: Long? = null,
+    override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
     @field:NotNull
@@ -44,4 +45,4 @@ data class UserDto(
     @field:JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     val password: String? = null,
     val roles: Set<Role>? = null
-) : Dto<Long>
+) : Dto<UUID>

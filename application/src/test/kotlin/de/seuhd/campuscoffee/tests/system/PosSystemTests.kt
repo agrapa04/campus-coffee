@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.returnResult
+import java.util.UUID
 
 /**
  * System tests for the operations related to POS (Point of Sale). Curating a POS requires a moderator,
@@ -138,7 +139,7 @@ class PosSystemTests : AbstractSystemTest() {
         // the first deletion returns 204 No Content, the second 404 Not Found
         assertThat(statusCodes).containsExactly(HttpStatus.NO_CONTENT.value(), HttpStatus.NOT_FOUND.value())
 
-        val remainingPosIds: List<Long?> = posRequests.retrieveAll().map { it.id }
+        val remainingPosIds: List<UUID?> = posRequests.retrieveAll().map { it.id }
         assertThat(remainingPosIds).doesNotContain(id)
     }
 

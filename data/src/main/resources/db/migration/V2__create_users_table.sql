@@ -1,9 +1,7 @@
 SET TIME ZONE 'UTC';
 
-CREATE SEQUENCE users_seq START WITH 1 INCREMENT BY 1;
-
 CREATE TABLE users (
-    id bigint NOT NULL PRIMARY KEY,
+    id uuid NOT NULL PRIMARY KEY,
     created_at timestamp NOT NULL,
     updated_at timestamp NOT NULL,
     login_name varchar(255) NOT NULL CHECK (login_name <> ''),

@@ -25,6 +25,7 @@ class DevSystemTests : AbstractSystemTest() {
                 .returnResult<DevSummaryDto>()
         assertThat(first.status.value()).isEqualTo(HttpStatus.OK.value())
         assertThat(posRequests.retrieveAll()).isNotEmpty()
+        val firstPosIds = posRequests.retrieveAll().map { it.id }
 
         // a second PUT replaces rather than appends, so it yields the same counts (no duplicate-key error)
         val second =
@@ -35,6 +36,8 @@ class DevSystemTests : AbstractSystemTest() {
                 .returnResult<DevSummaryDto>()
         assertThat(second.status.value()).isEqualTo(HttpStatus.OK.value())
         assertThat(second.responseBody).isEqualTo(first.responseBody)
+        // the reload resets the seeded id generator, so the reloaded fixtures get the same ids
+        assertThat(posRequests.retrieveAll().map { it.id }).containsExactlyInAnyOrderElementsOf(firstPosIds)
     }
 
     @Test

@@ -13,6 +13,7 @@ import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
 import de.seuhd.campuscoffee.domain.ports.data.ReviewApprovalDataService
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * Test fixtures for domain objects.
@@ -23,10 +24,16 @@ object TestFixtures {
 
     private val DATE_TIME: LocalDateTime = LocalDateTime.of(2025, 10, 29, 12, 0, 0)
 
+    // A deterministic UUID for a fixture. UUID(long mostSigBits, long leastSigBits) is the JDK
+    // constructor (the two args are the high and low 64 bits), so fixtureId(1) is
+    // 00000000-0000-0000-0000-000000000001. The *ForInsertion() helpers strip these before seeding, so
+    // they only matter to the unit tests that read them back (e.g. to tell one fixture user from another).
+    private fun fixtureId(value: Long): UUID = UUID(0L, value)
+
     private val USER_LIST =
         listOf(
             User(
-                id = 1L,
+                id = fixtureId(1),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 loginName = "jane_doe",
@@ -38,7 +45,7 @@ object TestFixtures {
                 password = "aaaMbnPdFYDqkOpS3fVA"
             ),
             User(
-                id = 2L,
+                id = fixtureId(2),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 loginName = "maxmustermann",
@@ -49,7 +56,7 @@ object TestFixtures {
                 password = "AmLtoD3r8lVdnwoLN1Nn"
             ),
             User(
-                id = 3L,
+                id = fixtureId(3),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 loginName = "student2023",
@@ -60,7 +67,7 @@ object TestFixtures {
                 password = "ZwTwB8Hn8VkNLZec7bR1"
             ),
             User(
-                id = 4L,
+                id = fixtureId(4),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 loginName = "lisa_lee",
@@ -71,7 +78,7 @@ object TestFixtures {
                 password = "lG6v9dGKZA5kfOHTFLNR"
             ),
             User(
-                id = 5L,
+                id = fixtureId(5),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 loginName = "olivia_admin",
@@ -87,7 +94,7 @@ object TestFixtures {
     private val POS_LIST =
         listOf(
             Pos(
-                id = 1L,
+                id = fixtureId(1),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 name = "Schmelzpunkt",
@@ -100,7 +107,7 @@ object TestFixtures {
                 city = "Heidelberg"
             ),
             Pos(
-                id = 2L,
+                id = fixtureId(2),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 name = "Bäcker Görtz",
@@ -113,7 +120,7 @@ object TestFixtures {
                 city = "Heidelberg"
             ),
             Pos(
-                id = 3L,
+                id = fixtureId(3),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 name = "Café Botanik",
@@ -126,7 +133,7 @@ object TestFixtures {
                 city = "Heidelberg"
             ),
             Pos(
-                id = 4L,
+                id = fixtureId(4),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 name = "New Vending Machine",
@@ -146,7 +153,7 @@ object TestFixtures {
     private val REVIEW_LIST =
         listOf(
             Review(
-                id = 1L,
+                id = fixtureId(1),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 pos = POS_LIST[0],
@@ -156,7 +163,7 @@ object TestFixtures {
                 approvalCount = 3
             ),
             Review(
-                id = 2L,
+                id = fixtureId(2),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 pos = POS_LIST[0],
@@ -166,7 +173,7 @@ object TestFixtures {
                 approvalCount = 2
             ),
             Review(
-                id = 3L,
+                id = fixtureId(3),
                 createdAt = DATE_TIME,
                 updatedAt = DATE_TIME,
                 pos = POS_LIST.last(),
@@ -247,8 +254,28 @@ object TestFixtures {
     fun createPosFixtures(posService: PosService): List<Pos> =
         getPosFixturesForInsertion().map { posService.upsert(it) }
 
-    fun createReviewFixtures(reviewService: ReviewService): List<Review> =
-        getReviewFixturesForInsertion().map { reviewService.upsert(it) }
+    /**
+     * Persists the fixture reviews, re-pointing each one at the already-persisted POS and author (matched
+     * by their natural keys: the POS name and the user login name). A review references its POS and author
+     * by id, and those ids are assigned at insertion time rather than known up front, so the fixture POS
+     * and author objects cannot be used directly.
+     */
+    fun createReviewFixtures(
+        reviewService: ReviewService,
+        createdUsers: List<User>,
+        createdPos: List<Pos>
+    ): List<Review> {
+        val posByName = createdPos.associateBy { it.name }
+        val userByLogin = createdUsers.associateBy { it.loginName }
+        return getReviewFixturesForInsertion().map { review ->
+            reviewService.upsert(
+                review.copy(
+                    pos = posByName.getValue(review.pos.name),
+                    author = userByLogin.getValue(review.author.loginName)
+                )
+            )
+        }
+    }
 
     /**
      * Records the `review_approvals` rows for the fixture reviews: for each review it records one approval
@@ -286,7 +313,7 @@ object TestFixtures {
     ): Triple<Int, Int, Int> {
         val users = createUserFixtures(userService)
         val pos = createPosFixtures(posService)
-        val reviews = createReviewFixtures(reviewService)
+        val reviews = createReviewFixtures(reviewService, users, pos)
         createReviewApprovalFixtures(reviewApprovalDataService, users, reviews)
         return Triple(users.size, pos.size, reviews.size)
     }

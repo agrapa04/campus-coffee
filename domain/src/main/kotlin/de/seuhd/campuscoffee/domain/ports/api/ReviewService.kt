@@ -4,6 +4,7 @@ import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
+import java.util.UUID
 
 /**
  * Service interface for review operations.
@@ -16,7 +17,7 @@ import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
  * The acting [User] is passed in by the api layer (resolved from the authenticated principal) so the
  * ownership and moderation rules are decided here, in the domain, without any Spring Security types.
  */
-interface ReviewService : CrudService<Review, Long> {
+interface ReviewService : CrudService<Review, UUID> {
     /**
      * Filters reviews by point of sale and approval status.
      *
@@ -25,7 +26,7 @@ interface ReviewService : CrudService<Review, Long> {
      * @return a list of reviews matching the filter criteria
      */
     fun filter(
-        posId: Long,
+        posId: UUID,
         approved: Boolean
     ): List<Review>
 
@@ -63,7 +64,7 @@ interface ReviewService : CrudService<Review, Long> {
      * @throws ForbiddenException if [actingUser] is neither the author nor a moderator
      */
     fun delete(
-        reviewId: Long,
+        reviewId: UUID,
         actingUser: User
     )
 
@@ -77,7 +78,7 @@ interface ReviewService : CrudService<Review, Long> {
      * @return the persisted review with the recomputed approval count and updated approval status
      */
     fun approve(
-        reviewId: Long,
+        reviewId: UUID,
         actingUser: User
     ): Review
 }

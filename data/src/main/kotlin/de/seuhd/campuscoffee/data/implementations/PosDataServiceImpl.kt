@@ -6,8 +6,10 @@ import de.seuhd.campuscoffee.data.persistence.entities.PosEntity
 import de.seuhd.campuscoffee.data.persistence.repositories.PosRepository
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.Pos
+import de.seuhd.campuscoffee.domain.ports.IdGenerator
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 /**
  * Data-layer adapter implementing the POS data service port. Responsible for persistence;
@@ -16,13 +18,15 @@ import org.springframework.stereotype.Service
 @Service
 class PosDataServiceImpl(
     repository: PosRepository,
-    entityMapper: PosEntityMapper
-) : CrudDataServiceImpl<Pos, PosEntity, PosRepository, Long>(
+    entityMapper: PosEntityMapper,
+    idGenerator: IdGenerator
+) : CrudDataServiceImpl<Pos, PosEntity, PosRepository, UUID>(
         repository,
         entityMapper,
         Pos::class.java,
         // unique constraint on the POS name, reported as a DuplicationException on that field
-        setOf(ConstraintMapping({ it.name }, PosEntity.NAME_COLUMN, PosEntity.NAME_UNIQUE_CONSTRAINT))
+        setOf(ConstraintMapping({ it.name }, PosEntity.NAME_COLUMN, PosEntity.NAME_UNIQUE_CONSTRAINT)),
+        idGenerator
     ),
     PosDataService {
     /**

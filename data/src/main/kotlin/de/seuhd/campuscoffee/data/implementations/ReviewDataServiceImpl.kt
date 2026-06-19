@@ -9,8 +9,10 @@ import de.seuhd.campuscoffee.data.persistence.repositories.ReviewRepository
 import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.model.objects.User
+import de.seuhd.campuscoffee.domain.ports.IdGenerator
 import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 /**
  * Data-layer adapter implementing the review data service port. The (pos, author) pair is unique: the
@@ -22,8 +24,9 @@ class ReviewDataServiceImpl(
     repository: ReviewRepository,
     entityMapper: ReviewEntityMapper,
     private val posEntityMapper: PosEntityMapper,
-    private val userEntityMapper: UserEntityMapper
-) : CrudDataServiceImpl<Review, ReviewEntity, ReviewRepository, Long>(
+    private val userEntityMapper: UserEntityMapper,
+    idGenerator: IdGenerator
+) : CrudDataServiceImpl<Review, ReviewEntity, ReviewRepository, UUID>(
         repository,
         entityMapper,
         Review::class.java,
@@ -33,7 +36,8 @@ class ReviewDataServiceImpl(
                 "pos_id/author_id",
                 ReviewEntity.POS_AUTHOR_UNIQUE_CONSTRAINT
             )
-        )
+        ),
+        idGenerator
     ),
     ReviewDataService {
     override fun filter(

@@ -1,15 +1,11 @@
 package de.seuhd.campuscoffee.data.configuration
 
-import de.seuhd.campuscoffee.data.persistence.repositories.ResettableSequenceRepositoryImpl
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 
 /**
- * Configures all repositories to use the custom base class that provides automatic sequence reset.
+ * Enables the Spring Data JPA repositories in the data layer.
  */
 @Configuration
-@EnableJpaRepositories(
-    basePackages = ["de.seuhd.campuscoffee.data.persistence.repositories"],
-    repositoryBaseClass = ResettableSequenceRepositoryImpl::class
-)
+@EnableJpaRepositories(basePackages = ["de.seuhd.campuscoffee.data.persistence.repositories"])
 class RepositoryConfiguration
