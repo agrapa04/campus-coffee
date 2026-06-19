@@ -4,8 +4,8 @@ name: campus-coffee-prod
 # endpoints are off, and the JWT secret comes from the environment (no insecure fallback). The prod
 # profile loads the fixture data on startup, so the demo has content without the /api/dev endpoints.
 #
-# Local: export JWT_SECRET=$(openssl rand -base64 32) && DB_HOST=db docker compose -f compose.prod.yaml up
-# Cloud Run: see INSTRUCTOR.md, step 7.
+# Local: cp deploy.env.example deploy.env (fill in JWT_SECRET) && DB_HOST=db docker compose -f compose.prod.yaml up
+# Cloud Run: see INSTRUCTOR.md, step 7 (a single `gcloud beta run compose up compose.prod.yaml`).
 #
 # DB_HOST defaults to localhost for Cloud Run: `gcloud run compose up` deploys the app and db as sidecar
 # containers in one service that share a network namespace and talk over localhost (no service-name DNS,
@@ -24,13 +24,16 @@ services:
       db:
         condition: service_healthy
     restart: on-failure
+    # JWT_SECRET (and the persistence mode) come from deploy.env (gitignored; copy deploy.env.example).
+    # `gcloud run compose up` and local `docker compose` both load env_file and set these on the container,
+    # so a single deploy command brings the service up healthy — no follow-up to set the secret.
+    env_file:
+      - deploy.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST:-localhost}:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      # the prod profile has no fallback, so the deployer must supply JWT_SECRET
-      - JWT_SECRET=${JWT_SECRET}
 
   db:
     image: 'postgres:17-alpine'

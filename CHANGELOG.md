@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 - Load the fixture data and run the event-sourcing import/rebuild startup migrations before the embedded web server accepts requests, so a cold start no longer serves the API before its data is loaded. The fixture loader and the two migration runners implement a `StartupTask` port that a new `StartupDataInitializer` runs in order during context refresh, instead of each triggering itself on `ApplicationReadyEvent` (after the server already accepted).
-- Document deploying the event-sourcing persistence mode to Google Cloud Run, and correct the relational `gcloud run services update` command to target the app container with `--container campus-coffee-app-prod` (the deployed service also runs a PostgreSQL sidecar).
+- Deploy to Google Cloud Run (including the event-sourcing mode) in a single command. Because `gcloud run compose up` has no env-var flag and does not read the shell environment, `compose.prod.yaml` reads `JWT_SECRET` and `CAMPUS_COFFEE_PERSISTENCE_MODE` from a gitignored `deploy.env` via `env_file`; `scripts/deploy-cloudrun.sh` generates that file with a random secret and runs `gcloud beta run compose up --allow-unauthenticated`, so the service comes up healthy and public in one step (no follow-up `services update`).
 
 ## [0.3.0] - 2026-06-19
 

@@ -88,3 +88,7 @@ campus-coffee-service.yaml
 # AI slop   #
 #############
 ai-slop-report.md
+
+# Cloud Run deploy secrets (local, never committed)
+deploy.env
+.env

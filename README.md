@@ -379,54 +379,35 @@ gcloud config set project <your-project-id>
 gcloud config set run/region <region>   # e.g. europe-west3; otherwise compose up prompts for one
 ```
 
-Build and deploy from source. This creates **one** Cloud Run service (named after the Compose project,
+Deploy from source with **one command**. [`scripts/deploy-cloudrun.sh`](scripts/deploy-cloudrun.sh)
+generates a gitignored `deploy.env` with a random JWT secret and runs `gcloud beta run compose up`, which
+builds the image and creates **one** Cloud Run service (named after the Compose project,
 `campus-coffee-prod`) that runs the app and PostgreSQL as **sidecar containers** sharing one network
-namespace — which is why `compose.prod.yaml` reaches the database at `localhost` (`DB_HOST` defaults to
-`localhost`; Docker Compose uses the service name `db` instead — see the file's comments):
+namespace (which is why `compose.prod.yaml` reaches the database at `localhost`):
 
 ```shell
-gcloud beta run compose up compose.prod.yaml
+scripts/deploy-cloudrun.sh                  # event-sourcing mode
+scripts/deploy-cloudrun.sh relational       # relational mode
 ```
 
-`compose up` builds the image and (re)creates the service from the Compose file. It **never** interpolates
-`${JWT_SECRET}` from your shell, and the prod profile has no fallback secret, so the revision it creates
-cannot start and the command **always reports `Deployment failed`** — on the first deploy *and on every
-redeploy*, because each `compose up` rewrites the service from the secret-less Compose file. **This is
-expected, not a real error.** Treat `compose up` and the `services update` below as **one two-step recipe,
-always run together**: the `services update` immediately rolls out a healthy revision and is where the
-secret (and the persistence mode) live, so it must be re-applied after every `compose up`. The
-`add-iam-policy-binding` grants public invocation, so the **app's own** authentication — not Cloud Run's IAM
-layer — gates requests; it is a one-time, service-level grant that survives redeploys. The service has two
-containers (the app and the PostgreSQL sidecar), so the env-var update targets the app container by name
-with `--container`:
+`compose up` has no flag to set environment variables, so the JWT secret (and the persistence mode) reach
+the prod profile — which has no fallback secret — through the Compose file's `env_file: deploy.env`. The
+script writes `deploy.env`, and `--allow-unauthenticated` grants public invocation in the same command, so
+the **app's own** authentication (not Cloud Run's IAM layer) gates write requests. The service comes up
+healthy in one step, and a redeploy is the same single command — the secret in `deploy.env` is reused, so
+JWTs issued earlier keep working.
+
+To deploy by hand instead of via the script, create `deploy.env` from the template and run the same
+`compose up`:
 
 ```shell
-gcloud run services update campus-coffee-prod --container campus-coffee-app-prod \
-  --update-env-vars JWT_SECRET=$(openssl rand -hex 32)
-gcloud run services add-iam-policy-binding campus-coffee-prod \
-  --member=allUsers --role=roles/run.invoker
+cp deploy.env.example deploy.env      # then set JWT_SECRET, e.g. to the output of `openssl rand -hex 32`
+gcloud beta run compose up compose.prod.yaml --allow-unauthenticated
 ```
 
-The deploy above runs the default **relational** persistence mode. To deploy the **event-sourcing** mode
-instead (the append-only event log becomes the source of truth and the tables a read model projected from
-it), add `CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing` to that same `services update` step
-(`compose.prod.yaml` does not forward the variable):
-
-```shell
-gcloud run services update campus-coffee-prod --container campus-coffee-app-prod \
-  --update-env-vars JWT_SECRET=$(openssl rand -hex 32),CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing
-gcloud run services add-iam-policy-binding campus-coffee-prod \
-  --member=allUsers --role=roles/run.invoker
-```
-
-The API behaves identically; the prod fixture load on startup now writes through the event log, so the
-`events` table is populated and the relational tables are projected from it. Every call below works the
-same way.
-
-**Redeploying after a code change** repeats the same two steps: `gcloud beta run compose up
-compose.prod.yaml` (which rebuilds the image and again reports `Deployment failed`), then the same
-`services update` to restore `JWT_SECRET` (and `CAMPUS_COFFEE_PERSISTENCE_MODE` for event-sourcing). The
-public-invocation binding persists across redeploys, so you do not re-grant it.
+The two modes differ only in `CAMPUS_COFFEE_PERSISTENCE_MODE` in `deploy.env` (the script sets it from its
+argument). In event-sourcing mode the prod fixture load writes through the event log, so the `events` table
+is populated and the relational tables are projected from it; the API behaves identically.
 
 Read the service URL (with `/api` appended for the API base path) and exercise it:
 
