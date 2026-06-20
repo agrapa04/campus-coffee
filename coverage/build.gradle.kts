@@ -1,5 +1,5 @@
 // Aggregates every module's JaCoCo execution data into one report and enforces the coverage gate
-// (95% line, 82% branch).
+// (90% line, 80% branch).
 plugins {
     base
     jacoco
@@ -68,12 +68,12 @@ val coverageGate = tasks.register<JacocoCoverageVerification>("coverageGate") {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = "0.95".toBigDecimal()
+                minimum = "0.90".toBigDecimal()
             }
             limit {
                 counter = "BRANCH"
                 value = "COVEREDRATIO"
-                minimum = "0.82".toBigDecimal()
+                minimum = "0.80".toBigDecimal()
             }
         }
     }

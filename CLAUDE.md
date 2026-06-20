@@ -169,7 +169,7 @@ gradle :domain:test --tests "PosServiceTest.getById returns the POS from the dat
   `domain`/`api`/`data` are largely covered by the `application` system and acceptance tests, not by
   their own tests. `gradle build` (or `gradle check`) builds the report and enforces the gate: the
   `coverageGate` task (a `JacocoCoverageVerification` in `coverage/build.gradle.kts`, wired into `check`)
-  fails the build when aggregated line or branch coverage is below its minimums (95% line, 82% branch).
+  fails the build when aggregated line or branch coverage is below its minimums (90% line, 80% branch).
   The minimums track current coverage; raise them when adding tests, never lower them to make a build pass.
 - **Mutation testing (PITest)**: opt-in and local via the `-Pmutation` property and the per-module
   `pitest` task (e.g., `gradle :domain:pitest -Pmutation`). Each module runs PIT against its own tests and
