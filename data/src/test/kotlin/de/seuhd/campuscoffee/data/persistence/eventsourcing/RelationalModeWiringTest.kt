@@ -14,9 +14,10 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
- * Verifies that in the default (relational) mode the data-service ports resolve to the plain relational
- * implementations. The event-sourced decorators are `@ConditionalOnProperty` on the event sourcing mode, so
- * in this default-mode context they are not created and the relational implementations are injected.
+ * Verifies that in relational mode the data-service ports resolve to the plain relational implementations.
+ * The event-sourced decorators are `@ConditionalOnProperty` on the event sourcing mode, so in a
+ * relational-mode context they are not created and the relational implementations are injected. The mode is
+ * pinned by [AbstractDataIntegrationTest], since the application default is event sourcing.
  */
 class RelationalModeWiringTest : AbstractDataIntegrationTest() {
     @Autowired
@@ -32,7 +33,7 @@ class RelationalModeWiringTest : AbstractDataIntegrationTest() {
     private lateinit var reviewApprovalDataService: ReviewApprovalDataService
 
     @Test
-    fun `default mode wires the relational data adapters`() {
+    fun `relational mode wires the relational data adapters`() {
         assertThat(posDataService).isInstanceOf(PosDataServiceImpl::class.java)
         assertThat(userDataService).isInstanceOf(UserDataServiceImpl::class.java)
         assertThat(reviewDataService).isInstanceOf(ReviewDataServiceImpl::class.java)

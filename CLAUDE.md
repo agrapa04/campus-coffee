@@ -39,8 +39,8 @@ Service **implementations**:
 
 The data ports have **two adapters**, selected by `campus-coffee.persistence.mode`:
 
-- **`relational`** (default): the plain `@Service` implementations write straight to the tables.
-- **`event-sourcing`**: event-sourced **Decorators** (the design pattern) in
+- **`relational`**: the plain `@Service` implementations write straight to the tables.
+- **`event-sourcing`** (default): event-sourced **Decorators** (the design pattern) in
   `data/src/main/kotlin/de/seuhd/campuscoffee/data/persistence/eventsourcing/` wrap the relational impls
   (`: PosDataService by delegate`, so the read and query methods auto-delegate). Both the decorator and the
   relational impl are adapters for the same domain port. They are
@@ -78,6 +78,10 @@ Domain-specific controllers/services extend these base classes (e.g., `PosContro
   step in `build.yml`) fails the build if they drift. To bump the JDK, change the catalog entry and
   the two hand-written pins together. The Docker **build** stage no longer pins a JDK/Gradle version:
   it installs mise and provisions both from `mise.toml`, mirroring CI.
+- The project version has a **single source of truth**: the `version` property in the root
+  `gradle.properties` (Gradle sets it on `project.version` for every module). The latest `## [x.y.z]` header
+  in `CHANGELOG.md` must match it; `scripts/check-version-sync.sh` (a CI step in `build.yml`) fails the
+  build if they drift. When cutting a release, bump that property and add the `CHANGELOG.md` entry together.
 
 ### Build
 
@@ -135,20 +139,22 @@ The fixture load on startup happens in the `dev` and `prod` profiles (both set
 `campus-coffee.fixtures.load-on-startup`); the database persists across application restarts, and the
 loader skips when users already exist.
 
-### Run in event sourcing mode
+### Run in relational mode (event sourcing is the default)
 
-The default persistence mode is relational. To run with the event-first event sourcing adapters instead
-(the event log becomes the source of truth and the tables a read model projected from it):
+Event sourcing is the default persistence mode, so a normal `dev` run already uses the event-first
+adapters (the event log is the source of truth and the tables a read model projected from it). Every write
+is recorded in the `events` table (`SELECT change_type, entity_type FROM events ORDER BY seq`). To migrate
+an existing relational database into the log, restart once with
+`--campus-coffee.persistence.data-to-events-on-startup=true` (appends one INSERT event per row), then
+rebuild the tables from the log with `--campus-coffee.persistence.events-to-data-on-startup=true`.
+
+To run with the plain relational adapters instead (write straight to the tables, no event log):
 
 ```shell
-gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=event-sourcing'
+gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=relational'
 ```
 
-Behavior is identical. Every write is now recorded in the `events` table
-(`SELECT change_type, entity_type FROM events ORDER BY seq`). To migrate an existing relational database
-into the log, restart once with `--campus-coffee.persistence.data-to-events-on-startup=true` (appends one
-INSERT event per row), then rebuild the tables from the log with
-`--campus-coffee.persistence.events-to-data-on-startup=true`.
+Behavior is identical.
 
 ### Run Tests
 
@@ -248,12 +254,16 @@ replay order, since the UUID id is not monotonic), `change_type`, `entity_type`,
 - **Architecture Tests**: In `application/src/test/kotlin/de/seuhd/campuscoffee/tests/architecture/`
   - ArchUnit tests enforce hexagonal architecture rules
 - **Both persistence modes** run in one `gradle build`, so the aggregate coverage gate sees both. System
-  tests are persistence-agnostic, so the same suites run on both backends: the thin subclasses in
-  `EventSourcingSystemTests.kt` (e.g. `EventSourcingPosSystemTests : PosSystemTests()`) re-run the existing
-  suites unchanged with `campus-coffee.persistence.mode=event-sourcing`, which forks a separate Spring
-  context. The event-sourcing-specific behavior (event writing, rollback, replay, import/rebuild runners,
-  per-mode bean selection) is covered by the data-layer integration and wiring tests under
-  `data/.../persistence/eventsourcing/`, which extend `AbstractEventSourcingDataIntegrationTest`.
+  tests are persistence-agnostic, so the same suites run on both backends. The application default is event
+  sourcing, but the test bases (`AbstractSystemTest`, `AbstractDataIntegrationTest`, and
+  `CucumberSpringConfiguration`) pin `campus-coffee.persistence.mode=relational` so they exercise the
+  relational backend regardless of the runtime default; the thin subclasses in `EventSourcingSystemTests.kt`
+  (e.g. `EventSourcingPosSystemTests : PosSystemTests()`) override that with
+  `campus-coffee.persistence.mode=event-sourcing`, which forks a separate Spring context (an inline
+  `@TestPropertySource` on a subclass overrides the base's for the same key). The event-sourcing-specific
+  behavior (event writing, rollback, replay, import/rebuild runners, per-mode bean selection) is covered by
+  the data-layer integration and wiring tests under `data/.../persistence/eventsourcing/`, which extend
+  `AbstractEventSourcingDataIntegrationTest`.
 
 ### Test Naming
 
@@ -370,7 +380,7 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
     (e.g., `CAMPUS_COFFEE_ID_ENTITY_SEED=random`) uses random UUIDs instead. A separate generator with its own
     seed (`campus-coffee.id.event-seed`, default `100`) assigns the event log's ids, so enabling event
     sourcing leaves the entity ids unchanged.
-  - `campus-coffee.persistence.mode`: `relational` (the default) or `event-sourcing`. Selects the data
+  - `campus-coffee.persistence.mode`: `event-sourcing` (the default) or `relational`. Selects the data
     adapter (see Ports & Adapters). An unknown mode value fails binding at startup.
   - `campus-coffee.persistence.data-to-events-on-startup`: when `true`, seed the event log from the existing
     rows on startup (import a relational database into the log; appends one INSERT event per row,

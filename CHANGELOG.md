@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-21
+
+- Guard the project version against drift. Move the project `group` and `version` to the root `gradle.properties` (Gradle's `project.group`/`project.version`, applied to every module, out of the build-logic convention plugin) and make the version the source of truth; the latest `## [x.y.z]` header in `CHANGELOG.md` must agree with it. A new `scripts/check-version-sync.sh` (mirroring `scripts/check-toolchain-versions.sh`) compares the two and fails with a GitHub Actions error annotation on mismatch; it runs as a CI step in `build.yml` before the Gradle build. This prevents the recurrence of the earlier drift, where the build version had gone stale at `0.2.0`.
+
+## [0.5.0] - 2026-06-20
+
+- Make event sourcing the default persistence mode. `campus-coffee.persistence.mode` now defaults to `event-sourcing` (the `PersistenceProperties` default, `application.yaml`, and the `compose.yaml` dev default), so a default run records every write request in the `events` table and projects it into the relational read model; pass `--campus-coffee.persistence.mode=relational` (or `CAMPUS_COFFEE_PERSISTENCE_MODE=relational`) to opt into the plain relational adapters. The Cloud Run deploy script (`scripts/deploy-cloudrun.sh`) already defaulted to event sourcing, so the application default and the deploy default now agree (resolving the prior split where the application defaulted to relational while the deploy defaulted to event sourcing). The test bases that exercise the relational backend (`AbstractSystemTest`, `AbstractDataIntegrationTest`, `CucumberSpringConfiguration`) now pin `campus-coffee.persistence.mode=relational` explicitly, and the `EventSourcing*SystemTests` subclasses override it back to `event-sourcing`, so both backends still run in one `gradle build` and the aggregate coverage gate continues to see both.
+
 ## [0.4.0] - 2026-06-20
 
 - Enforce KDoc on production code with a custom detekt rule set (`campus-coffee-kdoc`) in a new `:detekt-rules` subproject, loaded via `detektPlugins` and enabled in `config/detekt/detekt.yml`. The rules require KDoc on every non-local, non-override function (any visibility), an `@param` for every parameter of a public function, KDoc on every non-local class, interface, object, and enum class, and `@property` or `@param` for non-private enum constructor properties. Local declarations, overrides, and test sources are exempt (the `detekt` task wired into `check` is restricted to `src/main/kotlin`). The rules ship with their own unit tests, and the previously undocumented production declarations are now documented.

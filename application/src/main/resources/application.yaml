@@ -36,7 +36,7 @@ campus-coffee:
     entity-seed: ${CAMPUS_COFFEE_ID_ENTITY_SEED:42}
     event-seed: ${CAMPUS_COFFEE_ID_EVENT_SEED:100}
   persistence:
-    mode: ${CAMPUS_COFFEE_PERSISTENCE_MODE:relational}
+    mode: ${CAMPUS_COFFEE_PERSISTENCE_MODE:event-sourcing}
     data-to-events-on-startup: ${CAMPUS_COFFEE_DATA_TO_EVENTS_ON_STARTUP:false}
     events-to-data-on-startup: ${CAMPUS_COFFEE_EVENTS_TO_DATA_ON_STARTUP:false}
   approval:

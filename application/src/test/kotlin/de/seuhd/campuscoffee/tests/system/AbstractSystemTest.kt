@@ -19,17 +19,22 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.TestPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 
 /**
  * Abstract base class for system tests. Sets up the Spring Boot test context, manages the PostgreSQL
  * testcontainer, and configures the [RestTestClient][de.seuhd.campuscoffee.tests.SystemTestUtils]. The id
- * generator is the seeded (deterministic) one, configured via `campus-coffee.id.entity-seed`.
+ * generator is the seeded (deterministic) one, configured via `campus-coffee.id.entity-seed`. Pins the
+ * relational persistence mode so the base suites run against the relational backend regardless of the
+ * application's default mode (event sourcing); the `EventSourcing*SystemTests` subclasses override it to
+ * event sourcing, so the same suites run on both backends.
  */
 @SpringBootTest(
     classes = [Application::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
+@TestPropertySource(properties = ["campus-coffee.persistence.mode=relational"])
 abstract class AbstractSystemTest {
     @Autowired
     protected lateinit var posService: PosService

@@ -11,15 +11,19 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.TestPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.UUID
 
 /**
  * Base class for data layer integration tests. Boots the data layer against a real PostgreSQL
- * container with the Flyway-managed schema and clears the tables before each test.
+ * container with the Flyway-managed schema and clears the tables before each test. Pins the relational
+ * persistence mode so these tests exercise the relational adapters regardless of the application's default
+ * mode (which is event sourcing); `AbstractEventSourcingDataIntegrationTest` overrides it to event sourcing.
  */
 @SpringBootTest(classes = [DataTestApplication::class], webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@TestPropertySource(properties = ["campus-coffee.persistence.mode=relational"])
 abstract class AbstractDataIntegrationTest {
     @Autowired
     protected lateinit var posRepository: PosRepository

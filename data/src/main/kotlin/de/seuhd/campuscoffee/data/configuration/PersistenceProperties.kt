@@ -5,9 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 /**
  * The two interchangeable persistence modes.
  *
- * - [RELATIONAL]: the default. Writes go straight to the relational tables; there is no event log.
- * - [EVENT_SOURCING]: the event log is the source of truth and the tables are a read model projected from
- *   it. Each write appends an event and projects it in one transaction.
+ * - [RELATIONAL]: writes go straight to the relational tables; there is no event log.
+ * - [EVENT_SOURCING]: the default. The event log is the source of truth and the tables are a read model
+ *   projected from it. Each write appends an event and projects it in one transaction.
  */
 enum class PersistenceMode {
     RELATIONAL,
@@ -18,7 +18,7 @@ enum class PersistenceMode {
  * Configuration for the persistence layer, bound from `campus-coffee.persistence.*`. An unknown [mode]
  * value fails startup, because it cannot bind to the [PersistenceMode] enum.
  *
- * @property mode the persistence mode; relational by default.
+ * @property mode the persistence mode; event sourcing by default.
  * @property dataToEventsOnStartup when true, seed the event log from the existing relational rows on
  *   startup (import an existing database into the log). Appends one INSERT event per row, idempotently.
  * @property eventsToDataOnStartup when true, rebuild the relational tables from the event log on startup
@@ -26,7 +26,7 @@ enum class PersistenceMode {
  */
 @ConfigurationProperties(prefix = "campus-coffee.persistence")
 data class PersistenceProperties(
-    val mode: PersistenceMode = PersistenceMode.RELATIONAL,
+    val mode: PersistenceMode = PersistenceMode.EVENT_SOURCING,
     val dataToEventsOnStartup: Boolean = false,
     val eventsToDataOnStartup: Boolean = false
 ) {

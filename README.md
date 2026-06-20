@@ -64,15 +64,21 @@ gradle :application:bootRun --args='--spring.profiles.active=dev'
 In the `dev` profile the application loads the fixture dataset on startup, so the examples below have data
 to work with; the [Dev endpoints](#dev-endpoints-apidev) let you reload or clear it.
 
-### Event-sourcing persistence mode
+### Persistence mode (event sourcing by default)
 
-By default the application persists straight to the relational tables. It can also run in an event-first
-**event sourcing** mode, where an append-only event log is the source of truth and the relational tables
-are a read model projected from it. The API behaves identically. The difference is that every write request
-is also recorded in the `events` table.
+By default the application runs in an event-first **event sourcing** mode, where an append-only event log
+is the source of truth and the relational tables are a read model projected from it. The API behaves
+identically to the plain relational mode; the difference is that every write request is also recorded in
+the `events` table. A default `dev` run therefore already records events:
 
 ```shell
-gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=event-sourcing'
+gradle :application:bootRun --args='--spring.profiles.active=dev'
+```
+
+It can also run in a plain **relational** mode that writes straight to the tables, with no event log:
+
+```shell
+gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=relational'
 ```
 
 Inspect the log (its `seq` column is the append order):
@@ -82,14 +88,15 @@ SELECT seq, change_type, entity_type FROM events ORDER BY seq;
 ```
 
 To import an existing relational database into the log and then rebuild the tables from it, run these once
-each (they are one-off startup migrations, off by default):
+each (they are one-off startup migrations, off by default; both act only in event sourcing mode, the
+default):
 
 ```shell
 # 1. seed the log from the current rows (one INSERT event per row)
-gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=event-sourcing --campus-coffee.persistence.data-to-events-on-startup=true'
+gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.data-to-events-on-startup=true'
 
 # 2. rebuild the tables from the log (clears the tables, then replays every event, preserving ids and timestamps)
-gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=event-sourcing --campus-coffee.persistence.events-to-data-on-startup=true'
+gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.events-to-data-on-startup=true'
 ```
 
 ## Explore the REST API

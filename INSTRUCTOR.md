@@ -412,13 +412,13 @@ gcloud run services delete campus-coffee-prod
 
 ## Inspecting the event sourcing persistence mode
 
-The application can run in an event-first **event sourcing** mode (`campus-coffee.persistence.mode`), where
-an append-only event log is the source of truth and the relational tables are a read model projected from
-it. The API behaves exactly the same; this step shows the events that each write request records.
+The application runs in an event-first **event sourcing** mode by default (`campus-coffee.persistence.mode`),
+where an append-only event log is the source of truth and the relational tables are a read model projected
+from it. The API behaves exactly the same; this step shows the events that each write request records.
 
-Start the app in event sourcing mode (locally, set `CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing` before
-`docker compose up`, or pass `--campus-coffee.persistence.mode=event-sourcing` to a `bootRun` run). The
-fixture load on startup writes through the event log, so the `events` table is already populated:
+A default run is already in event sourcing mode (a local `docker compose up`, or a `bootRun` with no extra
+flag; pass `--campus-coffee.persistence.mode=relational` to opt out). The fixture load on startup writes
+through the event log, so the `events` table is already populated:
 
 ```shell
 # every fixture row, plus any write request you make, is recorded as an event (seq is the append order)

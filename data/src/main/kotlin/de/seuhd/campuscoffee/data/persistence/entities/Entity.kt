@@ -28,7 +28,7 @@ abstract class Entity : PersistableEntity() {
      * Marks the timestamps as already set, so the callbacks below leave [createdAt]/[updatedAt] untouched
      * and the caller's values are written as is. The read model projector calls this before
      * persisting a row, because in event sourcing mode the authoritative timestamps live in the event body
-     * and must be written exactly so a rebuilt row matches the event. The default relational path never
+     * and must be written exactly so a rebuilt row matches the event. The relational write path never
      * calls it, so the callbacks set the timestamps as usual. It is a method, not a property, so the
      * MapStruct mappers do not treat it as a mappable field.
      */

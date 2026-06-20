@@ -14,15 +14,19 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.TestPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 
 /**
  * Single Spring and Cucumber configuration shared by all acceptance step definitions. Cucumber allows
  * only one [CucumberContextConfiguration], so the step classes ([CucumberPosSteps], [CucumberReviewSteps])
- * hold step definitions only and rely on the context, container, and cleanup hooks defined here.
+ * hold step definitions only and rely on the context, container, and cleanup hooks defined here. Pins the
+ * relational persistence mode so the acceptance suite runs against the relational backend regardless of the
+ * application's default mode (event sourcing).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @CucumberContextConfiguration
+@TestPropertySource(properties = ["campus-coffee.persistence.mode=relational"])
 class CucumberSpringConfiguration(
     private val posService: PosService,
     private val userService: UserService,

@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 
 /**
- * Tests the events-to-data rebuild runner in the default (relational) mode. The
+ * Tests the events-to-data rebuild runner in relational mode. The
  * `events-to-data-on-startup` flag is set, so the runner bean exists, but in relational mode `rebuildFromLog`
  * logs and returns without touching the tables, because the relational tables are authoritative there and a
  * replay would delete their contents.
