@@ -103,7 +103,7 @@ plugin and wired into `check`, so `gradle build` and CI fail on findings. A per-
 ### Start PostgreSQL Database
 
 ```shell
-docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:17-alpine
+docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18-alpine
 ```
 
 ### Run Application (dev profile)
@@ -212,7 +212,7 @@ Dependencies and tools are kept current automatically:
 
 ## Database
 
-- **Database**: PostgreSQL 17.
+- **Database**: PostgreSQL 18.
 - **Migrations**: Flyway (located in `data/src/main/resources/db/migration/`).
 - **ORM**: JPA with Spring Data.
 - **Connection**: Configured in `application/src/main/resources/application.yaml`.

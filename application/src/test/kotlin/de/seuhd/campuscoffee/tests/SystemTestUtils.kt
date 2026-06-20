@@ -89,7 +89,7 @@ object SystemTestUtils {
         // is the standard way to use Testcontainers from Kotlin. We don't set a custom username/password here
         // and rely on Testcontainers' defaults, which configurePostgresContainers() (below) hands to Spring as
         // the datasource URL, username, and password.
-        PostgreSQLContainer<Nothing>(DockerImageName.parse("postgres:17-alpine"))
+        PostgreSQLContainer<Nothing>(DockerImageName.parse("postgres:18-alpine"))
 
     /** Points the Spring datasource at the given PostgreSQL testcontainer. */
     fun configurePostgresContainers(

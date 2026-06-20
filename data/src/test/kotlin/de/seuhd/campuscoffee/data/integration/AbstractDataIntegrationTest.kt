@@ -51,7 +51,7 @@ abstract class AbstractDataIntegrationTest {
     protected fun <T : Entity> T.withGeneratedId(): T = apply { id = UUID.randomUUID() }
 
     companion object {
-        private val postgresContainer = PostgreSQLContainer<Nothing>(DockerImageName.parse("postgres:17-alpine"))
+        private val postgresContainer = PostgreSQLContainer<Nothing>(DockerImageName.parse("postgres:18-alpine"))
 
         init {
             postgresContainer.start()

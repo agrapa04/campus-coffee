@@ -51,7 +51,7 @@ First, make sure that the Docker daemon is running.
 Before you start the application, you first need to start a Postgres docker container:
 
 ```shell
-docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:17-alpine
+docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18-alpine
 ```
 
 Then, you can start the application in the `dev` profile for local development:
@@ -316,7 +316,7 @@ to use the database provided in the started Postgres container.
 ```shell
 docker network create campus-coffee-net 2>/dev/null || true
 docker rm -f db 2>/dev/null || true
-docker run -d --name db --net campus-coffee-net -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:17-alpine
+docker run -d --name db --net campus-coffee-net -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18-alpine
 docker run --net campus-coffee-net -e SPRING_PROFILES_ACTIVE=dev -e SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres -p 8080:8080  -it --rm campus-coffee:latest
 ```
 

@@ -27,7 +27,7 @@ reload or clear the fixture data; see "Reset the local demo" below.
 To run without Docker, start a PostgreSQL container and use Gradle instead:
 
 ```shell
-docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:17-alpine
+docker run -d --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:18-alpine
 gradle :application:bootRun --args='--spring.profiles.active=dev'
 ```
 
