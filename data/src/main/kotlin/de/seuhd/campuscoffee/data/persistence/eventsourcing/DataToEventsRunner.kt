@@ -28,10 +28,10 @@ import kotlin.reflect.KClass
  * be rebuilt from. Idempotent per type: a type whose log already holds events is skipped, so repeated
  * startups (or a startup after the fixtures already wrote events) do not duplicate the log.
  *
- * The rows are read in foreign-key order (users and POS, then reviews, then approvals) so a later
+ * The rows are read in foreign key order (users and POS, then reviews, then approvals) so a later
  * events-to-data replay applies them in an order where a review's POS and author already exist.
  *
- * It runs only in event-sourcing mode (matching [EventsToDataRunner]): importing rows in relational mode
+ * It runs only in event sourcing mode (matching [EventsToDataRunner]): importing rows in relational mode
  * would record a one-time snapshot that later write requests then diverge from, which a rebuild could
  * replay over current data. The application's startup initializer invokes the runners in their `ORDER`
  * sequence (before the web server accepts requests); this runs before the rebuild runner, so when both flags
@@ -56,6 +56,11 @@ class DataToEventsRunner(
     @Transactional
     override fun run() = importRowsAsEvents()
 
+    /**
+     * Imports the current rows into the event log, one INSERT event per row, in foreign key order (users and
+     * POS, then reviews, then approvals). Skips entirely in relational mode, and skips any type whose log
+     * already holds events, so it is idempotent across restarts.
+     */
     @Transactional
     fun importRowsAsEvents() {
         if (properties.mode != PersistenceMode.EVENT_SOURCING) {
@@ -71,6 +76,7 @@ class DataToEventsRunner(
         importType(ReviewApproval::class) { reviewApprovalRepository.findAll().map(reviewApprovalMapper::fromEntity) }
     }
 
+    /** Appends one INSERT event per row of the given type, skipping the type if its log already has events. */
     private fun importType(
         domainType: KClass<out DomainModel<*>>,
         readRows: () -> List<DomainModel<*>>

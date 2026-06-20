@@ -31,6 +31,7 @@ class DevController(
     private val reviewApprovalDataService: ReviewApprovalDataService,
     private val idGenerator: IdGenerator
 ) {
+    /** Reports the current number of users, POS, and reviews. */
     @Operation(summary = "Report the current number of users, POS, and reviews.")
     @GetMapping("/data")
     fun count(): ResponseEntity<DevSummaryDto> =
@@ -38,6 +39,7 @@ class DevController(
             DevSummaryDto(userService.getAll().size, posService.getAll().size, reviewService.getAll().size)
         )
 
+    /** Clears the data and reloads the test fixtures, reusing the seeded ids, and reports the new counts. */
     @Operation(summary = "Replace all data with the test fixtures (users, POS, reviews).")
     @PutMapping("/data")
     fun load(): ResponseEntity<DevSummaryDto> {
@@ -49,6 +51,7 @@ class DevController(
         return ResponseEntity.ok(DevSummaryDto(users, pos, reviews))
     }
 
+    /** Clears all data (users, POS, reviews) and returns 204 No Content. */
     @Operation(summary = "Clear all data (users, POS, reviews).")
     @DeleteMapping("/data")
     fun clear(): ResponseEntity<Void> {

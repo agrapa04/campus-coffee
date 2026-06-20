@@ -89,6 +89,11 @@ class PosController(
         @PathVariable id: UUID
     ): ResponseEntity<Void> = super.delete(id)
 
+    /**
+     * Retrieves the POS with the given name.
+     *
+     * @param name the name of the POS to retrieve
+     */
     @Operation
     @CrudOperation(operation = FILTER, resource = POS)
     @GetMapping("/filter")
@@ -97,6 +102,12 @@ class PosController(
         @RequestParam("name") name: String
     ): ResponseEntity<PosDto> = ResponseEntity.ok(posDtoMapper.fromDomain(posService.getByName(name)))
 
+    /**
+     * Imports a POS from an OpenStreetMap node and returns 201 Created with its location.
+     *
+     * @param nodeId     the OpenStreetMap node to import
+     * @param campusType the campus type to assign to the imported POS
+     */
     @Operation
     @CrudOperation(operation = IMPORT, resource = POS, externalResource = OSM_NODE)
     @PostMapping("/import/osm/{nodeId}")

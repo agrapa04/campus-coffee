@@ -33,6 +33,10 @@ import tools.jackson.module.kotlin.KotlinModule
 object EventJsonMapper {
     val instance: JsonMapper = build()
 
+    /**
+     * Builds the event mapper: the Kotlin module, the serializer that flattens a review to ids, and the
+     * mixin that drops the raw password.
+     */
     private fun build(): JsonMapper =
         JsonMapper
             .builder()
@@ -50,7 +54,7 @@ object EventJsonMapper {
 
     /**
      * Serializes a [Review] with its POS and author flattened to ids (`posId`/`authorId`). The projector
-     * resolves those ids back to the read-model rows when it applies the event.
+     * resolves those ids back to the read model rows when it applies the event.
      */
     private class ReviewEventSerializer : ValueSerializer<Review>() {
         override fun serialize(

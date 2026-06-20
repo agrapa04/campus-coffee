@@ -75,7 +75,7 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
             return mapper.fromEntity(repository.saveAndFlush(entity))
         } catch (e: OptimisticLockingFailureException) {
             // the row changed between the read above and this write; surface it as a domain conflict,
-            // keeping the original optimistic-locking failure as the cause
+            // keeping the original optimistic locking failure as the cause
             throw ConcurrentUpdateException(domainClass, domain.id, e)
         } catch (e: DataIntegrityViolationException) {
             // the database reports which named constraint was violated; map it to the declared domain field
@@ -91,13 +91,13 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
                     }
                 }
             }
-            // no declared unique constraint matched (e.g., a CHECK or foreign-key violation) -> rethrow
+            // no declared unique constraint matched (e.g., a CHECK or foreign key violation) -> rethrow
             throw e
         }
     }
 
     /**
-     * Deletes by id, translating a foreign-key violation (other data still references the entity) into
+     * Deletes by id, translating a foreign key violation (other data still references the entity) into
      * a [DeletionConflictException]. The explicit flush surfaces the violation inside this method, and
      * thus inside the catch, instead of at the transaction commit.
      *
@@ -132,10 +132,12 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
 
     companion object {
         /**
-         * Returns the name of the database constraint reported by a data-integrity violation, or null
+         * Returns the name of the database constraint reported by a data integrity violation, or null
          * when the cause chain contains no Hibernate [ConstraintViolationException]. Reading the name
          * the driver reported avoids matching on database-specific error-message text. Exposed (not
          * private) so it can be unit-tested directly with a crafted exception.
+         *
+         * @param exception the data integrity violation whose cause chain is inspected
          */
         fun constraintNameOf(exception: DataIntegrityViolationException): String? {
             var cause: Throwable? = exception

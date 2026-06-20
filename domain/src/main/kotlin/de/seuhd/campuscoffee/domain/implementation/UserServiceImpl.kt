@@ -100,7 +100,10 @@ class UserServiceImpl(
         actingUser: User
     ): User = getByLoginName(loginName).also { requireMayView(it, actingUser) }
 
-    // user data (login name, email, roles) is not public: only the target user or an admin may read it
+    /**
+     * Requires that [actingUser] may view [target]; user data (login name, email, roles) is not public, so
+     * only the target user or an admin may read it.
+     */
     private fun requireMayView(
         target: User,
         actingUser: User

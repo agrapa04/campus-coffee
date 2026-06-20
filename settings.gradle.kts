@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "campus-coffee"
 
-include("domain", "api", "data", "application", "coverage")
+include("domain", "api", "data", "application", "coverage", "detekt-rules")

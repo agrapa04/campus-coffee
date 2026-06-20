@@ -11,6 +11,11 @@ import org.springframework.boot.runApplication
 @ConfigurationPropertiesScan
 class Application
 
+/**
+ * Starts the Spring Boot application.
+ *
+ * @param args the command line arguments passed to the Spring application
+ */
 fun main(args: Array<String>) {
     runApplication<Application>(*args)
 }

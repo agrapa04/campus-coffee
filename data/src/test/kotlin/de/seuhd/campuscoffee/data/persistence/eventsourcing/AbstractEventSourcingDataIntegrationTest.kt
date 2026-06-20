@@ -10,9 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 
 /**
- * Base class for the event-sourcing data layer integration tests. Reuses [AbstractDataIntegrationTest]'s
+ * Base class for the event sourcing data layer integration tests. Reuses [AbstractDataIntegrationTest]'s
  * PostgreSQL container and read-model repositories, and adds `campus-coffee.persistence.mode=event-sourcing`
- * so the context runs in event-sourcing mode. With that property set, the `@Primary` event-sourced
+ * so the context runs in event sourcing mode. With that property set, the `@Primary` event-sourced
  * decorators win injection, so the autowired data-service ports below are those decorators. It also clears
  * the event log before each test.
  */

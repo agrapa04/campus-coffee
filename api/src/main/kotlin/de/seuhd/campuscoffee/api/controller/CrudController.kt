@@ -28,12 +28,17 @@ abstract class CrudController<DOMAIN : DomainModel<ID>, DTO : Dto<ID>, ID : Any>
     /** Retrieves all resources. */
     open fun getAll(): ResponseEntity<List<DTO>> = ResponseEntity.ok(service().getAll().map { mapper().fromDomain(it) })
 
-    /** Retrieves a single resource by ID. */
+    /**
+     * Retrieves a single resource by ID.
+     *
+     * @param id the ID of the resource to retrieve
+     */
     open fun getById(id: ID): ResponseEntity<DTO> = ResponseEntity.ok(mapper().fromDomain(service().getById(id)))
 
     /**
      * Creates a new resource and returns 201 Created with its location.
      *
+     * @param dto the DTO of the resource to create
      * @throws IllegalArgumentException if the DTO carries an ID (the server assigns IDs; accepting one
      *   would silently turn the create into an update of an existing resource)
      */
@@ -46,6 +51,8 @@ abstract class CrudController<DOMAIN : DomainModel<ID>, DTO : Dto<ID>, ID : Any>
     /**
      * Updates an existing resource by ID.
      *
+     * @param id  the ID of the resource to update
+     * @param dto the DTO carrying the updated resource data
      * @throws IllegalArgumentException if the ID in the path does not match the ID in the DTO
      */
     open fun update(
@@ -56,7 +63,11 @@ abstract class CrudController<DOMAIN : DomainModel<ID>, DTO : Dto<ID>, ID : Any>
         return ResponseEntity.ok(upsert(dto))
     }
 
-    /** Deletes a resource by ID and returns 204 No Content. */
+    /**
+     * Deletes a resource by ID and returns 204 No Content.
+     *
+     * @param id the ID of the resource to delete
+     */
     open fun delete(id: ID): ResponseEntity<Void> {
         service().delete(id)
         return ResponseEntity.noContent().build()

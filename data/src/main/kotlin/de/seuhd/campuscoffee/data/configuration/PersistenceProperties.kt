@@ -22,7 +22,7 @@ enum class PersistenceMode {
  * @property dataToEventsOnStartup when true, seed the event log from the existing relational rows on
  *   startup (import an existing database into the log). Appends one INSERT event per row, idempotently.
  * @property eventsToDataOnStartup when true, rebuild the relational tables from the event log on startup
- *   (clear the tables and replay every event). Only active in event-sourcing mode.
+ *   (clear the tables and replay every event). Only active in event sourcing mode.
  */
 @ConfigurationProperties(prefix = "campus-coffee.persistence")
 data class PersistenceProperties(

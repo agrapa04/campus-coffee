@@ -118,6 +118,12 @@ class ReviewController(
         return ResponseEntity.noContent().build()
     }
 
+    /**
+     * Retrieves the reviews of a POS filtered by approval status.
+     *
+     * @param posId    the POS to retrieve reviews for
+     * @param approved the approval status of the reviews to retrieve
+     */
     @Operation
     @CrudOperation(operation = FILTER, resource = REVIEW)
     @GetMapping("/filter")
@@ -129,6 +135,11 @@ class ReviewController(
     ): ResponseEntity<List<ReviewDto>> =
         ResponseEntity.ok(reviewService.filter(posId, approved).map { reviewDtoMapper.fromDomain(it) })
 
+    /**
+     * Approves a review on behalf of the authenticated user and returns its recomputed approval state.
+     *
+     * @param id the review to approve
+     */
     @Operation(summary = "Approve a review by ID. The approver is the authenticated user (never the author).")
     @ApiResponses(
         value = [

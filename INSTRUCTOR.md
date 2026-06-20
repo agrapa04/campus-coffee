@@ -280,7 +280,7 @@ one network namespace — which is why `compose.prod.yaml` reaches the database 
 Compose service name `db`:
 
 ```shell
-scripts/deploy-cloudrun.sh                  # event-sourcing mode
+scripts/deploy-cloudrun.sh                  # event sourcing mode
 scripts/deploy-cloudrun.sh relational       # relational mode
 ```
 
@@ -303,8 +303,8 @@ gcloud beta run compose up compose.prod.yaml --allow-unauthenticated
 
 The two modes differ only in `CAMPUS_COFFEE_PERSISTENCE_MODE` in `deploy.env` (the script sets it from its
 argument; see
-[Inspecting the event-sourcing persistence mode](#inspecting-the-event-sourcing-persistence-mode)). In
-event-sourcing mode the prod fixture load writes through the event log, so the `events` table is already
+[Inspecting the event sourcing persistence mode](#inspecting-the-event-sourcing-persistence-mode)). In
+event sourcing mode the prod fixture load writes through the event log, so the `events` table is already
 populated (`5 users, 4 POS, 3 reviews`) and the relational tables are projected from it. The API behaves
 identically, and a write request you make over HTTPS appends a new event. (Because the sidecar database is
 ephemeral, each cold start replays the fixture load through the log, so the `events` table is rebuilt per
@@ -410,13 +410,13 @@ Delete the deployment when you are done:
 gcloud run services delete campus-coffee-prod
 ```
 
-## Inspecting the event-sourcing persistence mode
+## Inspecting the event sourcing persistence mode
 
-The application can run in an event-first **event-sourcing** mode (`campus-coffee.persistence.mode`), where
+The application can run in an event-first **event sourcing** mode (`campus-coffee.persistence.mode`), where
 an append-only event log is the source of truth and the relational tables are a read model projected from
 it. The API behaves exactly the same; this step shows the events that each write request records.
 
-Start the app in event-sourcing mode (locally, set `CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing` before
+Start the app in event sourcing mode (locally, set `CAMPUS_COFFEE_PERSISTENCE_MODE=event-sourcing` before
 `docker compose up`, or pass `--campus-coffee.persistence.mode=event-sourcing` to a `bootRun` run). The
 fixture load on startup writes through the event log, so the `events` table is already populated:
 

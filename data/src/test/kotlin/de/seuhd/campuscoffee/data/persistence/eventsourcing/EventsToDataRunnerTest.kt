@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 
 /**
- * Tests the events-to-data rebuild runner in event-sourcing mode: it clears the read tables and replays
+ * Tests the events-to-data rebuild runner in event sourcing mode: it clears the read tables and replays
  * the whole log, reconstructing the rows that were there before.
  */
 @TestPropertySource(properties = ["campus-coffee.persistence.events-to-data-on-startup=true"])

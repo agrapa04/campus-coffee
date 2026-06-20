@@ -12,7 +12,7 @@ import java.util.UUID
 import kotlin.reflect.KClass
 
 /**
- * Appends events to the log. In event-sourcing mode the log is the source of truth; projecting the event
+ * Appends events to the log. In event sourcing mode the log is the source of truth; projecting the event
  * onto the read tables is a separate step ([ReadModelProjector]) the caller runs in the same transaction.
  *
  * The body is the full JSON state of the domain object (INSERT/UPDATE), or just its id (DELETE), built with
@@ -25,32 +25,63 @@ class EventStore(
     private val eventRepository: EventRepository,
     @param:Qualifier(IdGeneratorConfiguration.EVENT_ID_GENERATOR) private val idGenerator: IdGenerator
 ) {
-    /** Appends an INSERT event carrying the full state of a newly created domain object. */
+    /**
+     * Appends an INSERT event carrying the full state of a newly created domain object.
+     *
+     * @param domain the newly created domain object whose full state is recorded
+     */
     fun appendInsert(domain: DomainModel<*>): EventEntity =
         append(ChangeType.INSERT, entityTypeOf(domain), toBody(domain))
 
-    /** Appends an UPDATE event carrying the full new state of a modified domain object. */
+    /**
+     * Appends an UPDATE event carrying the full new state of a modified domain object.
+     *
+     * @param domain the modified domain object whose full new state is recorded
+     */
     fun appendUpdate(domain: DomainModel<*>): EventEntity =
         append(ChangeType.UPDATE, entityTypeOf(domain), toBody(domain))
 
-    /** Appends a DELETE event carrying only the id of the removed domain object. */
+    /**
+     * Appends a DELETE event carrying only the id of the removed domain object.
+     *
+     * @param domainType the domain type of the removed object
+     * @param id the id of the removed domain object
+     */
     fun appendDelete(
         domainType: KClass<out DomainModel<*>>,
         id: UUID
     ): EventEntity = append(ChangeType.DELETE, entityTypeOf(domainType), mapOf("id" to id.toString()))
 
-    /** Removes every event for the given domain type. Part of the per-type clear, alongside the read table. */
+    /**
+     * Removes every event for the given domain type; its read table is cleared separately.
+     *
+     * @param entityType the entity type label (the domain class's simple name)
+     */
     fun clear(entityType: String) = eventRepository.deleteByEntityType(entityType)
 
-    /** Whether the log already holds an event for the given domain type, so the import can skip that type. */
+    /**
+     * Whether the log already holds an event for the given domain type, so the import can skip that type.
+     *
+     * @param entityType the entity type label (the domain class's simple name)
+     */
     fun hasEventsFor(entityType: String): Boolean = eventRepository.existsByEntityType(entityType)
 
-    /** The event's entity-type label, the domain class's simple name (`Pos`, `User`, `Review`, ...). */
+    /**
+     * The event's entity type label, the domain class's simple name (`Pos`, `User`, `Review`, ...).
+     *
+     * @param domain the domain object whose type label is derived
+     */
     fun entityTypeOf(domain: DomainModel<*>): String = entityTypeOf(domain::class)
 
+    /**
+     * The entity type label for a domain type, its simple name (`Pos`, `User`, `Review`, ...).
+     *
+     * @param domainType the domain type whose label is derived
+     */
     fun entityTypeOf(domainType: KClass<out DomainModel<*>>): String =
         requireNotNull(domainType.simpleName) { "A domain type used for an event must have a simple name." }
 
+    /** Builds the event, assigns its own id, version, and timestamp, and flushes it before the projection. */
     private fun append(
         changeType: ChangeType,
         entityType: String,
@@ -70,6 +101,7 @@ class EventStore(
         return eventRepository.saveAndFlush(event)
     }
 
+    /** Serializes a domain object to the JSON body map via [EventJsonMapper] (matching the `jsonb` column). */
     private fun toBody(domain: DomainModel<*>): Map<String, Any?> =
         EventJsonMapper.instance.convertValue(domain, BODY_TYPE)
 

@@ -13,12 +13,12 @@ import java.time.LocalDateTime
 /**
  * One entry in the append-only event log. A full-state event: [body] holds the complete JSON state of the
  * domain object (the domain object's own id lives inside it), except for a [ChangeType.DELETE], whose body
- * holds only the id. In event-sourcing mode the log is the source of truth and the read tables are a
+ * holds only the id. In event sourcing mode the log is the source of truth and the read tables are a
  * projection of it.
  *
- * Like the read-model entities, the id is an application-assigned UUID, so the entity extends
- * [PersistableEntity] for the assigned-id and new-entity handling. Events are append-only, so there is no
- * updatedAt and no optimistic-locking version.
+ * Like the read model entities, the id is an application-assigned UUID, so the entity extends
+ * [PersistableEntity] for the assigned id and new entity handling. Events are append-only, so there is no
+ * updatedAt and no optimistic locking version.
  */
 @Entity
 @Table(name = "events")

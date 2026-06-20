@@ -27,6 +27,7 @@ class OsmResponseDeserializer : JsonDeserializer<OsmResponse>() {
         )
     }
 
+    /** Reads the OSM tag array into a map of tag keys to values, returning an empty map when no tags are present. */
     private fun deserializeTags(tagNode: JsonNode?): Map<String, String> {
         if (tagNode == null || !tagNode.isArray) {
             return emptyMap()

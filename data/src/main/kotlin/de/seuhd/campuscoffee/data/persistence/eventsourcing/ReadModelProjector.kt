@@ -35,14 +35,14 @@ import kotlin.reflect.KClass
 
 /**
  * Applies a single event to the relational read tables. This is the one place that writes the read model
- * in event-sourcing mode, used both by the decorators when they apply a write and by the events-to-data
+ * in event sourcing mode, used both by the decorators when they apply a write and by the events-to-data
  * replay, so a row written while serving a request and a row rebuilt from the log go through identical
  * code.
  *
  * It writes the id and `createdAt`/`updatedAt` from the event body, marking the entity so the
  * `@PrePersist`/`@PreUpdate` timestamp callbacks leave them as written (see
  * [Entity.markTimestampsPreassigned]). The relational tables still enforce the invariants: a uniqueness,
- * foreign-key, or optimistic-locking violation here rolls the whole transaction back (so the log never
+ * foreign key, or optimistic locking violation here rolls the whole transaction back (so the log never
  * keeps an invalid event) and surfaces as the same domain exception the relational adapter would throw.
  *
  * The POS and author of a [Review] arrive as ids (the body is flattened); they are resolved against the
@@ -65,11 +65,21 @@ class ReadModelProjector(
     private val reviewMapper: ReviewEntityMapper,
     private val reviewApprovalMapper: ReviewApprovalEntityMapper
 ) {
-    /** Applies a stored event to the read tables, unwrapping its (always-populated) fields. */
+    /**
+     * Applies a stored event to the read tables, unwrapping its fields, which are always populated.
+     *
+     * @param event the stored event whose change type, entity type, and body are applied
+     */
     fun apply(event: EventEntity) =
         apply(requireNotNull(event.changeType), requireNotNull(event.entityType), requireNotNull(event.body))
 
-    /** Applies one event (its change type, entity type, and JSON body) to the read tables. */
+    /**
+     * Applies one event (its change type, entity type, and JSON body) to the read tables.
+     *
+     * @param changeType the change type (INSERT, UPDATE, or DELETE)
+     * @param entityType the entity type label (the domain class's simple name)
+     * @param body the JSON body of the event
+     */
     fun apply(
         changeType: ChangeType,
         entityType: String,
@@ -82,6 +92,7 @@ class ReadModelProjector(
         }
     }
 
+    /** Inserts a new read model row for the event's entity type, mapping the body to the entity. */
     private fun insert(
         entityType: String,
         body: Map<String, Any?>
@@ -100,6 +111,7 @@ class ReadModelProjector(
         }
     }
 
+    /** Updates the existing read model row for the event's entity type from the body. */
     private fun update(
         entityType: String,
         body: Map<String, Any?>
@@ -112,6 +124,7 @@ class ReadModelProjector(
         }
     }
 
+    /** Removes the read model row identified by the body's id for the event's entity type. */
     private fun delete(
         entityType: String,
         body: Map<String, Any?>
@@ -125,6 +138,7 @@ class ReadModelProjector(
         }
     }
 
+    /** Rebuilds a [Review] from its flattened body, resolving the POS and author ids against the read model. */
     private fun reconstructReview(body: Map<String, Any?>): Review {
         val payload = convert(body, ReviewEventPayload::class)
         val pos =
@@ -148,6 +162,7 @@ class ReadModelProjector(
         )
     }
 
+    /** Saves a new row, writing the id and both timestamps from the body and stopping the `@PrePersist` callback. */
     private fun <E : Entity> insertRow(
         repository: JpaRepository<E, UUID>,
         entity: E,
@@ -161,6 +176,7 @@ class ReadModelProjector(
         repository.saveAndFlush(entity)
     }
 
+    /** Loads the row (a missing one throws [NotFoundException]), updates it from the body, and keeps `createdAt`. */
     private fun <DOMAIN : DomainModel<*>, E : Entity> updateRow(
         repository: JpaRepository<E, UUID>,
         mapper: EntityMapper<DOMAIN, E>,
@@ -177,15 +193,17 @@ class ReadModelProjector(
         repository.saveAndFlush(entity)
     }
 
+    /** Deletes the row by id and flushes, so a foreign key violation surfaces here rather than at commit. */
     private fun <E : Entity> deleteRow(
         repository: JpaRepository<E, UUID>,
         id: UUID
     ) {
         repository.deleteById(id)
-        // surface a foreign-key violation here (inside translateViolations), not at transaction commit
+        // surface a foreign key violation here (inside translateViolations), not at transaction commit
         repository.flush()
     }
 
+    /** Converts the JSON body map to the given type via [EventJsonMapper]. */
     private fun <T : Any> convert(
         body: Map<String, Any?>,
         type: KClass<T>
@@ -193,8 +211,8 @@ class ReadModelProjector(
 
     /**
      * Runs a projection step, translating the relational violations into the same domain exceptions the
-     * relational adapter raises: an optimistic-locking failure to [ConcurrentUpdateException], a
-     * foreign-key violation on a delete to [DeletionConflictException], and a uniqueness violation to
+     * relational adapter raises: an optimistic locking failure to [ConcurrentUpdateException], a
+     * foreign key violation on a delete to [DeletionConflictException], and a uniqueness violation to
      * [DuplicationException]; any other integrity violation propagates unchanged.
      */
     private fun translatingViolations(
@@ -213,7 +231,7 @@ class ReadModelProjector(
     }
 
     /**
-     * The domain exception a relational integrity violation maps to: a foreign-key violation on a delete is
+     * The domain exception a relational integrity violation maps to: a foreign key violation on a delete is
      * a [DeletionConflictException], a violated unique constraint is a [DuplicationException], and anything
      * else propagates unchanged.
      */
@@ -229,6 +247,7 @@ class ReadModelProjector(
             duplicationOrNull(exception, body) ?: exception
         }
 
+    /** The [DuplicationException] for a violated unique constraint, or null when the violation is not a known one. */
     private fun duplicationOrNull(
         exception: DataIntegrityViolationException,
         body: Map<String, Any?>
@@ -238,19 +257,24 @@ class ReadModelProjector(
         return DuplicationException(rule.domainClass, rule.field, rule.valueOf(body))
     }
 
+    /** The domain class for an entity type label, used when building a translated exception. */
     private fun domainClassFor(entityType: String): Class<out DomainModel<*>> =
         DOMAIN_CLASSES[entityType] ?: error("Unknown entity type '$entityType'.")
 
+    /** The body's id parsed to a [UUID], or null when the body carries none. */
     private fun idOrNull(body: Map<String, Any?>): UUID? = body["id"]?.let { UUID.fromString(it.toString()) }
 
+    /** The body's id parsed to a [UUID], failing when the body carries none. */
     private fun idOf(body: Map<String, Any?>): UUID =
         requireNotNull(idOrNull(body)) { "An event body must carry an id." }
 
+    /** Parses the body's timestamp at the given key to a [LocalDateTime]. */
     private fun timestampOf(
         body: Map<String, Any?>,
         key: String
     ): LocalDateTime = LocalDateTime.parse(requireNotNull(body[key]) { "An event body must carry $key." }.toString())
 
+    /** Fails for a change type and entity type with no projection defined. */
     private fun unsupported(
         changeType: ChangeType,
         entityType: String
@@ -276,13 +300,13 @@ class ReadModelProjector(
     )
 
     private companion object {
-        // the event entity-type labels, derived from the domain class names so they match EventStore
+        // the event entity type labels, derived from the domain class names so they match EventStore
         private val POS = requireNotNull(Pos::class.simpleName)
         private val USER = requireNotNull(User::class.simpleName)
         private val REVIEW = requireNotNull(Review::class.simpleName)
         private val REVIEW_APPROVAL = requireNotNull(ReviewApproval::class.simpleName)
 
-        // the domain class for each entity-type label, for building the translated exceptions
+        // the domain class for each entity type label, for building the translated exceptions
         private val DOMAIN_CLASSES: Map<String, Class<out DomainModel<*>>> =
             mapOf(
                 POS to Pos::class.java,

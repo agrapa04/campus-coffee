@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component
  * fresh database, because the prod profile does not register the `/api/dev` endpoints that load the data
  * during local development.
  *
- * [StartupDataInitializer] runs this before the web server accepts requests, after any event-sourcing
+ * [StartupDataInitializer] runs this before the web server accepts requests, after any event sourcing
  * import/rebuild migration, so the guard sees the rebuilt users and does not load the fixtures again, and the
  * API is never served before its data is loaded. It is the last startup task, so its [order] is the highest.
  */
@@ -32,6 +32,9 @@ class FixtureStartupLoader(
 
     override fun run() = loadOnStartup()
 
+    /**
+     * Loads the fixture data, skipping when the database already has users.
+     */
     fun loadOnStartup() {
         if (userService.getAll().isNotEmpty()) {
             log.info("Skipping the fixture load: the database already has users.")
@@ -43,7 +46,7 @@ class FixtureStartupLoader(
     }
 
     private companion object {
-        // runs after the event-sourcing import (0) and rebuild (100) startup tasks
+        // runs after the event sourcing import (0) and rebuild (100) startup tasks
         private const val ORDER = 200
         private val log = LoggerFactory.getLogger(FixtureStartupLoader::class.java)
     }

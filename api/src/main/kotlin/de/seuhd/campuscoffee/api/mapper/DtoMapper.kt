@@ -15,11 +15,15 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
 interface DtoMapper<DOMAIN : DomainModel<*>, DTO : Dto<*>> {
     /**
      * Converts a domain model object to its DTO representation.
+     *
+     * @param source the domain model object to convert
      */
     fun fromDomain(source: DOMAIN): DTO
 
     /**
      * Converts a DTO to its domain model representation.
+     *
+     * @param source the DTO to convert
      */
     fun toDomain(source: DTO): DOMAIN
 }

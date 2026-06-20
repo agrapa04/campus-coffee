@@ -14,5 +14,11 @@ class ConstraintMapping<DOMAIN>(
     val columnName: String,
     val constraintName: String
 ) {
+    /**
+     * Reads the guarded field's value from the domain object for the DuplicationException message.
+     *
+     * @param domain the domain object that violated the constraint
+     * @return the offending field value
+     */
     fun extractValue(domain: DOMAIN): Any? = valueExtractor(domain)
 }

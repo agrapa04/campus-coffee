@@ -24,10 +24,12 @@ object TestFixtures {
 
     private val DATE_TIME: LocalDateTime = LocalDateTime.of(2025, 10, 29, 12, 0, 0)
 
-    // A deterministic UUID for a fixture. UUID(long mostSigBits, long leastSigBits) is the JDK
-    // constructor (the two args are the high and low 64 bits), so fixtureId(1) is
-    // 00000000-0000-0000-0000-000000000001. The *ForInsertion() helpers strip these before seeding, so
-    // they only matter to the unit tests that read them back (e.g. to tell one fixture user from another).
+    /**
+     * Builds a deterministic UUID for a fixture. UUID(long mostSigBits, long leastSigBits) is the JDK
+     * constructor (the two args are the high and low 64 bits), so fixtureId(1) is
+     * 00000000-0000-0000-0000-000000000001. The *ForInsertion() helpers strip these before seeding, so
+     * they only matter to the unit tests that read them back (e.g. to tell one fixture user from another).
+     */
     private fun fixtureId(value: Long): UUID = UUID(0L, value)
 
     private val USER_LIST =
@@ -198,6 +200,7 @@ object TestFixtures {
             2 to emptyList()
         )
 
+    /** Returns the fixture users. */
     fun getUserFixtures(): List<User> = USER_LIST
 
     /** A fixture user holding exactly [Role.USER] (no moderator or admin grant). */
@@ -218,6 +221,8 @@ object TestFixtures {
      * [Role.MODERATOR] a moderator, and [Role.ADMIN] the fixture that holds every role. This is the single
      * source of the fixture credentials, reused by the dev endpoint, the startup loader, and the system
      * tests, so a password is defined in exactly one place.
+     *
+     * @param role the role whose representative fixture credentials to return
      */
     fun rawCredentialsFor(role: Role): Pair<String, String> =
         when (role) {
@@ -226,17 +231,21 @@ object TestFixtures {
             Role.ADMIN -> getUserFixtures().first { it.roles.containsAll(Role.entries) }
         }.let { requireNotNull(it.loginName) to requireNotNull(it.password) }
 
+    /** Returns the fixture users with their ids and timestamps stripped, ready for insertion. */
     fun getUserFixturesForInsertion(): List<User> =
         getUserFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
+    /** Returns the fixture POS. */
     fun getPosFixtures(): List<Pos> = POS_LIST
 
     /** Any fixture POS, for tests that need one without caring which. */
     fun anyPos(): Pos = getPosFixtures().first()
 
+    /** Returns the fixture POS with their ids and timestamps stripped, ready for insertion. */
     fun getPosFixturesForInsertion(): List<Pos> =
         getPosFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
+    /** Returns the fixture reviews. */
     fun getReviewFixtures(): List<Review> = REVIEW_LIST
 
     /** A fixture review that has reached the approval quorum. */
@@ -245,12 +254,23 @@ object TestFixtures {
     /** A fixture review with no approvals yet. */
     fun unapprovedReview(): Review = getReviewFixtures().first { !it.approved && it.approvalCount == 0 }
 
+    /** Returns the fixture reviews with their ids and timestamps stripped, ready for insertion. */
     fun getReviewFixturesForInsertion(): List<Review> =
         getReviewFixtures().map { it.copy(id = null, createdAt = null, updatedAt = null) }
 
+    /**
+     * Persists the fixture users through the given service and returns them.
+     *
+     * @param userService the service used to persist the users
+     */
     fun createUserFixtures(userService: UserService): List<User> =
         getUserFixturesForInsertion().map { userService.upsert(it) }
 
+    /**
+     * Persists the fixture POS through the given service and returns them.
+     *
+     * @param posService the service used to persist the POS
+     */
     fun createPosFixtures(posService: PosService): List<Pos> =
         getPosFixturesForInsertion().map { posService.upsert(it) }
 
@@ -259,6 +279,10 @@ object TestFixtures {
      * by their natural keys: the POS name and the user login name). A review references its POS and author
      * by id, and those ids are assigned at insertion time rather than known up front, so the fixture POS
      * and author objects cannot be used directly.
+     *
+     * @param reviewService the service used to persist the reviews
+     * @param createdUsers  the persisted users, matched to each review's author by login name
+     * @param createdPos    the persisted POS, matched to each review's POS by name
      */
     fun createReviewFixtures(
         reviewService: ReviewService,
@@ -284,6 +308,7 @@ object TestFixtures {
      * approver rows. The approve *workflow* that records these at runtime is the subject of the
      * assignment (Exercise 5); the fixtures write them directly.
      *
+     * @param reviewApprovalDataService the data service used to record the approvals
      * @param createdUsers   the persisted users, in fixture order (their ids are read here)
      * @param createdReviews the persisted reviews, in fixture order (their ids are read here)
      * @return the recorded approvals
@@ -304,6 +329,11 @@ object TestFixtures {
     /**
      * Loads the users, POS, reviews, and their approver rows into the given services and returns the
      * counts (users, POS, reviews). Used by the dev endpoint and the optional startup loader.
+     *
+     * @param userService               the service used to persist the users
+     * @param posService                the service used to persist the POS
+     * @param reviewService             the service used to persist the reviews
+     * @param reviewApprovalDataService the data service used to record the approvals
      */
     fun loadAll(
         userService: UserService,
@@ -318,5 +348,6 @@ object TestFixtures {
         return Triple(users.size, pos.size, reviews.size)
     }
 
+    /** Returns the approval properties configured with the fixture minimum approval count. */
     fun getApprovalProperties(): ApprovalProperties = ApprovalProperties(MIN_APPROVAL_COUNT)
 }

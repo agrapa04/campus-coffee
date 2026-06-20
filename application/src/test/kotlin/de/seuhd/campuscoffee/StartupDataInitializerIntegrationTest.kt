@@ -20,7 +20,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 /**
  * Verifies the behavior the startup orchestrator exists for: the startup tasks finish before the embedded
  * web server starts, so the API is never served before its data is loaded. It boots the full application
- * with the fixture load and both event-sourcing migrations enabled, and the probe records how many users
+ * with the fixture load and both event sourcing migrations enabled, and the probe records how many users
  * exist at the moment the web server is initialized (an event that fires after the connectors bind). Under
  * the previous `ApplicationReadyEvent` trigger the fixtures loaded only after that point, so the probe would
  * see an empty database and the first assertion would fail; the [StartupDataInitializer] running during
@@ -61,7 +61,7 @@ class StartupDataInitializerIntegrationTest {
     @Test
     fun `the fixture load is the last startup task, after the import and rebuild migrations`() {
         val migrations = startupTasks.filter { it !== fixtureStartupLoader }
-        // both event-sourcing migration runners are present (their flags are on)
+        // both event sourcing migration runners are present (their flags are on)
         assertThat(migrations).hasSize(2)
         assertThat(migrations).allSatisfy {
             assertThat(it.order).isLessThan(fixtureStartupLoader.order)

@@ -23,7 +23,11 @@ class ValidationException : RuntimeException {
     }
 
     private companion object {
-        /** Formats constraint violations into a readable message. */
+        /**
+         * Formats constraint violations into a readable message.
+         *
+         * @param violations the constraint violations to format
+         */
         fun formatViolations(violations: Set<ConstraintViolation<*>>): String =
             violations.joinToString(", ") { "${it.propertyPath}: ${it.message}" }
     }

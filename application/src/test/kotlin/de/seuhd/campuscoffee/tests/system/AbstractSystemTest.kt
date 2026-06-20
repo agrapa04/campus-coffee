@@ -70,7 +70,7 @@ abstract class AbstractSystemTest {
     }
 
     // Clears in foreign-key order: approvals reference reviews and users, reviews reference POS and users.
-    // Clearing approvals explicitly also removes their events in event-sourcing mode (where it is harmless
+    // Clearing approvals explicitly also removes their events in event sourcing mode (where it is harmless
     // in relational mode), so the same base resets both backends.
     private fun clearAll() {
         reviewApprovalDataService.clear()

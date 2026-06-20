@@ -36,6 +36,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     /**
      * Unified handler for the mapped domain exceptions, returning the HTTP status configured for the
      * exception type and falling back to the generic handler for anything unmapped.
+     *
+     * @param exception the thrown domain exception
+     * @param request   the current web request
      */
     @ExceptionHandler(
         NotFoundException::class,
@@ -65,6 +68,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
      * Maps an authentication failure raised inside a controller to 401. The token endpoint authenticates
      * the supplied credentials, and a wrong password raises an [AuthenticationException] there (not in the
      * filter chain), so the security entry point does not see it.
+     *
+     * @param exception the authentication failure
+     * @param request   the current web request
      */
     @ExceptionHandler(AuthenticationException::class)
     fun handleAuthenticationException(
@@ -77,7 +83,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
             .body(errorBody(exception, HttpStatus.UNAUTHORIZED, request, exception.message))
     }
 
-    /** Fallback handler for unexpected exceptions, returning HTTP 500. */
+    /**
+     * Fallback handler for unexpected exceptions, returning HTTP 500.
+     *
+     * @param exception the unexpected exception
+     * @param request   the current web request
+     */
     @ExceptionHandler(Exception::class)
     fun handleGenericException(
         exception: Exception,
@@ -137,6 +148,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         return ResponseEntity.status(statusCode).headers(headers).body(responseBody)
     }
 
+    /** Assembles the standardized [ErrorResponse] body from the exception, status, request, and message. */
     private fun errorBody(
         exception: Exception,
         status: HttpStatusCode,
@@ -153,6 +165,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
             path = extractPath(request)
         )
 
+    /** Extracts the request URI from the web request, or "unknown" when it is not a servlet request. */
     private fun extractPath(request: WebRequest): String =
         (request as? ServletWebRequest)?.request?.requestURI ?: "unknown"
 

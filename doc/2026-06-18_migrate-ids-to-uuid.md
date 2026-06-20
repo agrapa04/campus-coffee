@@ -1,13 +1,13 @@
 # Migrate ids from Long to UUID
 
 Implementation plan. Standalone, behavior-preserving refactor. It is the clean baseline for the
-event-sourcing change in `doc/2026-06-18_configurable-event-sourcing-persistence.md` (implement this one
+event sourcing change in `doc/2026-06-18_configurable-event-sourcing-persistence.md` (implement this one
 first, verify green, commit, then do that one).
 
 ## Context
 
 CampusCoffee's entity ids come from Postgres sequences (`<table>_seq`), assigned by the database on insert.
-The event-sourcing work needs the **application** to assign the id *before* the write (so the event can be
+The event sourcing work needs the **application** to assign the id *before* the write (so the event can be
 the authoritative record), and we want ids that are deterministic and reproducible (for stable test data
 and documentable README examples) without the sequence-reset machinery. Application-assigned `UUID`s
 achieve both. This phase changes the id type and where it is assigned; relational behavior is otherwise
@@ -27,7 +27,7 @@ identical (the one added convenience is the dev-profile startup fixture load).
   reloading the fixtures, so each `PUT /api/dev/data` reassigns the same ids. The deterministic seed makes
   the loaded fixture ids reproducible (and so documentable in the README/INSTRUCTOR), which is what
   replaces the old sequence-reset machinery; a real deployment can set `CAMPUS_COFFEE_ID_SEED=random`.
-  (The event-sourcing phase later renames this primary generator `entityIdGenerator` and adds a second,
+  (The event sourcing phase later renames this primary generator `entityIdGenerator` and adds a second,
   separately seeded `eventIdGenerator` for the event log's own ids; `SeededUuidGenerator.newId()` and
   `reset()` are also made `@Synchronized`, so a dev reload running concurrently with a write cannot perturb
   the deterministic sequence.)
@@ -40,12 +40,12 @@ identical (the one added convenience is the dev-profile startup fixture load).
   Java interface's `getId()`/`setId()`). Newness is a private `@Transient persisted` flag flipped to `true`
   in `@PostLoad`/`@PostPersist`, with `override fun isNew() = !persisted`. Deliberately **not**
   `isNew = (createdAt == null)`: tying new-entity detection to the timestamp is fragile and breaks the
-  moment `createdAt` is set together with the id (which the event-sourcing phase does). (The event-sourcing
+  moment `createdAt` is set together with the id (which the event sourcing phase does). (The event sourcing
   phase later extracts this id + `Persistable`/`isNew` handling into a `PersistableEntity` `@MappedSuperclass`
   that both `Entity` and the event log's `EventEntity` extend, so the assigned-id support lives in one place;
   `Entity` then holds only the timestamps.)
 - **Timestamps unchanged here.** `createdAt`/`updatedAt` stay set by `@PrePersist`/`@PreUpdate` at persist
-  time (relational mode never reads them before persist). The event-sourcing phase moves the stamp earlier;
+  time (relational mode never reads them before persist). The event sourcing phase moves the stamp earlier;
   that is why `isNew` must not key off `createdAt`.
 - **Delete the sequence machinery.** Remove `CustomSequence`, `CustomSequenceGenerator`,
   `ResettableSequenceRepository`, `ResettableSequenceRepositoryImpl`, `JpaUtils`; drop `repositoryBaseClass`

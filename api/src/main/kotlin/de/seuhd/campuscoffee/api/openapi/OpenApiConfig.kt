@@ -28,7 +28,9 @@ import org.springframework.context.annotation.Configuration
 class OpenApiConfig {
     /**
      * Sets the OpenAPI document version from the build's [BuildProperties], falling back to "dev"
-     * when the build-info resource is absent. Keeps the version in one place: the Gradle build.
+     * when the build info resource is absent. Keeps the version in one place: the Gradle build.
+     *
+     * @param buildProperties the build info provider, empty when the build info resource is absent
      */
     @Bean
     fun apiVersionCustomizer(buildProperties: ObjectProvider<BuildProperties>): OpenApiCustomizer =

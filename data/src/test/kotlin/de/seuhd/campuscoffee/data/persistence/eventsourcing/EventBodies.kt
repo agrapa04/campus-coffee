@@ -3,7 +3,7 @@ package de.seuhd.campuscoffee.data.persistence.eventsourcing
 import java.util.UUID
 
 /**
- * Builders for the event-body maps the event-sourcing tests feed to the [ReadModelProjector], in the shape
+ * Builders for the event-body maps the event sourcing tests feed to the [ReadModelProjector], in the shape
  * [EventJsonMapper] produces (ids and timestamps as strings, POS and author flattened to ids for a review).
  */
 internal object EventBodies {

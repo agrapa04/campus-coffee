@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 /**
  * Rebuilds the relational read tables from the event log on startup, when
  * `campus-coffee.persistence.events-to-data-on-startup` is true: clears the tables and replays every event
- * in append order through the [ReadModelProjector]. It runs only in event-sourcing mode (where the log is
+ * in append order through the [ReadModelProjector]. It runs only in event sourcing mode (where the log is
  * the source of truth); in relational mode it logs and skips, since the tables are authoritative there and
  * replaying would delete their contents. It also skips when the log is empty, so it cannot clear a
  * populated read model with nothing to replay back into it.
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional
  * may have just added.
  *
  * The replay writes the ids and the `createdAt`/`updatedAt` from the event bodies. The reviews'
- * optimistic-locking version column restarts from zero, which has no effect because nothing compares a
+ * optimistic locking version column restarts from zero, which has no effect because nothing compares a
  * version across a rebuild.
  */
 @Component
@@ -43,6 +43,11 @@ class EventsToDataRunner(
     @Transactional
     override fun run() = rebuildFromLog()
 
+    /**
+     * Clears the read tables and replays every event in append order to rebuild the read model. Skips in
+     * relational mode (the tables are authoritative there) and when the log is empty (so it never wipes a
+     * populated read model with nothing to replay back).
+     */
     @Transactional
     fun rebuildFromLog() {
         if (properties.mode != PersistenceMode.EVENT_SOURCING) {
@@ -63,6 +68,7 @@ class EventsToDataRunner(
         log.info("Rebuilt the read model from {} events in the log.", events.size)
     }
 
+    /** Empties the read tables in foreign key order (approvals and reviews, then POS and users). */
     private fun clearReadTables() {
         // approvals and reviews carry the foreign keys, so clear them before the POS and users they reference
         reviewApprovalRepository.deleteAllInBatch()

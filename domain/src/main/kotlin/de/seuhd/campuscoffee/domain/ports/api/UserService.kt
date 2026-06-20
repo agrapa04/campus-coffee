@@ -32,6 +32,8 @@ interface UserService : CrudService<User, UUID> {
      * themselves or an admin may read it (listing all users is admin-only and gated at the web layer;
      * this guards reading a single user).
      *
+     * @param id         the id of the user to retrieve
+     * @param actingUser the authenticated user attempting the read
      * @throws NotFoundException if no user exists with [id]
      * @throws ForbiddenException if [actingUser] is neither the target user nor an admin
      */
@@ -44,6 +46,8 @@ interface UserService : CrudService<User, UUID> {
      * Retrieves a user by login name on behalf of [actingUser], with the same self-or-admin rule as the
      * id-based [getById].
      *
+     * @param loginName  the login name of the user to retrieve
+     * @param actingUser the authenticated user attempting the read
      * @throws NotFoundException if no user exists with [loginName]
      * @throws ForbiddenException if [actingUser] is neither the target user nor an admin
      */

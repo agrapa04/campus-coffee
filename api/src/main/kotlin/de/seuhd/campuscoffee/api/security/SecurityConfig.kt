@@ -34,6 +34,14 @@ import org.springframework.security.web.access.AccessDeniedHandler
  */
 @Configuration
 class SecurityConfig {
+    /**
+     * Builds the stateless filter chain that enforces the access rules described in the class KDoc.
+     *
+     * @param http the security builder for the chain
+     * @param authenticationEntryPoint renders a missing or invalid credential as a 401 JSON response
+     * @param accessDeniedHandler renders an authorization denial as a 403 JSON response
+     * @param jwtAuthenticationConverter maps a validated Bearer token to a principal with ROLE_* authorities
+     */
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
@@ -117,7 +125,12 @@ class SecurityConfig {
     @Bean
     fun passwordEncoder(): PasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder()
 
-    /** Authenticates username/password against the [UserDetailsService] using the shared encoder. */
+    /**
+     * Authenticates username/password against the [UserDetailsService] using the shared encoder.
+     *
+     * @param userDetailsService loads the user record for the supplied login name
+     * @param passwordEncoder verifies the supplied password against the stored hash
+     */
     @Bean
     fun authenticationProvider(
         userDetailsService: UserDetailsService,
@@ -128,7 +141,11 @@ class SecurityConfig {
         return provider
     }
 
-    /** Exposes the [AuthenticationManager] so the token endpoint (Exercise 4) can reuse it. */
+    /**
+     * Exposes the [AuthenticationManager] so the token endpoint (Exercise 4) can reuse it.
+     *
+     * @param authenticationProvider the provider the manager delegates each authentication attempt to
+     */
     @Bean
     fun authenticationManager(authenticationProvider: DaoAuthenticationProvider): AuthenticationManager =
         AuthenticationManager { authentication -> authenticationProvider.authenticate(authentication) }

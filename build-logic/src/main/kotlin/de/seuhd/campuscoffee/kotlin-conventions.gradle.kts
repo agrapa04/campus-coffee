@@ -1,5 +1,6 @@
 package de.seuhd.campuscoffee
 
+import dev.detekt.gradle.Detekt
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
@@ -34,14 +35,24 @@ configure<KtlintExtension> {
 }
 
 // Static analysis with detekt: the plugin wires its task into `check` and fails the build on findings by
-// default. buildUponDefaultConfig layers any future project rules on detekt's defaults; the per-module
-// baseline grandfathers the current findings so only new ones break the build.
+// default. buildUponDefaultConfig layers our config on detekt's defaults; config/detekt/detekt.yml enables
+// the custom campus-coffee-kdoc rules, and the per-module baseline grandfathers the current findings so
+// only new ones break the build.
 detekt {
     buildUponDefaultConfig = true
     parallel = true
     baseline = file("detekt-baseline.xml")
+    config.from(rootProject.file("config/detekt/detekt.yml"))
+}
+
+// The check-wired `detekt` task scans main and test sources by default. The KDoc rules apply to
+// production code only (test sources are exempt), so restrict it to the main source set.
+tasks.named<Detekt>("detekt") {
+    setSource(files("src/main/kotlin"))
 }
 
 dependencies {
     implementation(kotlin("reflect"))
+    // The custom KDoc rules; activated in config/detekt/detekt.yml.
+    detektPlugins(project(":detekt-rules"))
 }

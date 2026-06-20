@@ -20,6 +20,12 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration
 class EventSourcingHibernateConfiguration {
+    /**
+     * Pins Hibernate's `hibernate.type.json_format_mapper` to [EventJsonMapper], so the `events.body` `jsonb`
+     * column is serialized and read back with the same mapper that builds the event body.
+     *
+     * @return the customizer that sets the JSON format mapper on the Hibernate properties
+     */
     @Bean
     fun eventJsonFormatMapperCustomizer(): HibernatePropertiesCustomizer =
         HibernatePropertiesCustomizer { properties ->

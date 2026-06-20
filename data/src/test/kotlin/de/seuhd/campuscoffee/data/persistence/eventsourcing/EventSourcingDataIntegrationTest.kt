@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import java.util.UUID
 
 /**
- * Integration tests for the event-sourcing data adapters against a real PostgreSQL container: every write
+ * Integration tests for the event sourcing data adapters against a real PostgreSQL container: every write
  * appends the right event and projects the read model, rollbacks leave the log clean, the event bodies
  * never carry a raw password (and review events never carry a password hash), a clear empties both the log
  * and the tables, and replaying the log reconstructs the read model faithfully.

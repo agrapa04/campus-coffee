@@ -100,6 +100,16 @@ Kotlin version they were built against, which is why Kotlin is pinned at 2.4.0).
 plugin and wired into `check`, so `gradle build` and CI fail on findings. A per-module
 `detekt-baseline.xml` grandfathers pre-existing findings; regenerate it with `gradle detektBaseline`.
 
+On top of detekt's defaults the build enforces a **custom KDoc rule set** (`campus-coffee-kdoc`),
+authored in the `:detekt-rules` tooling subproject and loaded via `detektPlugins`. It requires:
+every non-local, non-override function to have KDoc (any visibility); public functions to document
+every parameter with `@param`; every non-local class, interface, object, and enum class to have KDoc;
+and non-private enum constructor properties to be documented with `@property` or `@param`. Local
+declarations, overrides, and **test sources** are exempt (the `detekt` task wired into `check` is
+restricted to `src/main/kotlin` in `kotlin-conventions`). The rules are enabled in `config/detekt/detekt.yml` and
+covered by their own unit tests (`gradle :detekt-rules:test`). To add or change a rule, edit
+`detekt-rules/src/main/kotlin/de/seuhd/campuscoffee/detekt/` and its `META-INF/services` provider.
+
 ### Start PostgreSQL Database
 
 ```shell
@@ -125,9 +135,9 @@ The fixture load on startup happens in the `dev` and `prod` profiles (both set
 `campus-coffee.fixtures.load-on-startup`); the database persists across application restarts, and the
 loader skips when users already exist.
 
-### Run in event-sourcing mode
+### Run in event sourcing mode
 
-The default persistence mode is relational. To run with the event-first event-sourcing adapters instead
+The default persistence mode is relational. To run with the event-first event sourcing adapters instead
 (the event log becomes the source of truth and the tables a read model projected from it):
 
 ```shell
@@ -219,7 +229,7 @@ Dependencies and tools are kept current automatically:
 
 Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql`, `V2__create_users_table.sql`).
 
-`V8__create_events_table.sql` adds the `events` table for the event-sourcing mode. It always runs and the
+`V8__create_events_table.sql` adds the `events` table for the event sourcing mode. It always runs and the
 `EventEntity` is always mapped (the table exists in both modes); in relational mode nothing writes to it.
 The table is append-only: an application-assigned `uuid` id, a database-assigned monotonic `seq` (the
 replay order, since the UUID id is not monotonic), `change_type`, `entity_type`, `entity_version`, a `jsonb`
@@ -268,7 +278,7 @@ private helpers) keep conventional camelCase names.
 - **Kotlin** on JDK 25; nullability is expressed with Kotlin's nullable types.
 - **MapStruct** for object mapping (DTOs <-> domain models <-> entities), run via kapt.
 - **ktlint** for Kotlin formatting and linting (the official Kotlin style; `ktlintCheck` runs as part of `check`).
-- **detekt** for Kotlin static analysis (`dev.detekt` `2.0.0-alpha.5`, gated via `check`; a per-module baseline grandfathers existing findings).
+- **detekt** for Kotlin static analysis (`dev.detekt` `2.0.0-alpha.5`, gated via `check`; a per-module baseline grandfathers existing findings), plus a custom `campus-coffee-kdoc` rule set in `:detekt-rules` enforcing KDoc on production code.
 - **Bean Validation** (Jakarta Validation) for input validation (validation happens in the controllers based on the DTOs, before mapping them to domain models).
 - **OpenAPI/Swagger** (SpringDoc) for API documentation.
 - **Spring `@HttpExchange`** declarative HTTP client over `RestClient` (OpenStreetMap API integration).
@@ -366,7 +376,7 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
     rows on startup (import a relational database into the log; appends one INSERT event per row,
     idempotent per type). Off by default.
   - `campus-coffee.persistence.events-to-data-on-startup`: when `true`, rebuild the relational tables from
-    the event log on startup (clear the tables and replay the whole log). Acts only in event-sourcing mode;
+    the event log on startup (clear the tables and replay the whole log). Acts only in event sourcing mode;
     logs and skips in relational mode. Off by default.
   - `campus-coffee.jwt.secret`: HMAC signing secret for the stateless JWT bearer tokens. Required and at
     least 32 bytes; binding fails at startup otherwise. Supplied via `JWT_SECRET` (the dev profile has an
@@ -374,7 +384,7 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
   - `campus-coffee.fixtures.load-on-startup`: when `true` and the database has no users yet, load the
     fixture dataset on startup (enabled in the dev and prod profiles).
 
-The design is honest about its claims: in event-sourcing mode the events are the source of truth and the
+The design is honest about its claims: in event sourcing mode the events are the source of truth and the
 tables are a materialized read model rebuilt from the log. The `events` table retains `passwordHash` in a
 user event (the same sensitivity as the `users` table, so a login survives a rebuild) but never the raw
 `password`, and a review event stores its POS and author as ids, so no hash leaks through a review.

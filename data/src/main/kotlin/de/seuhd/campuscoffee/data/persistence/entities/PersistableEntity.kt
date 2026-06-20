@@ -20,8 +20,8 @@ import java.util.UUID
  * `id` would compile to the same `getId()` as the [Persistable] override and clash with it. Callers still
  * write `entity.id`, since Kotlin exposes the Java `getId()`/`setId()` pair as a property.
  *
- * Both the timestamped [Entity] (the relational read-model rows) and the event log's `EventEntity` extend
- * this, so the assigned-id and new-entity handling lives in one place.
+ * Both the timestamped [Entity] (the relational read model rows) and the event log's `EventEntity` extend
+ * this, so the assigned id and new entity handling lives in one place.
  */
 @MappedSuperclass
 abstract class PersistableEntity : Persistable<UUID> {
@@ -34,12 +34,18 @@ abstract class PersistableEntity : Persistable<UUID> {
 
     override fun getId(): UUID? = entityId
 
+    /**
+     * Assigns the entity's id (exposed as the `id` property in Kotlin).
+     *
+     * @param value the id to assign
+     */
     fun setId(value: UUID?) {
         entityId = value
     }
 
     override fun isNew(): Boolean = !persisted
 
+    /** Flips the new entity flag after the row is loaded or persisted, so [isNew] then returns false. */
     @PostLoad
     @PostPersist
     private fun markPersisted() {

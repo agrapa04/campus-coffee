@@ -67,7 +67,7 @@ to work with; the [Dev endpoints](#dev-endpoints-apidev) let you reload or clear
 ### Event-sourcing persistence mode
 
 By default the application persists straight to the relational tables. It can also run in an event-first
-**event-sourcing** mode, where an append-only event log is the source of truth and the relational tables
+**event sourcing** mode, where an append-only event log is the source of truth and the relational tables
 are a read model projected from it. The API behaves identically. The difference is that every write request
 is also recorded in the `events` table.
 
@@ -386,7 +386,7 @@ builds the image and creates **one** Cloud Run service (named after the Compose 
 namespace (which is why `compose.prod.yaml` reaches the database at `localhost`):
 
 ```shell
-scripts/deploy-cloudrun.sh                  # event-sourcing mode
+scripts/deploy-cloudrun.sh                  # event sourcing mode
 scripts/deploy-cloudrun.sh relational       # relational mode
 ```
 
@@ -406,7 +406,7 @@ gcloud beta run compose up compose.prod.yaml --allow-unauthenticated
 ```
 
 The two modes differ only in `CAMPUS_COFFEE_PERSISTENCE_MODE` in `deploy.env` (the script sets it from its
-argument). In event-sourcing mode the prod fixture load writes through the event log, so the `events` table
+argument). In event sourcing mode the prod fixture load writes through the event log, so the `events` table
 is populated and the relational tables are projected from it; the API behaves identically.
 
 Read the service URL (with `/api` appended for the API base path) and exercise it:

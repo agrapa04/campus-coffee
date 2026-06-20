@@ -42,6 +42,10 @@ class CrudOperationCustomizer : OperationCustomizer {
     /**
      * Creates the API responses from the operation's response specifications, attaching the
      * ErrorResponse schema for error responses and the return-type schema for success responses.
+     *
+     * @param params         the resolved operation, resource, and external resource
+     * @param handlerMethod  the handler method whose return type yields the success schema
+     * @param roleRestricted whether the operation also answers 403 when the caller lacks the role
      */
     fun createResponses(
         params: Parameters,
@@ -83,6 +87,7 @@ class CrudOperationCustomizer : OperationCustomizer {
         return String.format(spec.descriptionTemplate, substitution)
     }
 
+    /** Builds the JSON content referencing the [ErrorResponse] component schema for an error response. */
     private fun createErrorResponseContent(): Content {
         val errorSchema = Schema<Any>().`$ref`("#/components/schemas/" + ErrorResponse::class.java.simpleName)
         return Content().addMediaType("application/json", MediaType().schema(errorSchema))

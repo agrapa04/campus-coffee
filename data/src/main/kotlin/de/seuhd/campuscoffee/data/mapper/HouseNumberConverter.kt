@@ -19,6 +19,7 @@ class HouseNumberConverter {
      * Splits a house number into its numeric part and optional letter suffix (the 'a' in "21a",
      * "21 a", or "21-a"; separators are not retained).
      *
+     * @param houseNumber the house number string to split, or null
      * @return the parts, both null when the input is null or empty
      * @throws IllegalArgumentException if the input contains no digit or its numeric part exceeds Int range
      */
@@ -44,6 +45,8 @@ class HouseNumberConverter {
     /**
      * Merges a numeric house number and optional suffix back into a string.
      *
+     * @param number the numeric house number, or null
+     * @param suffix the optional single letter suffix, or null
      * @return the merged string, or null when the numeric part is null
      */
     fun merge(

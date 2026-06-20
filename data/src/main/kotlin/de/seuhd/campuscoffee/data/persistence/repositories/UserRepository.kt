@@ -8,5 +8,10 @@ import java.util.UUID
  * Repository for persisting user entities.
  */
 interface UserRepository : JpaRepository<UserEntity, UUID> {
+    /**
+     * Returns the user with the given login name, or null if none matches.
+     *
+     * @param loginName the login name to look up
+     */
     fun findByLoginName(loginName: String): UserEntity?
 }

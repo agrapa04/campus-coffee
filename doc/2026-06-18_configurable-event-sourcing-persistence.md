@@ -1,4 +1,4 @@
-# Configurable event-sourcing (event-first CQRS) persistence
+# Configurable event sourcing (event-first CQRS) persistence
 
 Design as implemented (this document tracks the as-built feature). **Builds on** the id migration in
 `doc/2026-06-18_migrate-ids-to-uuid.md` (ids are application-assigned `UUID`s with an `IdGenerator` bean).
@@ -6,7 +6,7 @@ Design as implemented (this document tracks the as-built feature). **Builds on**
 ## Context
 
 Add a second, genuinely event-sourced data layer, selectable by a config flag, mirroring the
-`ase24-taskboard` approach (whose event-sourcing impl appended the event and a database trigger derived the
+`ase24-taskboard` approach (whose event sourcing impl appended the event and a database trigger derived the
 table). We use **event-first** writes: the event log is the source of truth and the relational tables are a
 projection derived from it, so the "source of truth" framing is accurate rather than overclaimed. The
 projection moves from taskboard's SQL triggers into testable Kotlin, reusing the existing MapStruct mappers
@@ -54,12 +54,12 @@ replay-on-read. Default mode stays relational; the `domain` and `api` layers are
   holds `mode`, `dataToEventsOnStartup`, `eventsToDataOnStartup` (an unknown mode fails startup, since it
   cannot bind to the enum); the runners read it.
 - **events → data** (rebuild): a flag-gated (`events-to-data-on-startup`) data-component runs only in
-  event-sourcing mode and skips an empty log (so it never clears a populated read model with nothing to
+  event sourcing mode and skips an empty log (so it never clears a populated read model with nothing to
   replay back). Otherwise it clears the tables and replays the whole log in append order
   (`findAllByOrderBySeqAsc`) through the `ReadModelProjector`, preserving ids + `createdAt`/`updatedAt`; the
   `@Version` counter restarts from zero, which has no effect. No `api` involvement.
 - **data → events** (import an existing database): a flag-gated, `@Transactional` component that runs only
-  in event-sourcing mode; it reads the current rows and appends one INSERT event each in FK order (users/pos
+  in event sourcing mode; it reads the current rows and appends one INSERT event each in FK order (users/pos
   → reviews → approvals; **approvals via `ReviewApprovalRepository.findAll()`** since that port has no
   `getAll`); idempotent per type (skip when the type's log is non-empty).
 - **Startup ordering — run before the web server accepts requests.** The import and rebuild runners and the
@@ -118,7 +118,7 @@ ArchUnit: the new code is in the `data` layer and imports only `domain` + Spring
 ## Docs, changelog & version
 
 - **`CHANGELOG.md`** (Keep a Changelog): add an `[Unreleased]` entry for the configurable
-  event-sourcing/CQRS persistence mode and, since this is a user-facing feature, open the next
+  event sourcing/CQRS persistence mode and, since this is a user-facing feature, open the next
   `## [x.y.z]` section (version is tracked only via CHANGELOG headings, latest `0.2.0`).
 - **`CLAUDE.md`:** Ports & Adapters (the two interchangeable data adapters + the mode flag), Build/Run (the
   ES run line), Database (`V8` + the always-present `events` table), Testing (both-modes note), Configuration

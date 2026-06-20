@@ -10,9 +10,17 @@ interface EventRepository : JpaRepository<EventEntity, UUID> {
     /** All events in append order (by the monotonic [EventEntity.seq]), for replaying the whole log. */
     fun findAllByOrderBySeqAsc(): List<EventEntity>
 
-    /** Whether the log already holds at least one event for the given domain type, so the import can skip it. */
+    /**
+     * Whether the log already holds at least one event for the given domain type, so the import can skip it.
+     *
+     * @param entityType the entity type label (the domain class's simple name)
+     */
     fun existsByEntityType(entityType: String): Boolean
 
-    /** Removes every event for the given domain type, when clearing that type's data. */
+    /**
+     * Removes every event for the given domain type, when clearing that type's data.
+     *
+     * @param entityType the entity type label (the domain class's simple name)
+     */
     fun deleteByEntityType(entityType: String)
 }

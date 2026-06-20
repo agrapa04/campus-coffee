@@ -5,6 +5,9 @@ import org.springframework.http.HttpStatus
 /**
  * Supported CRUD operation types, each with its OpenAPI summary template and the response
  * specifications (status codes, description templates, and which are error responses).
+ *
+ * @property summaryTemplate builds the operation summary from the resolved [Parameters]
+ * @property responseSpecifications the response specs (status codes, description templates, error flags)
  */
 enum class Operation(
     val summaryTemplate: (Parameters) -> String,

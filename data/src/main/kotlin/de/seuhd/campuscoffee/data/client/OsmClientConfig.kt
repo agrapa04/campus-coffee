@@ -18,12 +18,19 @@ import java.net.http.HttpClient
  */
 @Configuration
 class OsmClientConfig {
+    /**
+     * Builds the [OsmClient] proxy over a RestClient configured for the OSM API.
+     *
+     * @param properties the OSM API base URL and connect/read timeouts
+     * @param buildProperties the build info used for the User-Agent version (absent on an IDE run)
+     * @return the declarative OSM HTTP client
+     */
     @Bean
     fun osmClient(
         properties: OsmApiProperties,
         buildProperties: ObjectProvider<BuildProperties>
     ): OsmClient {
-        // Version from the build (BuildProperties); "dev" when build-info is absent, e.g., an IDE run.
+        // Version from the build (BuildProperties); "dev" when build info is absent, e.g., an IDE run.
         val version = buildProperties.ifAvailable?.version ?: "dev"
         val httpClient =
             HttpClient

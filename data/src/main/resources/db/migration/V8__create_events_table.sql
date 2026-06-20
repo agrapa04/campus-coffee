@@ -1,6 +1,6 @@
 SET TIME ZONE 'UTC';
 
--- Append-only event log for the optional event-sourcing persistence mode
+-- Append-only event log for the optional event sourcing persistence mode
 -- (campus-coffee.persistence.mode = event-sourcing). The table is always created and the EventEntity is
 -- always mapped; in the default relational mode nothing writes to it. When event sourcing is on, the log
 -- is the source of truth and the other tables are a read model projected from it.

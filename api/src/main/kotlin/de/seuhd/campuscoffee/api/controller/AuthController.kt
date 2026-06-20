@@ -38,6 +38,13 @@ class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val jwtEncoder: JwtEncoder
 ) {
+    /**
+     * Authenticates the credentials with the shared [AuthenticationManager] and returns a signed JWT
+     * carrying the subject, the user's roles, and a 15-minute expiry.
+     *
+     * @param request the login name and password to authenticate
+     * @return 200 OK with the issued bearer token
+     */
     @Operation(summary = "Authenticate with a login name and password and issue a JWT bearer token.")
     @PostMapping("/token")
     fun token(

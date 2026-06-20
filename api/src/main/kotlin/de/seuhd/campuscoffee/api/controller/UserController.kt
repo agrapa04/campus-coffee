@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import java.util.UUID
 
+/** Controller for handling user registration and management requests. */
 @Tag(name = "Users", description = "Operations related to user management.")
 @Controller
 @RequestMapping("/users")
@@ -112,6 +113,11 @@ class UserController(
         @PathVariable id: UUID
     ): ResponseEntity<Void> = super.delete(id)
 
+    /**
+     * Retrieves the user with the given login name; like getById, only that user or an admin may read it.
+     *
+     * @param loginName the login name of the user to retrieve
+     */
     @Operation
     @CrudOperation(operation = FILTER, resource = USER)
     @GetMapping("/filter")

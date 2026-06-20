@@ -107,8 +107,10 @@ class ReviewServiceImpl(
         super.delete(reviewId)
     }
 
-    // the author, or any moderator, may edit or delete a review; ownership and role combine here, on
-    // the domain User (gated on MODERATOR, not ADMIN)
+    /**
+     * Requires that [actingUser] is the review's author or a moderator before an edit or delete; ownership
+     * and role combine here, on the domain User (gated on MODERATOR, not ADMIN).
+     */
     private fun requireAuthorOrModerator(
         existing: Review,
         actingUser: User,
