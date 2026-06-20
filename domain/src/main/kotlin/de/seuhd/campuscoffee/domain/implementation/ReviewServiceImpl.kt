@@ -1,6 +1,6 @@
 package de.seuhd.campuscoffee.domain.implementation
 
-import de.seuhd.campuscoffee.domain.configuration.ApprovalConfiguration
+import de.seuhd.campuscoffee.domain.configuration.ApprovalProperties
 import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
 import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.exceptions.ValidationException
@@ -29,7 +29,7 @@ class ReviewServiceImpl(
     private val userDataService: UserDataService,
     private val posDataService: PosDataService,
     private val reviewApprovalDataService: ReviewApprovalDataService,
-    private val approvalConfiguration: ApprovalConfiguration
+    private val approvalProperties: ApprovalProperties
 ) : CrudServiceImpl<Review, UUID>(Review::class.java),
     ReviewService {
     override fun dataService(): CrudDataService<Review, UUID> = reviewDataService
@@ -160,20 +160,20 @@ class ReviewServiceImpl(
         // the approval state comes from the recorded rows: the number of distinct approvers, and
         // whether that count meets the quorum
         val approvalCount = reviewApprovalDataService.countByReviewId(reviewId)
-        val approved = approvalCount >= approvalConfiguration.minCount
+        val approved = approvalCount >= approvalProperties.minCount
         if (approved) {
             log.info(
                 "Review with ID '{}' has now reached the approval quorum ({}/{})",
                 reviewId,
                 approvalCount,
-                approvalConfiguration.minCount
+                approvalProperties.minCount
             )
         } else {
             log.info(
                 "Review with ID '{}' has not reached the approval quorum ({}/{})",
                 reviewId,
                 approvalCount,
-                approvalConfiguration.minCount
+                approvalProperties.minCount
             )
         }
 

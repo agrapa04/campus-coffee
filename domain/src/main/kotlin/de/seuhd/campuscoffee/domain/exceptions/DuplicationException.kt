@@ -1,7 +1,5 @@
 package de.seuhd.campuscoffee.domain.exceptions
 
-import de.seuhd.campuscoffee.domain.model.objects.DomainModel
-
 /**
  * Generic exception thrown when attempting to create or update an entity with a value that already exists.
  * This represents a business rule violation: certain fields must be unique.
@@ -11,7 +9,7 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * @param fieldValue  the duplicate value
  */
 class DuplicationException(
-    domainClass: Class<out DomainModel<*>>,
+    domainClass: Class<*>,
     fieldName: String,
     fieldValue: String
 ) : RuntimeException("${domainClass.simpleName} with $fieldName '$fieldValue' already exists.")

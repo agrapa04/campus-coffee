@@ -26,42 +26,25 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
-osm:
-  api:
-    base-url: https://www.openstreetmap.org/api/0.6
+# Custom properties; documented in their @ConfigurationProperties classes (OsmApiProperties, IdProperties,
+# PersistenceProperties, ApprovalProperties, JwtProperties, FixturesProperties), not here.
 campus-coffee:
+  osm:
+    api:
+      base-url: https://www.openstreetmap.org/api/0.6
   id:
-    # Seed for the application-assigned entity UUIDs. A number makes the assigned ids deterministic, so a
-    # fixture load assigns the same ids every time. Set CAMPUS_COFFEE_ID_SEED=random for random UUIDs.
-    seed: ${CAMPUS_COFFEE_ID_SEED:42}
-    # Separate seed for the event log's own ids in event-sourcing mode. A different value from the entity
-    # seed, so an event id never coincides with an entity id.
+    entity-seed: ${CAMPUS_COFFEE_ID_ENTITY_SEED:42}
     event-seed: ${CAMPUS_COFFEE_ID_EVENT_SEED:100}
   persistence:
-    # Persistence mode: 'relational' (default) writes straight to the tables; 'event-sourcing' makes the
-    # event log the source of truth and the tables a read model projected from it. The events table is
-    # always present; in relational mode nothing writes to it. An unknown mode value fails startup.
     mode: ${CAMPUS_COFFEE_PERSISTENCE_MODE:relational}
-    # One-off startup migrations between the two representations (both off by default). Both are
-    # DESTRUCTIVE and run automatically on the next startup, so enable one only deliberately:
-    #   data-to-events: append one INSERT event per existing row, importing a relational database into the
-    #     log (skipped per type once that type already has events).
-    #   events-to-data: DELETE every row in the read tables and rebuild them by replaying the whole log
-    #     (event-sourcing mode only; the log becomes authoritative for the table contents).
     data-to-events-on-startup: ${CAMPUS_COFFEE_DATA_TO_EVENTS_ON_STARTUP:false}
     events-to-data-on-startup: ${CAMPUS_COFFEE_EVENTS_TO_DATA_ON_STARTUP:false}
   approval:
     min-count: 3
+  jwt:
+    secret: ${JWT_SECRET:dev-only-insecure-jwt-secret-change-me-in-production}
   fixtures:
-    # Load the fixture data once on startup, but only when the database has no users yet. Off by
-    # default; the prod deployment turns it on because that profile has no /api/dev endpoints to load
-    # data through.
     load-on-startup: false
-jwt:
-  # HMAC (symmetric) signing secret for the stateless JWT bearer tokens. The same value signs and
-  # verifies tokens, so it must stay secret. This is a development default; a real deployment supplies its
-  # own via the JWT_SECRET environment variable. Must be at least 32 bytes for HMAC-SHA256.
-  secret: ${JWT_SECRET:dev-only-insecure-jwt-secret-change-me-in-production}
 
 ---
 spring:
@@ -94,8 +77,6 @@ springdoc:
     path: /api/swagger-ui.html
 campus-coffee:
   fixtures:
-    # The local dev app loads the fixture data on startup (when the database has no users yet), so it
-    # comes up ready with the seeded ids. Use the /api/dev endpoints to inspect, replace, or clear it.
     load-on-startup: true
 
 ---
@@ -103,15 +84,10 @@ spring:
   config:
     activate:
       on-profile: prod
-jwt:
-  # No fallback in prod: JWT_SECRET must be set in the environment, or startup fails. The datasource
-  # (SPRING_DATASOURCE_*) and the other settings also come from the environment that the deployment
-  # provides; Swagger and the dev endpoints are off, because this is not the dev profile.
-  secret: ${JWT_SECRET}
 campus-coffee:
+  jwt:
+    secret: ${JWT_SECRET}
   fixtures:
-    # This is a teaching deployment, so it loads the fixture data on startup. Set
-    # LOAD_FIXTURES_ON_STARTUP=false for an empty database.
     load-on-startup: ${LOAD_FIXTURES_ON_STARTUP:true}
 management:
   # env is not exposed in prod: even with sensitive values masked it reveals the configuration

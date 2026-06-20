@@ -1,7 +1,5 @@
 package de.seuhd.campuscoffee.domain.exceptions
 
-import de.seuhd.campuscoffee.domain.model.objects.DomainModel
-
 /**
  * Thrown when an entity cannot be deleted because other data still references it (e.g., a POS or user
  * that has reviews). The caller must delete the referencing data first.
@@ -11,7 +9,7 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * @param cause       the underlying integrity violation, if any
  */
 class DeletionConflictException(
-    domainClass: Class<out DomainModel<*>>,
+    domainClass: Class<*>,
     id: Any?,
     cause: Throwable? = null
 ) : RuntimeException(

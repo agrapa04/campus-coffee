@@ -64,7 +64,7 @@ abstract class AbstractDataIntegrationTest {
             registry.add("spring.datasource.username", postgresContainer::getUsername)
             registry.add("spring.datasource.password", postgresContainer::getPassword)
             // the OSM client is wired but never called in these tests
-            registry.add("osm.api.base-url") { "http://localhost:1" }
+            registry.add("campus-coffee.osm.api.base-url") { "http://localhost:1" }
         }
     }
 }

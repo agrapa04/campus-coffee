@@ -1,5 +1,6 @@
 package de.seuhd.campuscoffee.data.persistence.eventsourcing
 
+import de.seuhd.campuscoffee.data.configuration.IdGeneratorConfiguration
 import de.seuhd.campuscoffee.domain.model.objects.DomainModel
 import de.seuhd.campuscoffee.domain.ports.IdGenerator
 import org.springframework.beans.factory.annotation.Qualifier
@@ -16,13 +17,13 @@ import kotlin.reflect.KClass
  *
  * The body is the full JSON state of the domain object (INSERT/UPDATE), or just its id (DELETE), built with
  * [EventJsonMapper] so it matches the `jsonb` column. The domain object's own id is inside the body; the
- * event's own id comes from a dedicated [IdGenerator] (the [EVENT_ID_GENERATOR] bean) with its own seed,
- * separate from the entity-id generator.
+ * event's own id comes from a dedicated [IdGenerator] bean, qualified
+ * [IdGeneratorConfiguration.EVENT_ID_GENERATOR], with its own seed, separate from the entity-id generator.
  */
 @Service
 class EventStore(
     private val eventRepository: EventRepository,
-    @param:Qualifier(EVENT_ID_GENERATOR) private val idGenerator: IdGenerator
+    @param:Qualifier(IdGeneratorConfiguration.EVENT_ID_GENERATOR) private val idGenerator: IdGenerator
 ) {
     /** Appends an INSERT event carrying the full state of a newly created domain object. */
     fun appendInsert(domain: DomainModel<*>): EventEntity =
@@ -73,9 +74,6 @@ class EventStore(
         EventJsonMapper.instance.convertValue(domain, BODY_TYPE)
 
     companion object {
-        /** Bean name of the dedicated generator for event ids. */
-        const val EVENT_ID_GENERATOR = "eventIdGenerator"
-
         /** The event payload schema version recorded on every event; increment it if the body format changes. */
         const val PAYLOAD_SCHEMA_VERSION = 1L
 

@@ -30,10 +30,6 @@ dependencies {
     testImplementation(libs.mapstruct)
     kapt(libs.mapstruct.processor)
 
-    // Generate Spring configuration metadata for the @ConfigurationProperties classes (OsmApiProperties);
-    // the processor runs via kapt.
-    kapt(libs.spring.boot.configuration.processor)
-
     testImplementation(libs.testcontainers.postgresql)
 }
 

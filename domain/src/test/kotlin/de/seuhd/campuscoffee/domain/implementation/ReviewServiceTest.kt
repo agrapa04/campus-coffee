@@ -29,7 +29,7 @@ import java.util.UUID
  */
 @ExtendWith(MockitoExtension::class)
 class ReviewServiceTest {
-    private val approvalConfiguration = TestFixtures.getApprovalConfiguration()
+    private val approvalProperties = TestFixtures.getApprovalProperties()
 
     // an id no fixture review carries, for the "update a missing review" case
     private val missingReviewId = UUID(0L, 9999L)
@@ -56,7 +56,7 @@ class ReviewServiceTest {
                 userDataService,
                 posDataService,
                 reviewApprovalDataService,
-                approvalConfiguration
+                approvalProperties
             )
     }
 
@@ -82,7 +82,7 @@ class ReviewServiceTest {
         // the recorded approvals now meet the quorum, so the derived state is approved
         whenever(
             reviewApprovalDataService.countByReviewId(reviewId)
-        ).thenReturn(approvalConfiguration.minCount.toLong())
+        ).thenReturn(approvalProperties.minCount.toLong())
         whenever(reviewDataService.upsert(any<Review>())).thenAnswer { it.getArgument<Review>(0) }
 
         val approvedReview = reviewService.approve(reviewId, approver)
@@ -91,7 +91,7 @@ class ReviewServiceTest {
             ReviewApproval(reviewId = reviewId, userId = requireNotNull(approver.id))
         )
         verify(reviewApprovalDataService).countByReviewId(reviewId)
-        assertThat(approvedReview.approvalCount).isEqualTo(approvalConfiguration.minCount)
+        assertThat(approvedReview.approvalCount).isEqualTo(approvalProperties.minCount)
         assertThat(approvedReview.approved).isTrue()
     }
 
@@ -218,7 +218,7 @@ class ReviewServiceTest {
         val posId = requireNotNull(pos.id)
         val reviews =
             TestFixtures.getReviewFixtures().map {
-                it.copy(pos = pos, approvalCount = approvalConfiguration.minCount, approved = true)
+                it.copy(pos = pos, approvalCount = approvalProperties.minCount, approved = true)
             }
         whenever(posDataService.getById(posId)).thenReturn(pos)
         whenever(reviewDataService.filter(pos, true)).thenReturn(reviews)

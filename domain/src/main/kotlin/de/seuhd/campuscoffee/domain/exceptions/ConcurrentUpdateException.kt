@@ -1,7 +1,5 @@
 package de.seuhd.campuscoffee.domain.exceptions
 
-import de.seuhd.campuscoffee.domain.model.objects.DomainModel
-
 /**
  * Thrown when an update is rejected because the entity was modified concurrently since it was read
  * (an optimistic-locking conflict). The caller should reload the current state and retry.
@@ -11,7 +9,7 @@ import de.seuhd.campuscoffee.domain.model.objects.DomainModel
  * @param cause       the underlying optimistic-locking failure, if any
  */
 class ConcurrentUpdateException(
-    domainClass: Class<out DomainModel<*>>,
+    domainClass: Class<*>,
     id: Any?,
     cause: Throwable? = null
 ) : RuntimeException(

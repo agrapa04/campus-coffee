@@ -1,8 +1,6 @@
 package de.seuhd.campuscoffee.data.configuration
 
-import de.seuhd.campuscoffee.data.persistence.eventsourcing.EventStore
 import de.seuhd.campuscoffee.domain.ports.IdGenerator
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -21,14 +19,10 @@ import java.util.UUID
 class IdGeneratorConfiguration {
     @Bean
     @Primary
-    fun entityIdGenerator(
-        @Value("\${campus-coffee.id.seed:42}") seed: String
-    ): IdGenerator = generatorFor(seed)
+    fun entityIdGenerator(properties: IdProperties): IdGenerator = generatorFor(properties.entitySeed)
 
-    @Bean(EventStore.EVENT_ID_GENERATOR)
-    fun eventIdGenerator(
-        @Value("\${campus-coffee.id.event-seed:100}") seed: String
-    ): IdGenerator = generatorFor(seed)
+    @Bean(EVENT_ID_GENERATOR)
+    fun eventIdGenerator(properties: IdProperties): IdGenerator = generatorFor(properties.eventSeed)
 
     private fun generatorFor(seed: String): IdGenerator =
         if (seed.isBlank() || seed.equals("random", ignoreCase = true)) {
@@ -36,4 +30,9 @@ class IdGeneratorConfiguration {
         } else {
             SeededUuidGenerator(seed.trim().toLong())
         }
+
+    companion object {
+        /** Bean name of the dedicated generator for event ids (the qualifier the event store injects). */
+        const val EVENT_ID_GENERATOR = "eventIdGenerator"
+    }
 }

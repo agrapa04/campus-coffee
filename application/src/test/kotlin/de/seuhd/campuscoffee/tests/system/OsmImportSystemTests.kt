@@ -25,7 +25,7 @@ import org.springframework.test.web.servlet.client.returnResult
 
 /**
  * System tests for importing a POS from an OpenStreetMap node. The external OSM HTTP API is stubbed
- * with WireMock, and the OSM client is pointed at the stub through the `osm.api.base-url` property.
+ * with WireMock, and the OSM client is pointed at the stub through the `campus-coffee.osm.api.base-url` property.
  * The server starts before the Spring context so the client resolves the stub URL. The import is a POS
  * write request, so it requires a moderator; each call authenticates as the moderator fixture, and one test
  * pins that a plain USER is forbidden.
@@ -180,7 +180,7 @@ class OsmImportSystemTests : AbstractSystemTest() {
         @JvmStatic
         @DynamicPropertySource
         fun osmProperties(registry: DynamicPropertyRegistry) {
-            registry.add("osm.api.base-url") { "http://localhost:${wireMock.port()}" }
+            registry.add("campus-coffee.osm.api.base-url") { "http://localhost:${wireMock.port()}" }
         }
 
         @JvmStatic

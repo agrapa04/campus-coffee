@@ -43,7 +43,6 @@ spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boo
 # Boot 4 split autoconfiguration into per-technology modules; Flyway's is not pulled by data-jpa.
 spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
-spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 spring-tx = { module = "org.springframework:spring-tx" }
 spring-web = { module = "org.springframework:spring-web" }

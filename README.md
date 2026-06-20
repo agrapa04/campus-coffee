@@ -137,7 +137,7 @@ The fixture data records `review_approvals` rows consistent with each review's a
 review of `Schmelzpunkt` reaches the quorum, so it starts out approved. Write requests require authentication,
 so pass one of these credentials, e.g. `-u jane_doe:aaaMbnPdFYDqkOpS3fVA`.
 
-Resource ids are `UUID`s the server assigns on creation. With the default seed (`campus-coffee.id.seed` =
+Resource ids are `UUID`s the server assigns on creation. With the default seed (`campus-coffee.id.entity-seed` =
 `42`), a freshly loaded fixture dataset always gets the same ids, so the examples below use the concrete
 fixture ids, each with a `#` comment naming the entity. If you have changed the data, read the current id
 from a list or filter response (e.g., `GET /api/pos` or `GET /api/users/filter?login_name=jane_doe`).

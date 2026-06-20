@@ -300,17 +300,38 @@ header cannot switch responses to XML (the OSM client parses XML with its own `X
 
 MapStruct runs as a Kotlin annotation processor via kapt, applied through the `de.seuhd.campuscoffee.kotlin-kapt-conventions` convention plugin (`build-logic/`); the `api` and `data` modules declare `kapt(mapstruct-processor)`. The generated `*MapperImpl` classes are excluded from the coverage and mutation gates.
 
+### IDE Configuration Metadata
+
+The custom `campus-coffee.*` keys resolve in IntelliJ's `application.yaml` editor because the IDE reads the
+`@ConfigurationProperties` classes directly from source. Two rules keep that working:
+
+- **Every custom key has a `@ConfigurationProperties` class**, named `*Properties` and living in its module's
+  `configuration` package: `ApprovalProperties` (`domain`), `IdProperties` / `PersistenceProperties` /
+  `OsmApiProperties` (`data`), and `JwtProperties` / `FixturesProperties` (`application`). Document each
+  property with **KDoc on the class** (the IDE shows it as the key's quick-doc), never with comments in
+  `application.yaml`. To add a key, add it to the relevant class.
+- **The data module is a compile dependency of `application`** (`implementation(project(":data"))`, not
+  `runtimeOnly`). The IDE resolves `application.yaml` against the `application` module's compile classpath, so
+  a `runtimeOnly` data dependency would leave the data-owned keys (`campus-coffee.id.*`,
+  `campus-coffee.persistence.*`, `campus-coffee.osm.api.*`) flagged as unresolved while editing the file.
+
+We deliberately do **not** use the `spring-boot-configuration-processor` or any hand-authored
+`spring-configuration-metadata.json`. That processor runs through kapt, which writes the generated metadata
+under `build/tmp/kapt3` — a directory IntelliJ does not index — so it never helped the IDE (JetBrains
+IDEA-316797 / IDEA-370289; kapt is also in maintenance mode). kapt is applied only to `api` and `data`, for
+MapStruct.
+
 ### Identifier Generation
 
 Entity ids are application-assigned `UUID`s. The domain defines an `IdGenerator` port
 (`domain/.../ports/IdGenerator.kt`); the data-layer `IdGeneratorConfiguration` selects the adapter from the
-`campus-coffee.id.seed` property. A numeric seed (the default) yields a `SeededUuidGenerator` whose
+`campus-coffee.id.entity-seed` property. A numeric seed (the default) yields a `SeededUuidGenerator` whose
 deterministic sequence makes the loaded fixture ids reproducible across runs, so the README and instructor
 examples can reference them. The fixtures load on startup in the dev and prod profiles (both set
 `campus-coffee.fixtures.load-on-startup`), and the dev `PUT /api/dev/data` reloads them on demand. The dev
 reload resets the generator first, so repeated loads reassign the same ids. The tests use the same seeded
 generator.
-Setting the seed to `random` (e.g., `CAMPUS_COFFEE_ID_SEED=random`) yields
+Setting the seed to `random` (e.g., `CAMPUS_COFFEE_ID_ENTITY_SEED=random`) yields
 `UUID.randomUUID()` for a deployment that wants random ids. The id is assigned in the data-layer insert
 path (`CrudDataServiceImpl`, `ReviewApprovalDataServiceImpl`), so a null `domain.id` still means "create" and
 a non-null id means "update". The base `Entity` (`@MappedSuperclass`) implements Spring Data's
@@ -330,13 +351,13 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
 - Main config: `application/src/main/resources/application.yaml`.
 - Dev profile activates on `spring.config.activate.on-profile: dev`.
 - Custom properties:
-  - `osm.api.base-url`: OpenStreetMap API endpoint.
-  - `osm.api.connect-timeout` / `osm.api.read-timeout`: HTTP timeouts of the OSM client (defaults: 5s/10s).
+  - `campus-coffee.osm.api.base-url`: OpenStreetMap API endpoint.
+  - `campus-coffee.osm.api.connect-timeout` / `campus-coffee.osm.api.read-timeout`: HTTP timeouts of the OSM client (defaults: 5s/10s).
   - `campus-coffee.approval.min-count`: Minimum number of approvals needed for reviews to be approved.
     Required and must be >= 1; binding fails at startup otherwise.
-  - `campus-coffee.id.seed`: Seed for the application-assigned entity UUIDs. A number (the default) makes
+  - `campus-coffee.id.entity-seed`: Seed for the application-assigned entity UUIDs. A number (the default) makes
     the assigned ids deterministic and reproducible (so the loaded fixture data has stable ids); `random`
-    (e.g., `CAMPUS_COFFEE_ID_SEED=random`) uses random UUIDs instead. A separate generator with its own
+    (e.g., `CAMPUS_COFFEE_ID_ENTITY_SEED=random`) uses random UUIDs instead. A separate generator with its own
     seed (`campus-coffee.id.event-seed`, default `100`) assigns the event log's ids, so enabling event
     sourcing leaves the entity ids unchanged.
   - `campus-coffee.persistence.mode`: `relational` (the default) or `event-sourcing`. Selects the data
@@ -347,6 +368,11 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
   - `campus-coffee.persistence.events-to-data-on-startup`: when `true`, rebuild the relational tables from
     the event log on startup (clear the tables and replay the whole log). Acts only in event-sourcing mode;
     logs and skips in relational mode. Off by default.
+  - `campus-coffee.jwt.secret`: HMAC signing secret for the stateless JWT bearer tokens. Required and at
+    least 32 bytes; binding fails at startup otherwise. Supplied via `JWT_SECRET` (the dev profile has an
+    insecure fallback, the prod profile none).
+  - `campus-coffee.fixtures.load-on-startup`: when `true` and the database has no users yet, load the
+    fixture dataset on startup (enabled in the dev and prod profiles).
 
 The design is honest about its claims: in event-sourcing mode the events are the source of truth and the
 tables are a materialized read model rebuilt from the log. The `events` table retains `passwordHash` in a

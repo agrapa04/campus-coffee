@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.data.persistence.eventsourcing
+package de.seuhd.campuscoffee.data.configuration
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

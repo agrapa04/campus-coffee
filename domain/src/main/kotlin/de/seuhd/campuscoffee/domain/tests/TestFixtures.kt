@@ -1,6 +1,6 @@
 package de.seuhd.campuscoffee.domain.tests
 
-import de.seuhd.campuscoffee.domain.configuration.ApprovalConfiguration
+import de.seuhd.campuscoffee.domain.configuration.ApprovalProperties
 import de.seuhd.campuscoffee.domain.model.enums.CampusType
 import de.seuhd.campuscoffee.domain.model.enums.PosType
 import de.seuhd.campuscoffee.domain.model.objects.Pos
@@ -318,5 +318,5 @@ object TestFixtures {
         return Triple(users.size, pos.size, reviews.size)
     }
 
-    fun getApprovalConfiguration(): ApprovalConfiguration = ApprovalConfiguration(MIN_APPROVAL_COUNT)
+    fun getApprovalProperties(): ApprovalProperties = ApprovalProperties(MIN_APPROVAL_COUNT)
 }

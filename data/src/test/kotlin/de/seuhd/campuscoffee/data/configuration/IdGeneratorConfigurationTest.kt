@@ -6,24 +6,28 @@ import java.util.UUID
 
 /**
  * Tests [IdGeneratorConfiguration] and the [SeededUuidGenerator] it builds: a numeric
- * `campus-coffee.id.seed` produces the same id sequence every time, and `random` (or a blank value)
+ * `campus-coffee.id.entity-seed` produces the same id sequence every time, and `random` (or a blank value)
  * produces a different id on each call.
  */
 class IdGeneratorConfigurationTest {
     private val configuration = IdGeneratorConfiguration()
 
+    private fun entityGenerator(seed: String) = configuration.entityIdGenerator(IdProperties(entitySeed = seed))
+
+    private fun eventGenerator(eventSeed: String) = configuration.eventIdGenerator(IdProperties(eventSeed = eventSeed))
+
     @Test
     fun `a blank or random seed produces a different id on each call`() {
         for (seed in listOf("random", "RANDOM", " ")) {
-            val idGenerator = configuration.entityIdGenerator(seed)
+            val idGenerator = entityGenerator(seed)
             assertThat(idGenerator.newId()).isNotEqualTo(idGenerator.newId())
         }
     }
 
     @Test
     fun `the same numeric seed produces the same id sequence on two generators`() {
-        val first = configuration.entityIdGenerator("42")
-        val second = configuration.entityIdGenerator("42")
+        val first = entityGenerator("42")
+        val second = entityGenerator("42")
 
         repeat(5) { assertThat(first.newId()).isEqualTo(second.newId()) }
     }
@@ -37,8 +41,8 @@ class IdGeneratorConfigurationTest {
     fun `the default entity and event seeds produce different id sequences`() {
         // the entity and event generators use separate seeds (42 and 100 by default), so an event id never
         // coincides with an entity id
-        val entityIds = configuration.entityIdGenerator("42").let { gen -> List(3) { gen.newId() } }
-        val eventIds = configuration.eventIdGenerator("100").let { gen -> List(3) { gen.newId() } }
+        val entityIds = entityGenerator("42").let { gen -> List(3) { gen.newId() } }
+        val eventIds = eventGenerator("100").let { gen -> List(3) { gen.newId() } }
 
         assertThat(eventIds).doesNotContainAnyElementsOf(entityIds)
     }
@@ -65,12 +69,12 @@ class IdGeneratorConfigurationTest {
 
     @Test
     fun `reset restarts a seeded generator's sequence and leaves a random one random`() {
-        val seeded = configuration.entityIdGenerator("42")
+        val seeded = entityGenerator("42")
         val firstTwo = listOf(seeded.newId(), seeded.newId())
         seeded.reset()
         assertThat(listOf(seeded.newId(), seeded.newId())).isEqualTo(firstTwo)
 
-        val random = configuration.entityIdGenerator("random")
+        val random = entityGenerator("random")
         random.reset()
         assertThat(random.newId()).isNotEqualTo(random.newId())
     }

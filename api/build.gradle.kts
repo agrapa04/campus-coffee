@@ -13,7 +13,10 @@ dependencies {
     api(project(":domain"))
 
     implementation(libs.spring.boot.starter.web)
-    implementation(libs.springdoc.openapi.starter.webmvc.ui)
+    // `api` (not `implementation`): the public DTOs carry springdoc `@Schema` annotations, so the Swagger
+    // annotation classes are part of api's compile contract. Exposing them lets the application module's
+    // annotation processor resolve `@Schema(accessMode = ...)` instead of warning that the enum is missing.
+    api(libs.springdoc.openapi.starter.webmvc.ui)
     implementation(libs.spring.boot.starter.validation)
     // The api layer owns the Spring Security setup, because the access rules are part of the interface
     // this layer exposes: the filter chain and access rules (SecurityConfig), the JWT encoder and decoder

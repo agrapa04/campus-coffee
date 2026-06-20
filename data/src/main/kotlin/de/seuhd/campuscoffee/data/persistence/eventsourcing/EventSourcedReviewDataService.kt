@@ -1,5 +1,5 @@
 package de.seuhd.campuscoffee.data.persistence.eventsourcing
-
+import de.seuhd.campuscoffee.data.configuration.PersistenceProperties
 import de.seuhd.campuscoffee.data.implementations.ReviewDataServiceImpl
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService

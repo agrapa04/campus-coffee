@@ -1,5 +1,6 @@
 package de.seuhd.campuscoffee.data.persistence.eventsourcing
-
+import de.seuhd.campuscoffee.data.configuration.PersistenceMode
+import de.seuhd.campuscoffee.data.configuration.PersistenceProperties
 import de.seuhd.campuscoffee.data.persistence.repositories.PosRepository
 import de.seuhd.campuscoffee.data.persistence.repositories.ReviewApprovalRepository
 import de.seuhd.campuscoffee.data.persistence.repositories.ReviewRepository

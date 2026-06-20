@@ -47,7 +47,7 @@ while `olivia_admin` holds `USER` and `ADMIN` but not `MODERATOR`. The same list
 
 `curl` sends Basic credentials with `-u <login>:<password>`.
 
-Resource ids are `UUID`s the server assigns on creation. With the default seed (`campus-coffee.id.seed` =
+Resource ids are `UUID`s the server assigns on creation. With the default seed (`campus-coffee.id.entity-seed` =
 `42`), a freshly loaded fixture dataset always gets the same ids, so the commands below use the concrete
 fixture ids: `jane_doe` is `ba419d35-0dfe-8af7-aee7-bbe10c45c028`, `student2023` is
 `aa616abe-1761-0c9a-e743-67bd738597dc`, the `Café Botanik` POS is `2d68ad16-268a-478c-9827-50f4569b5949`,

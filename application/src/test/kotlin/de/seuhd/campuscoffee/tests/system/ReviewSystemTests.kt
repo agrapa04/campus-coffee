@@ -1,7 +1,7 @@
 package de.seuhd.campuscoffee.tests.system
 
 import de.seuhd.campuscoffee.api.dtos.ReviewDto
-import de.seuhd.campuscoffee.domain.configuration.ApprovalConfiguration
+import de.seuhd.campuscoffee.domain.configuration.ApprovalProperties
 import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
@@ -26,7 +26,7 @@ import java.util.UUID
  */
 open class ReviewSystemTests : AbstractSystemTest() {
     @Autowired
-    private lateinit var approvalConfiguration: ApprovalConfiguration
+    private lateinit var approvalProperties: ApprovalProperties
 
     @Test
     fun `creating a review returns it unapproved`() {
@@ -245,7 +245,7 @@ open class ReviewSystemTests : AbstractSystemTest() {
         val (_, authorCredentials) = createUser("author", "author@uni-heidelberg.de")
         // exactly the configured quorum of distinct approvers, so the test does not depend on min-count = 3
         val approvers =
-            (1..approvalConfiguration.minCount)
+            (1..approvalProperties.minCount)
                 .map { createUser("approver_$it", "approver$it@uni-heidelberg.de") }
         val created =
             reviewRequests.create(listOf(reviewFor(pos, "Review text before the update.")), authorCredentials).first()

@@ -24,7 +24,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 /**
  * Abstract base class for system tests. Sets up the Spring Boot test context, manages the PostgreSQL
  * testcontainer, and configures the [RestTestClient][de.seuhd.campuscoffee.tests.SystemTestUtils]. The id
- * generator is the seeded (deterministic) one, configured via `campus-coffee.id.seed`.
+ * generator is the seeded (deterministic) one, configured via `campus-coffee.id.entity-seed`.
  */
 @SpringBootTest(
     classes = [Application::class],

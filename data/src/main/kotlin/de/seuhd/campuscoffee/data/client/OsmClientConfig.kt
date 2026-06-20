@@ -1,5 +1,5 @@
 package de.seuhd.campuscoffee.data.client
-
+import de.seuhd.campuscoffee.data.configuration.OsmApiProperties
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.info.BuildProperties
 import org.springframework.context.annotation.Bean

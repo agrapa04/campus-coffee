@@ -11,9 +11,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 
 /**
- * Loads the fixture data on startup when `campus-coffee.fixtures.load-on-startup` is true and the
- * database has no users yet. The prod deployment uses this to populate a fresh database, because the
- * prod profile does not register the `/api/dev` endpoints that load the data during local development.
+ * Loads the fixture data on startup when `campus-coffee.fixtures.load-on-startup` is true (declared by
+ * `FixturesProperties`) and the database has no users yet. The prod deployment uses this to populate a
+ * fresh database, because the prod profile does not register the `/api/dev` endpoints that load the data
+ * during local development.
  *
  * [StartupDataInitializer] runs this before the web server accepts requests, after any event-sourcing
  * import/rebuild migration, so the guard sees the rebuilt users and does not load the fixtures again, and the
