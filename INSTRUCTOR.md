@@ -38,7 +38,7 @@ moderation) and `ADMIN` (user administration) are independent grants on top, so 
 while `olivia_admin` holds `USER` and `ADMIN` but not `MODERATOR`. The same list is in the README's *dev* section.
 
 | Login name      | Password               | Roles                        |
-| --------------- | ---------------------- | ---------------------------- |
+|-----------------|------------------------|------------------------------|
 | `student2023`   | `ZwTwB8Hn8VkNLZec7bR1` | `USER`                       |
 | `lisa_lee`      | `lG6v9dGKZA5kfOHTFLNR` | `USER`                       |
 | `maxmustermann` | `AmLtoD3r8lVdnwoLN1Nn` | `USER`, `MODERATOR`          |

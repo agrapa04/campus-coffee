@@ -126,7 +126,7 @@ grants on top, so a user holds whichever capabilities they were given. For examp
 is not a moderator. Passwords are stored only as hashes and are never returned in any response.
 
 | Login name      | Password               | Roles                        |
-| --------------- | ---------------------- | ---------------------------- |
+|-----------------|------------------------|------------------------------|
 | `jane_doe`      | `aaaMbnPdFYDqkOpS3fVA` | `USER`, `MODERATOR`, `ADMIN` |
 | `maxmustermann` | `AmLtoD3r8lVdnwoLN1Nn` | `USER`, `MODERATOR`          |
 | `student2023`   | `ZwTwB8Hn8VkNLZec7bR1` | `USER`                       |

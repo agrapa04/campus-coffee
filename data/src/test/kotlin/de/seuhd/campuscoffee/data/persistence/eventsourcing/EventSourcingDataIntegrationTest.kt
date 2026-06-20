@@ -171,7 +171,7 @@ class EventSourcingDataIntegrationTest : AbstractEventSourcingDataIntegrationTes
             TestFixtures
                 .getUserFixturesForInsertion()
                 .first()
-                .copy(passwordHash = "{bcrypt}\$2a\$10\$abcdefghijklmnopqrstuv", password = "rawPlaintextSecret")
+                .copy(passwordHash = $$"{bcrypt}$2a$10$abcdefghijklmnopqrstuv", password = "rawPlaintextSecret")
 
         userDataService.upsert(user)
 
@@ -326,7 +326,7 @@ class EventSourcingDataIntegrationTest : AbstractEventSourcingDataIntegrationTes
         val author =
             userDataService.upsert(
                 TestFixtures.getUserFixturesForInsertion().first().copy(
-                    passwordHash = "{bcrypt}\$2a\$10\$seededhashvalue000000"
+                    passwordHash = $$"{bcrypt}$2a$10$seededhashvalue000000"
                 )
             )
         val review =

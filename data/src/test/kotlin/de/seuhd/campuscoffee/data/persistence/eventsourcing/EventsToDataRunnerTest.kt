@@ -22,7 +22,7 @@ class EventsToDataRunnerTest : AbstractEventSourcingDataIntegrationTest() {
         val author =
             userDataService.upsert(
                 TestFixtures.getUserFixturesForInsertion().first().copy(
-                    passwordHash = "{bcrypt}\$2a\$10\$rebuildhashvalue00000"
+                    passwordHash = $$"{bcrypt}$2a$10$rebuildhashvalue00000"
                 )
             )
         reviewDataService.upsert(
