@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-22
+
+- Run the `:application:test` suite (the system, acceptance, and architecture tests, the slow part of the build) in parallel across several JVM processes to speed it up. `maxParallelForks` on the `application` `test` task now defaults to `min(4, availableProcessors / 2)` (override with `-PtestForks=N`; `-PtestForks=1` disables parallelism), with a `1g` per-fork heap cap so the forks cannot collectively overcommit. Process-level forking is the only safe form of parallelism here: `SystemTestUtils` is an `object` with a shared mutable `RestTestClient` and the test bases wipe the whole database between tests with `clearAll()`, so two tests must never run concurrently in the same JVM or against the same database. Each fork is a separate JVM with its own `SystemTestUtils` and its own Testcontainers PostgreSQL instance (the container lives in a companion object, one per JVM), and JUnit runs the classes within a fork serially, so two tests never touch the shared client at once and `clearAll()` never wipes a running test's data, while Spring's per-JVM context cache still pays off within each fork. On a 16-core machine this took the task from ~95s to ~50s with all 145 tests still passing.
+
 ## [0.5.1] - 2026-06-21
 
 - Guard the project version against drift. Move the project `group` and `version` to the root `gradle.properties` (Gradle's `project.group`/`project.version`, applied to every module, out of the build-logic convention plugin) and make the version the source of truth; the latest `## [x.y.z]` header in `CHANGELOG.md` must agree with it. A new `scripts/check-version-sync.sh` (mirroring `scripts/check-toolchain-versions.sh`) compares the two and fails with a GitHub Actions error annotation on mismatch; it runs as a CI step in `build.yml` before the Gradle build. This prevents the recurrence of the earlier drift, where the build version had gone stale at `0.2.0`.
