@@ -431,6 +431,64 @@ event appears, while the `reviews` table still serves the read request. The ids 
 `body` column match the rows, because the read model is projected from exactly these events. The seeded
 entity ids are unchanged from the relational mode (the event ids come from a separate generator).
 
+## Observability with Spring Boot Actuator
+
+Spring Boot Actuator exposes operational endpoints under `/actuator` (its own base path, separate from the
+`/api` prefix the controllers use). Which endpoints are reachable is configured in `application.yaml`
+(`management.endpoints.web.exposure.include: health, metrics, env`; the prod profile drops `env`), and access
+is enforced in `SecurityConfig` with the same role rules as the rest of the API: **health is public**, while
+**metrics requires an ADMIN**.
+
+### Health
+
+The health endpoint reports an overall `UP`/`DOWN` status, with details hidden by default, so it is safe to
+expose without authentication (a load balancer or Cloud Run probes it):
+
+```shell
+curl http://localhost:8080/actuator/health
+# -> {"groups":["liveness","readiness"],"status":"UP"}
+```
+
+### Metrics (ADMIN only)
+
+The metrics endpoint is gated on the ADMIN role, so an unauthenticated request is rejected:
+
+```shell
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/actuator/metrics
+# -> 401
+```
+
+As an admin (jane_doe), it lists the available meters:
+
+```shell
+curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/actuator/metrics
+# -> {"names":["application.ready.time","disk.free","hikaricp.connections.active",
+#     "http.server.requests","jvm.memory.used","jdbc.connections.active", ...]}
+```
+
+Append a meter name to read its current value. JVM memory in use, tagged by area (heap/non-heap):
+
+```shell
+curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/actuator/metrics/jvm.memory.used
+# -> {"name":"jvm.memory.used","measurements":[{"statistic":"VALUE","value":236862112.0}],
+#     "baseUnit":"bytes","availableTags":[{"tag":"area","values":["heap","nonheap"]}, ...]}
+```
+
+HTTP request count and latency, recorded per endpoint (the COUNT grows as you exercise the API). Filter with
+a tag to focus on one route or status:
+
+```shell
+curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/actuator/metrics/http.server.requests
+# -> measurements: COUNT, TOTAL_TIME, MAX; availableTags: uri, status, method, outcome, exception
+
+curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA \
+  "http://localhost:8080/actuator/metrics/http.server.requests?tag=uri:/api/pos&tag=status:200"
+# -> the same meter, narrowed to successful requests to /api/pos
+```
+
+`management.metrics.enable.all: true` keeps every available meter on. A real deployment would scrape these
+(for example via a Prometheus endpoint) into a dashboard rather than read them by hand.
+
 ## Reset the local demo
 
 The dev app loads the fixture data on startup, and `PUT /api/dev/data` clears and reloads it, reassigning

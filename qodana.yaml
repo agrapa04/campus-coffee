@@ -1,0 +1,13 @@
+# Qodana project configuration. https://www.jetbrains.com/help/qodana/qodana-yaml.html
+version: "1.0"
+
+# This is a Kotlin/JVM Gradle project, so use the free JVM community linter (no license or
+# QODANA_TOKEN required). The CI workflow lives in .github/workflows/qodana.yml.
+linter: jetbrains/qodana-jvm-community:latest
+
+# Skip generated sources and build output (e.g. the kapt-generated MapStruct *MapperImpl), matching
+# what the coverage and mutation gates already exclude.
+exclude:
+  - name: All
+    paths:
+      - "**/build/**"

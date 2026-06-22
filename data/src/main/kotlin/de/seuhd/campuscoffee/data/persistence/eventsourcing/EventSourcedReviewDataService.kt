@@ -24,11 +24,11 @@ import java.util.UUID
 )
 class EventSourcedReviewDataService(
     private val delegate: ReviewDataServiceImpl,
-    private val mutator: EventSourcedMutator
+    private val writer: EventSourcedWriter
 ) : ReviewDataService by delegate {
     @Transactional
     override fun upsert(domain: Review): Review =
-        mutator.upsert(
+        writer.upsert(
             domain,
             delegate::getById,
             { id, now -> domain.copy(id = id, createdAt = now, updatedAt = now) },
@@ -36,8 +36,8 @@ class EventSourcedReviewDataService(
         )
 
     @Transactional
-    override fun delete(id: UUID) = mutator.delete(Review::class, id, delegate::getById)
+    override fun delete(id: UUID) = writer.delete(Review::class, id, delegate::getById)
 
     @Transactional
-    override fun clear() = mutator.clear(Review::class, delegate::clear)
+    override fun clear() = writer.clear(Review::class, delegate::clear)
 }

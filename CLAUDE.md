@@ -114,6 +114,11 @@ restricted to `src/main/kotlin` in `kotlin-conventions`). The rules are enabled 
 covered by their own unit tests (`gradle :detekt-rules:test`). To add or change a rule, edit
 `detekt-rules/src/main/kotlin/de/seuhd/campuscoffee/detekt/` and its `META-INF/services` provider.
 
+Separately from the Gradle build, **JetBrains Qodana** (the free `jetbrains/qodana-jvm-community` linter,
+an IDE-inspection pass) runs in CI on every push via `.github/workflows/qodana.yml`, configured by the root
+`qodana.yaml`. It is not part of `gradle build` and not required to pass locally; a `QODANA_TOKEN` secret is
+optional and only links runs to Qodana Cloud.
+
 ### Start PostgreSQL Database
 
 ```shell

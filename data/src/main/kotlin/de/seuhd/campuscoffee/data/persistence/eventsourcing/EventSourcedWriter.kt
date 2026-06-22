@@ -20,7 +20,7 @@ import kotlin.reflect.KClass
  * the relational adapter also uses), so the assigned entity ids match the relational mode exactly.
  */
 @Component
-class EventSourcedMutator(
+class EventSourcedWriter(
     private val eventStore: EventStore,
     private val projector: ReadModelProjector,
     private val idGenerator: IdGenerator

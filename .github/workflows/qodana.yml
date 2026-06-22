@@ -1,0 +1,29 @@
+name: Qodana
+
+# Run JetBrains Qodana static analysis on every push to any branch (mirrors the build workflow's trigger).
+on:
+  push:
+    branches: [ "**" ] # every branch
+
+# Read-only token: the scan only reads the checkout. To surface findings in the repository's
+# code-scanning (Security) tab, add `security-events: write` here and a `github/codeql-action/upload-sarif`
+# step after the scan.
+permissions:
+  contents: read
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Qodana compares against history for its baseline and quality gate
+          persist-credentials: false # the scan never pushes back to the repository
+
+      - name: Qodana scan
+        uses: JetBrains/qodana-action@v2026.1.3
+        env:
+          # Optional: set a QODANA_TOKEN repository secret to link runs to Qodana Cloud (baseline,
+          # trends, and pull-request summaries). The community linter in qodana.yaml runs without it.
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}

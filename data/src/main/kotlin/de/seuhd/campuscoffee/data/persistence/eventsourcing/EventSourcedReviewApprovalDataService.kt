@@ -23,12 +23,12 @@ import org.springframework.transaction.annotation.Transactional
 )
 class EventSourcedReviewApprovalDataService(
     private val delegate: ReviewApprovalDataServiceImpl,
-    private val mutator: EventSourcedMutator
+    private val writer: EventSourcedWriter
 ) : ReviewApprovalDataService by delegate {
     @Transactional
     override fun record(approval: ReviewApproval): ReviewApproval =
-        mutator.create { id, now -> approval.copy(id = id, createdAt = now, updatedAt = now) }
+        writer.create { id, now -> approval.copy(id = id, createdAt = now, updatedAt = now) }
 
     @Transactional
-    override fun clear() = mutator.clear(ReviewApproval::class, delegate::clear)
+    override fun clear() = writer.clear(ReviewApproval::class, delegate::clear)
 }

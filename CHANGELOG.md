@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-06-23
+
+- Run JetBrains Qodana static analysis in CI on every push. A new `.github/workflows/qodana.yml` (triggered by `push` to any branch, matching `build.yml`) runs the `JetBrains/qodana-action`, and a root `qodana.yaml` selects the free JVM community linter (`jetbrains/qodana-jvm-community`, no license or `QODANA_TOKEN` needed) and excludes `**/build/**` (the generated MapStruct `*MapperImpl` and build output), mirroring the coverage and mutation exclusions. The scan is a separate IDE-inspection pass; it does not run as part of `gradle build`. Setting a `QODANA_TOKEN` secret additionally links runs to Qodana Cloud (baseline and trends).
+- Rename the event-sourcing write helper `EventSourcedMutator` to `EventSourcedWriter` (the `mutator` field in the four decorators becomes `writer`). "Mutator" collided with the PITest mutation-testing terminology this project already uses (`-Ppitest.mutators`); "Writer" names the role (the write side of the event-sourced adapter, paired with reads that delegate) without the clash. Behavior is unchanged; the bean is wired by type.
+- Standardize the identifier rendering in log messages to `with ID '<id>'` (quoted, no colon), fixing the two outliers in `CrudServiceImpl` (`with ID: '<id>'` on upsert and the unquoted `with ID <id>` on delete) so every log line is uniform.
+- Guard the Cloud Run deploy against a stale `gcloud config`. `scripts/deploy-cloudrun.sh` now accepts an optional `--project <id>` override, prints the resolved target (project, region, mode), and asks for confirmation before deploying (`-y`/`--yes` skips the prompt); it passes `--project` to every `gcloud` call so the deploy hits exactly the confirmed project. No project is hardcoded — it still falls back to the active config.
+- Document Spring Boot Actuator observability in `INSTRUCTOR.md`: the public health endpoint and the ADMIN-only metrics endpoint (`jvm.memory.used`, `http.server.requests` with a tag filter), tying into the guide's authentication theme.
+
 ## [0.5.3] - 2026-06-22
 
 - Log through kotlin-logging (`io.github.oshai:kotlin-logging-jvm`) instead of the SLF4J API directly. Each `LoggerFactory.getLogger(X::class.java)` in a companion object becomes `KotlinLogging.logger {}`, and the call sites move from the SLF4J parameterized form (`log.info("... {}", arg)`) to the kotlin-logging lambda form (`log.info { "... $arg" }`), which builds the message string only when the level is enabled. kotlin-logging is a Kotlin layer over SLF4J, so the backend stays Logback (via the Spring Boot starters); the resolved logger names and the message text are unchanged, so the log output is identical.

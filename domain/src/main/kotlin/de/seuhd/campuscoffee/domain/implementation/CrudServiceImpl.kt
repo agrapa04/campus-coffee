@@ -55,7 +55,7 @@ abstract class CrudServiceImpl<DOMAIN : DomainModel<ID>, ID>(
 
         try {
             val upserted = dataService().upsert(domainObject)
-            log.info { "Successfully upserted ${domainClass.simpleName} with ID: '${upserted.id}'." }
+            log.info { "Successfully upserted ${domainClass.simpleName} with ID '${upserted.id}'." }
             return upserted
         } catch (e: DuplicationException) {
             log.error { "Error upserting ${domainClass.simpleName}: ${e.message}" }
@@ -66,7 +66,7 @@ abstract class CrudServiceImpl<DOMAIN : DomainModel<ID>, ID>(
     override fun delete(id: ID) {
         log.info { "Trying to delete ${domainClass.simpleName} with ID '$id'..." }
         dataService().delete(id)
-        log.info { "${domainClass.simpleName} with ID $id deleted." }
+        log.info { "${domainClass.simpleName} with ID '$id' deleted." }
     }
 
     private companion object {
