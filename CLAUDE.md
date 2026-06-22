@@ -304,6 +304,7 @@ private helpers) keep conventional camelCase names.
 - **Testcontainers** for system tests.
 - **Cucumber** for BDD acceptance tests.
 - **ArchUnit** for architecture testing.
+- **kotlin-logging** (`io.github.oshai:kotlin-logging-jvm`) for logging: a Kotlin layer over SLF4J. Loggers are declared as `private val log = KotlinLogging.logger {}` in a companion object, and log calls use the lambda form (`log.info { "..." }`), which builds the message only when the level is enabled. The backend is Logback via the Spring Boot starters.
 
 ## Important Patterns
 

@@ -27,6 +27,8 @@ dependencies {
     implementation(libs.spring.boot.starter.oauth2.resource.server)
     // Jackson support for the Kotlin DTOs (construction, nullability, defaults); Spring Boot auto-registers it.
     implementation(libs.jackson.module.kotlin)
+    // The auth controller and the global exception handler log via KotlinLogging.logger {} (over SLF4J).
+    implementation(libs.kotlin.logging)
 
     // MapStruct is compile-only for the Kotlin mappers; kapt runs the processor that generates the impls.
     compileOnly(libs.mapstruct)

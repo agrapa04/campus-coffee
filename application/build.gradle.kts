@@ -22,6 +22,8 @@ dependencies {
     // The starter ships a working-but-permissive setup; the assignment tightens it.
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.oauth2.resource.server)
+    // The fixture startup loader logs via KotlinLogging.logger {} (over SLF4J).
+    implementation(libs.kotlin.logging)
 
     // The JDBC driver reaches the runtime classpath transitively via data, but declaring it on the
     // deployable module makes the runtime dependency explicit and lets the IDE resolve the

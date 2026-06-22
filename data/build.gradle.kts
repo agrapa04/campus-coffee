@@ -24,6 +24,8 @@ dependencies {
     implementation(libs.jackson3.module.kotlin)
     // BCrypt/delegating password encoder for the PasswordHasher adapter (small, dependency-free).
     implementation(libs.spring.security.crypto)
+    // The OSM client and the event-sourcing startup runners log via KotlinLogging.logger {} (over SLF4J).
+    implementation(libs.kotlin.logging)
 
     // MapStruct is compile-only for the Kotlin mappers; kapt runs the processor that generates the impls.
     compileOnly(libs.mapstruct)

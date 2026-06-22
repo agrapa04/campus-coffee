@@ -4,7 +4,7 @@ import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
 import de.seuhd.campuscoffee.domain.model.objects.DomainModel
 import de.seuhd.campuscoffee.domain.ports.api.CrudService
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.transaction.annotation.Transactional
 
 /**
@@ -23,17 +23,17 @@ abstract class CrudServiceImpl<DOMAIN : DomainModel<ID>, ID>(
     protected abstract fun dataService(): CrudDataService<DOMAIN, ID>
 
     override fun clear() {
-        log.warn("Clearing all {} data...", domainClass.simpleName)
+        log.warn { "Clearing all ${domainClass.simpleName} data..." }
         dataService().clear()
     }
 
     override fun getAll(): List<DOMAIN> {
-        log.debug("Retrieving all {}...", domainClass.simpleName)
+        log.debug { "Retrieving all ${domainClass.simpleName}..." }
         return dataService().getAll()
     }
 
     override fun getById(id: ID): DOMAIN {
-        log.debug("Retrieving {} with ID '{}'...", domainClass.simpleName, id)
+        log.debug { "Retrieving ${domainClass.simpleName} with ID '$id'..." }
         return dataService().getById(id)
     }
 
@@ -46,30 +46,30 @@ abstract class CrudServiceImpl<DOMAIN : DomainModel<ID>, ID>(
     override fun upsert(domainObject: DOMAIN): DOMAIN {
         val id = domainObject.id
         if (id == null) {
-            log.info("Creating new {}...", domainClass.simpleName)
+            log.info { "Creating new ${domainClass.simpleName}..." }
         } else {
-            log.info("Updating {} with ID '{}'...", domainClass.simpleName, id)
+            log.info { "Updating ${domainClass.simpleName} with ID '$id'..." }
             // the entity must exist in the database before the update
             dataService().getById(id)
         }
 
         try {
             val upserted = dataService().upsert(domainObject)
-            log.info("Successfully upserted {} with ID: '{}'.", domainClass.simpleName, upserted.id)
+            log.info { "Successfully upserted ${domainClass.simpleName} with ID: '${upserted.id}'." }
             return upserted
         } catch (e: DuplicationException) {
-            log.error("Error upserting {}: {}", domainClass.simpleName, e.message)
+            log.error { "Error upserting ${domainClass.simpleName}: ${e.message}" }
             throw e
         }
     }
 
     override fun delete(id: ID) {
-        log.info("Trying to delete {} with ID '{}'...", domainClass.simpleName, id)
+        log.info { "Trying to delete ${domainClass.simpleName} with ID '$id'..." }
         dataService().delete(id)
-        log.info("{} with ID {} deleted.", domainClass.simpleName, id)
+        log.info { "${domainClass.simpleName} with ID $id deleted." }
     }
 
     private companion object {
-        private val log = LoggerFactory.getLogger(CrudServiceImpl::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }

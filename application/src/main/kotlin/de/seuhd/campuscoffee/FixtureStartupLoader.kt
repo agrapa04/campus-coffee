@@ -6,7 +6,7 @@ import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import de.seuhd.campuscoffee.domain.ports.api.UserService
 import de.seuhd.campuscoffee.domain.ports.data.ReviewApprovalDataService
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 
@@ -37,17 +37,17 @@ class FixtureStartupLoader(
      */
     fun loadOnStartup() {
         if (userService.getAll().isNotEmpty()) {
-            log.info("Skipping the fixture load: the database already has users.")
+            log.info { "Skipping the fixture load: the database already has users." }
             return
         }
         val (users, pos, reviews) =
             TestFixtures.loadAll(userService, posService, reviewService, reviewApprovalDataService)
-        log.info("Loaded the fixture data on startup: {} users, {} POS, {} reviews.", users, pos, reviews)
+        log.info { "Loaded the fixture data on startup: $users users, $pos POS, $reviews reviews." }
     }
 
     private companion object {
         // runs after the event sourcing import (0) and rebuild (100) startup tasks
         private const val ORDER = 200
-        private val log = LoggerFactory.getLogger(FixtureStartupLoader::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }

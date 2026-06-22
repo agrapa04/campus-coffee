@@ -8,7 +8,7 @@ import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.exceptions.MissingFieldException
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.exceptions.ValidationException
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -58,7 +58,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val config =
             EXCEPTION_MAPPINGS[exception.javaClass]
                 ?: return handleGenericException(exception, request)
-        log.warn(config.logMessage, exception.message)
+        log.warn { config.logMessage.replace("{}", exception.message.toString()) }
         return ResponseEntity
             .status(config.httpStatus)
             .body(errorBody(exception, config.httpStatus, request, exception.message))
@@ -77,7 +77,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         exception: AuthenticationException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        log.warn("Authentication failed: {}", exception.message)
+        log.warn { "Authentication failed: ${exception.message}" }
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
             .body(errorBody(exception, HttpStatus.UNAUTHORIZED, request, exception.message))
@@ -94,7 +94,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         exception: Exception,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
-        log.error("Unexpected error occurred", exception)
+        log.error(exception) { "Unexpected error occurred" }
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(errorBody(exception, HttpStatus.INTERNAL_SERVER_ERROR, request, "An unexpected error occurred."))
@@ -112,7 +112,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         request: WebRequest
     ): ResponseEntity<Any>? {
         val message = ex.bindingResult.fieldErrors.joinToString("; ") { "${it.field} ${it.defaultMessage}" }
-        log.warn("Domain validation failed: {}", message)
+        log.warn { "Domain validation failed: $message" }
         val body: Any = errorBody(ex, status, request, message)
         return ResponseEntity.status(status).headers(headers).body(body)
     }
@@ -130,7 +130,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         request: WebRequest
     ): ResponseEntity<Any>? {
         val path = extractPath(request)
-        log.warn("No endpoint mapped for {}", path)
+        log.warn { "No endpoint mapped for $path" }
         val body: Any = errorBody(ex, status, request, "No endpoint found for '$path'.", errorCode = "NotFound")
         return ResponseEntity.status(status).headers(headers).body(body)
     }
@@ -143,7 +143,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         statusCode: HttpStatusCode,
         request: WebRequest
     ): ResponseEntity<Any>? {
-        log.warn("{} -> {}", ex.javaClass.simpleName, statusCode)
+        log.warn { "${ex.javaClass.simpleName} -> $statusCode" }
         val responseBody: Any = errorBody(ex, statusCode, request, ex.message)
         return ResponseEntity.status(statusCode).headers(headers).body(responseBody)
     }
@@ -179,7 +179,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     )
 
     private companion object {
-        private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+        private val log = KotlinLogging.logger {}
 
         private val EXCEPTION_MAPPINGS: Map<Class<out Exception>, ExceptionConfig> =
             mapOf(

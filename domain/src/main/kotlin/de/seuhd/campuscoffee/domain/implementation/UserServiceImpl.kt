@@ -8,7 +8,7 @@ import de.seuhd.campuscoffee.domain.ports.api.UserService
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService
 import de.seuhd.campuscoffee.domain.ports.data.PasswordHasher
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -48,7 +48,7 @@ class UserServiceImpl(
     override fun register(user: User): User {
         // registration always yields a plain USER. A client cannot self-assign a privileged role by
         // putting one in the body; only an admin grants roles, and only on an update (see [update]).
-        log.info("Registering new user '{}' as a plain USER.", user.loginName)
+        log.info { "Registering new user '${user.loginName}' as a plain USER." }
         return upsert(user.copy(roles = setOf(Role.USER)))
     }
 
@@ -86,7 +86,7 @@ class UserServiceImpl(
     }
 
     override fun getByLoginName(loginName: String): User {
-        log.debug("Retrieving user with login name: {}", loginName)
+        log.debug { "Retrieving user with login name: $loginName" }
         return userDataService.getByLoginName(loginName)
     }
 
@@ -116,6 +116,6 @@ class UserServiceImpl(
     }
 
     private companion object {
-        private val log = LoggerFactory.getLogger(UserServiceImpl::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }

@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-06-22
+
+- Log through kotlin-logging (`io.github.oshai:kotlin-logging-jvm`) instead of the SLF4J API directly. Each `LoggerFactory.getLogger(X::class.java)` in a companion object becomes `KotlinLogging.logger {}`, and the call sites move from the SLF4J parameterized form (`log.info("... {}", arg)`) to the kotlin-logging lambda form (`log.info { "... $arg" }`), which builds the message string only when the level is enabled. kotlin-logging is a Kotlin layer over SLF4J, so the backend stays Logback (via the Spring Boot starters); the resolved logger names and the message text are unchanged, so the log output is identical.
+
 ## [0.5.2] - 2026-06-22
 
 - Run the `:application:test` suite (the system, acceptance, and architecture tests, the slow part of the build) in parallel across several JVM processes to speed it up. `maxParallelForks` on the `application` `test` task now defaults to `min(4, availableProcessors / 2)` (override with `-PtestForks=N`; `-PtestForks=1` disables parallelism), with a `1g` per-fork heap cap so the forks cannot collectively overcommit. Process-level forking is the only safe form of parallelism here: `SystemTestUtils` is an `object` with a shared mutable `RestTestClient` and the test bases wipe the whole database between tests with `clearAll()`, so two tests must never run concurrently in the same JVM or against the same database. Each fork is a separate JVM with its own `SystemTestUtils` and its own Testcontainers PostgreSQL instance (the container lives in a companion object, one per JVM), and JUnit runs the classes within a fork serially, so two tests never touch the shared client at once and `clearAll()` never wipes a running test's data, while Spring's per-JVM context cache still pays off within each fork. On a 16-core machine this took the task from ~95s to ~50s with all 145 tests still passing.

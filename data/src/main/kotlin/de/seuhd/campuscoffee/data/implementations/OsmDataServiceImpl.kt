@@ -10,7 +10,7 @@ import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.enums.OsmAmenity
 import de.seuhd.campuscoffee.domain.model.objects.OsmNode
 import de.seuhd.campuscoffee.domain.ports.data.OsmDataService
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClientException
@@ -28,26 +28,26 @@ class OsmDataServiceImpl(
     private val osmClient: OsmClient
 ) : OsmDataService {
     override fun fetchNode(nodeId: Long): OsmNode {
-        log.debug("Fetching OSM node with ID '{}'...", nodeId)
+        log.debug { "Fetching OSM node with ID '$nodeId'..." }
         val xmlResponse =
             try {
                 osmClient.fetchNode(nodeId)
             } catch (ignored: HttpClientErrorException.NotFound) {
                 // a 404 conveys nothing beyond its status code, so the exception is not kept as a cause
-                log.warn("OSM node with ID '{}' does not exist.", nodeId)
+                log.warn { "OSM node with ID '$nodeId' does not exist." }
                 throw NotFoundException(OsmNode::class.java, nodeId)
             } catch (ignored: HttpClientErrorException.Gone) {
                 // the OSM API reports deleted nodes as 410 Gone
-                log.warn("OSM node with ID '{}' was deleted.", nodeId)
+                log.warn { "OSM node with ID '$nodeId' was deleted." }
                 throw NotFoundException(OsmNode::class.java, nodeId)
             } catch (e: RestClientException) {
-                log.error("Error calling the OSM API for node with ID '{}'", nodeId, e)
+                log.error(e) { "Error calling the OSM API for node with ID '$nodeId'" }
                 throw ExternalServiceException(OSM_SERVICE_NAME, e)
             }
 
         if (xmlResponse.isNullOrEmpty()) {
             // a 2xx without a body is a malformed OSM response (a missing node would have been a 404)
-            log.error("Empty response from OSM API for node with ID '{}'.", nodeId)
+            log.error { "Empty response from OSM API for node with ID '$nodeId'." }
             throw ExternalServiceException(OSM_SERVICE_NAME)
         }
 
@@ -55,10 +55,10 @@ class OsmDataServiceImpl(
             try {
                 parseOsmXml(xmlResponse, nodeId)
             } catch (e: JacksonException) {
-                log.error("Malformed XML from OSM API for node with ID '{}'", nodeId, e)
+                log.error(e) { "Malformed XML from OSM API for node with ID '$nodeId'" }
                 throw ExternalServiceException(OSM_SERVICE_NAME, e)
             }
-        log.debug("Successfully fetched and parsed OSM node with ID '{}'.", nodeId)
+        log.debug { "Successfully fetched and parsed OSM node with ID '$nodeId'." }
         return node
     }
 
@@ -83,7 +83,7 @@ class OsmDataServiceImpl(
         val amenityStr = getRequiredTag(tags, "amenity", nodeId)
         val amenity =
             OsmAmenity.fromOsmValue(amenityStr) ?: run {
-                log.warn("OSM node {} has unsupported amenity type: {}", nodeId, amenityStr)
+                log.warn { "OSM node $nodeId has unsupported amenity type: $amenityStr" }
                 throw MissingFieldException(OsmNode::class.java, nodeId, "amenity")
             }
 
@@ -115,17 +115,12 @@ class OsmDataServiceImpl(
         nodeId: Long
     ): String =
         tags[key] ?: run {
-            log.warn(
-                "OSM node {} is missing required field: '{}'. Available tags: {}",
-                nodeId,
-                key,
-                tags.keys
-            )
+            log.warn { "OSM node $nodeId is missing required field: '$key'. Available tags: ${tags.keys}" }
             throw MissingFieldException(OsmNode::class.java, nodeId, key)
         }
 
     companion object {
-        private val log = LoggerFactory.getLogger(OsmDataServiceImpl::class.java)
+        private val log = KotlinLogging.logger {}
 
         /** Description applied when an OSM node carries no `description` tag. */
         const val DEFAULT_DESCRIPTION: String = "n/a"

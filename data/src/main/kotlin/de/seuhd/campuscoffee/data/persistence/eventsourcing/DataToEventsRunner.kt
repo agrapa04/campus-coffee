@@ -15,7 +15,7 @@ import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.model.objects.ReviewApproval
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.ports.StartupTask
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -64,10 +64,9 @@ class DataToEventsRunner(
     @Transactional
     fun importRowsAsEvents() {
         if (properties.mode != PersistenceMode.EVENT_SOURCING) {
-            log.info(
-                "Skipping the data-to-events import: persistence mode is {}, not event-sourcing.",
-                properties.mode
-            )
+            log.info {
+                "Skipping the data-to-events import: persistence mode is ${properties.mode}, not event-sourcing."
+            }
             return
         }
         importType(User::class) { userRepository.findAll().map(userMapper::fromEntity) }
@@ -83,17 +82,17 @@ class DataToEventsRunner(
     ) {
         val entityType = eventStore.entityTypeOf(domainType)
         if (eventStore.hasEventsFor(entityType)) {
-            log.info("Skipping {} import: the event log already has {} events.", entityType, entityType)
+            log.info { "Skipping $entityType import: the event log already has $entityType events." }
             return
         }
         val rows = readRows()
         rows.forEach { eventStore.appendInsert(it) }
-        log.info("Imported {} {} rows into the event log as INSERT events.", rows.size, entityType)
+        log.info { "Imported ${rows.size} $entityType rows into the event log as INSERT events." }
     }
 
     companion object {
         /** Runs before [EventsToDataRunner], so the log is seeded before any rebuild replays it. */
         const val ORDER = 0
-        private val log = LoggerFactory.getLogger(DataToEventsRunner::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }

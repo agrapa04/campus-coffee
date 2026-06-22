@@ -15,7 +15,7 @@ import de.seuhd.campuscoffee.domain.ports.data.PosDataService
 import de.seuhd.campuscoffee.domain.ports.data.ReviewApprovalDataService
 import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -137,7 +137,7 @@ class ReviewServiceImpl(
         actingUser: User
     ): Review {
         val approverId = actingUser.persistedId
-        log.info("Processing approval request for review with ID '{}' by user with ID '{}'...", reviewId, approverId)
+        log.info { "Processing approval request for review with ID '$reviewId' by user with ID '$approverId'..." }
 
         // validate that the review exists
         val reviewToApprove = reviewDataService.getById(reviewId)
@@ -145,11 +145,7 @@ class ReviewServiceImpl(
 
         // a user cannot approve their own review (the approver is the authenticated user)
         if (authorId == approverId) {
-            log.warn(
-                "User with ID '{}' attempted to approve their own review with ID '{}'.",
-                approverId,
-                reviewId
-            )
+            log.warn { "User with ID '$approverId' attempted to approve their own review with ID '$reviewId'." }
             throw ValidationException(
                 "User with ID '$approverId' cannot approve their own review with ID '$reviewId'."
             )
@@ -163,20 +159,11 @@ class ReviewServiceImpl(
         // whether that count meets the quorum
         val approvalCount = reviewApprovalDataService.countByReviewId(reviewId)
         val approved = approvalCount >= approvalProperties.minCount
+        val quorumProgress = "$approvalCount/${approvalProperties.minCount}"
         if (approved) {
-            log.info(
-                "Review with ID '{}' has now reached the approval quorum ({}/{})",
-                reviewId,
-                approvalCount,
-                approvalProperties.minCount
-            )
+            log.info { "Review with ID '$reviewId' has now reached the approval quorum ($quorumProgress)" }
         } else {
-            log.info(
-                "Review with ID '{}' has not reached the approval quorum ({}/{})",
-                reviewId,
-                approvalCount,
-                approvalProperties.minCount
-            )
+            log.info { "Review with ID '$reviewId' has not reached the approval quorum ($quorumProgress)" }
         }
 
         return reviewDataService.upsert(
@@ -185,6 +172,6 @@ class ReviewServiceImpl(
     }
 
     private companion object {
-        private val log = LoggerFactory.getLogger(ReviewServiceImpl::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }

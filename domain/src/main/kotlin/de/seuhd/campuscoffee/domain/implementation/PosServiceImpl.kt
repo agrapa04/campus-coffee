@@ -10,7 +10,7 @@ import de.seuhd.campuscoffee.domain.ports.api.PosService
 import de.seuhd.campuscoffee.domain.ports.data.CrudDataService
 import de.seuhd.campuscoffee.domain.ports.data.OsmDataService
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -26,7 +26,7 @@ class PosServiceImpl(
     override fun dataService(): CrudDataService<Pos, UUID> = posDataService
 
     override fun getByName(name: String): Pos {
-        log.debug("Retrieving POS with name: {}", name)
+        log.debug { "Retrieving POS with name: $name" }
         return posDataService.getByName(name)
     }
 
@@ -37,14 +37,14 @@ class PosServiceImpl(
         nodeId: Long,
         campusType: CampusType
     ): Pos {
-        log.info("Importing POS from OpenStreetMap node {}...", nodeId)
+        log.info { "Importing POS from OpenStreetMap node $nodeId..." }
 
         // fetch the OSM node data using the port
         val osmNode = osmDataService.fetchNode(nodeId)
 
         // convert OSM node to POS domain object and upsert it
         val savedPos = upsert(convertOsmNodeToPos(osmNode, campusType))
-        log.info("Successfully imported POS '{}' from OSM node {}", savedPos.name, nodeId)
+        log.info { "Successfully imported POS '${savedPos.name}' from OSM node $nodeId" }
 
         return savedPos
     }
@@ -82,6 +82,6 @@ class PosServiceImpl(
         }
 
     private companion object {
-        private val log = LoggerFactory.getLogger(PosServiceImpl::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }

@@ -6,7 +6,7 @@ import de.seuhd.campuscoffee.data.persistence.repositories.ReviewApprovalReposit
 import de.seuhd.campuscoffee.data.persistence.repositories.ReviewRepository
 import de.seuhd.campuscoffee.data.persistence.repositories.UserRepository
 import de.seuhd.campuscoffee.domain.ports.StartupTask
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -51,21 +51,20 @@ class EventsToDataRunner(
     @Transactional
     fun rebuildFromLog() {
         if (properties.mode != PersistenceMode.EVENT_SOURCING) {
-            log.info(
-                "Skipping the events-to-data rebuild: persistence mode is {}, not event-sourcing.",
-                properties.mode
-            )
+            log.info {
+                "Skipping the events-to-data rebuild: persistence mode is ${properties.mode}, not event-sourcing."
+            }
             return
         }
         if (eventRepository.count() == 0L) {
             // an empty log against possibly-populated tables: rebuilding would only wipe them, so refuse
-            log.warn("Skipping the events-to-data rebuild: the event log is empty; not clearing the read tables.")
+            log.warn { "Skipping the events-to-data rebuild: the event log is empty; not clearing the read tables." }
             return
         }
         clearReadTables()
         val events = eventRepository.findAllByOrderBySeqAsc()
         events.forEach { projector.apply(it) }
-        log.info("Rebuilt the read model from {} events in the log.", events.size)
+        log.info { "Rebuilt the read model from ${events.size} events in the log." }
     }
 
     /** Empties the read tables in foreign key order (approvals and reviews, then POS and users). */
@@ -80,6 +79,6 @@ class EventsToDataRunner(
     companion object {
         /** Runs after [DataToEventsRunner], so a rebuild sees the events that the import may have just added. */
         const val ORDER = 100
-        private val log = LoggerFactory.getLogger(EventsToDataRunner::class.java)
+        private val log = KotlinLogging.logger {}
     }
 }
