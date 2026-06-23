@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 /**
  * Resolves the authenticated principal to the domain [User] acting on the current request.
  *
- * This is the single bridge in the api layer between Spring Security and the domain: controllers pass the
+ * This is the api layer's bridge between Spring Security and the domain (its counterpart, used while verifying credentials, is [DomainUserDetailsService]): controllers pass the
  * resolved [User] inward so the domain decides ownership and roles without ever touching a Spring
  * `Authentication`.
  */

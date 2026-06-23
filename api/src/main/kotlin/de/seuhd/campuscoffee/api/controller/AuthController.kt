@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * Authentication endpoint that exchanges credentials for a stateless JWT bearer token. The path is
- * relative to the resource; the central `/api` base is applied by ApiPathConfig.
+ * relative to the resource; the central `/api` base is applied by ApiWebConfig.
  *
  * Skeleton in the starter: the endpoint is reachable but unimplemented and answers 501 Not Implemented.
  * Exercise 4 wires it to the AuthenticationManager and returns a JWT (subject = login name, a `roles`

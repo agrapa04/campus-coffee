@@ -1,10 +1,10 @@
 package de.seuhd.campuscoffee.tests.security
 
+import de.seuhd.campuscoffee.api.security.DomainUserDetailsService
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.model.objects.Role
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.ports.api.UserService
-import de.seuhd.campuscoffee.security.CampusUserDetailsService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -15,16 +15,16 @@ import org.mockito.kotlin.whenever
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 
 /**
- * Unit tests for [CampusUserDetailsService], which adapts a domain [User] to a Spring Security
+ * Unit tests for [DomainUserDetailsService], which adapts a domain [User] to a Spring Security
  * UserDetails: roles become `ROLE_<role>` authorities, the stored hash becomes the password, and both a
  * missing hash and an unknown login name map to [UsernameNotFoundException].
  */
 @ExtendWith(MockitoExtension::class)
-class CampusUserDetailsServiceTest {
+class DomainUserDetailsServiceTest {
     @Mock
     private lateinit var userService: UserService
 
-    private val service by lazy { CampusUserDetailsService(userService) }
+    private val service by lazy { DomainUserDetailsService(userService) }
 
     private fun user(
         roles: Set<Role>,

@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.security
+package de.seuhd.campuscoffee.api.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

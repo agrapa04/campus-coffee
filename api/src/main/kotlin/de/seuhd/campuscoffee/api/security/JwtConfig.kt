@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.security
+package de.seuhd.campuscoffee.api.security
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret
 import org.springframework.context.annotation.Bean

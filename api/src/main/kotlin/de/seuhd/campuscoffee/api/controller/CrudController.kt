@@ -1,6 +1,6 @@
 package de.seuhd.campuscoffee.api.controller
 
-import de.seuhd.campuscoffee.api.config.ApiPathConfig
+import de.seuhd.campuscoffee.api.config.ApiWebConfig
 import de.seuhd.campuscoffee.api.dtos.Dto
 import de.seuhd.campuscoffee.api.mapper.DtoMapper
 import de.seuhd.campuscoffee.domain.model.objects.DomainModel
@@ -91,7 +91,7 @@ abstract class CrudController<DOMAIN : DomainModel<ID>, DTO : Dto<ID>, ID : Any>
     ): URI =
         ServletUriComponentsBuilder
             .fromCurrentContextPath()
-            .path(ApiPathConfig.API_BASE_PATH)
+            .path(ApiWebConfig.API_BASE_PATH)
             .path(collectionPath)
             .path("/{id}")
             .buildAndExpand(resourceId)

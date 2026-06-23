@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.security
+package de.seuhd.campuscoffee.api.security
 
 import de.seuhd.campuscoffee.domain.exceptions.NotFoundException
 import de.seuhd.campuscoffee.domain.ports.api.UserService
@@ -17,7 +17,7 @@ import org.springframework.security.core.userdetails.User as SpringUser
  * Spring boilerplate provided in the starter.
  */
 @Service
-class CampusUserDetailsService(
+class DomainUserDetailsService(
     private val userService: UserService
 ) : UserDetailsService {
     override fun loadUserByUsername(username: String): UserDetails {

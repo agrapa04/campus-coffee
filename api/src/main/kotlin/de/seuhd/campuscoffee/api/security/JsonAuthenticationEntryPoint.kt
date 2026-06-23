@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.security
+package de.seuhd.campuscoffee.api.security
 
 import de.seuhd.campuscoffee.api.exceptions.ErrorResponse
 import jakarta.servlet.http.HttpServletRequest
@@ -15,7 +15,7 @@ import java.time.LocalDateTime
 /**
  * Writes an unauthenticated request's rejection as the application's standard JSON [ErrorResponse] with
  * 401, instead of Spring Security's default empty body or a `WWW-Authenticate` browser prompt. Mirrors
- * the shape produced by the api layer's GlobalExceptionHandler so error bodies are uniform.
+ * the shape produced by this layer's GlobalExceptionHandler so error bodies are uniform.
  *
  * Provided in the starter; it only takes effect once the chain actually requires authentication
  * (Exercise 1) — under the permissive `permitAll` chain nothing is rejected.

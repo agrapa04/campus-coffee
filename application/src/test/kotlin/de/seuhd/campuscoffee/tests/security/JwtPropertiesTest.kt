@@ -1,6 +1,6 @@
 package de.seuhd.campuscoffee.tests.security
 
-import de.seuhd.campuscoffee.security.JwtProperties
+import de.seuhd.campuscoffee.api.security.JwtProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test

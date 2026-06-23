@@ -244,7 +244,7 @@ Global exception handler: `api/src/main/kotlin/de/seuhd/campuscoffee/api/excepti
 It extends `ResponseEntityExceptionHandler`, so the standard Spring MVC exceptions also map to their
 proper status codes (an unmapped path returns 404, a wrong HTTP method 405) instead of a generic 500.
 
-The REST API is JSON-only: `ApiPathConfig` removes the XML message converter, so a client's `Accept`
+The REST API is JSON-only: `ApiWebConfig` removes the XML message converter, so a client's `Accept`
 header cannot switch responses to XML (the OSM client parses XML with its own `XmlMapper`).
 
 ### MapStruct Configuration
@@ -326,7 +326,7 @@ Notes on semantics:
 8. Create data service implementation in `data/src/main/kotlin/de/seuhd/campuscoffee/data/implementations/` (extend `CrudDataServiceImpl<DOMAIN, ENTITY, REPOSITORY, ID>`).
 9. Create DTO in `api/src/main/kotlin/de/seuhd/campuscoffee/api/dtos/` (extend `Dto<ID>`).
 10. Create DTO mapper in `api/src/main/kotlin/de/seuhd/campuscoffee/api/mapper/` (extend `DtoMapper<DOMAIN, DTO>`).
-11. Create controller in `api/src/main/kotlin/de/seuhd/campuscoffee/api/controller/` (extend `CrudController<DOMAIN, DTO, ID>`). Map paths relative to the resource (e.g., `@RequestMapping("/widgets")`); the `/api` base is applied centrally by `ApiPathConfig`.
+11. Create controller in `api/src/main/kotlin/de/seuhd/campuscoffee/api/controller/` (extend `CrudController<DOMAIN, DTO, ID>`). Map paths relative to the resource (e.g., `@RequestMapping("/widgets")`); the `/api` base is applied centrally by `ApiWebConfig`.
 12. Create Flyway migration in `data/src/main/resources/db/migration/`.
 
 ### Constraint Violations

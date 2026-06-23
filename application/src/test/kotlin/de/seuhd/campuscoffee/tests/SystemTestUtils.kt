@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.util.concurrent.ConcurrentHashMap
 import java.lang.reflect.Array as ReflectArray
 
 /**
@@ -21,9 +22,20 @@ object SystemTestUtils {
     /** Client bound to the running server for the current test; set via [configureClient]. */
     private lateinit var client: RestTestClient
 
+    // One client per server port, created once and reused for that context's lifetime. Without fork-level
+    // parallelism (-PtestForks=1) every system-test context is cached in a single JVM, each on its own
+    // random port; rebuilding the client on every test left a client (with its own connection pool) open
+    // per test, hundreds at once, whose crossed connections showed up as wrong-port I/O errors. Keying by
+    // port hands each test the client for its own context's server and bounds the live clients to one per
+    // context.
+    private val clientsByPort = ConcurrentHashMap<Int, RestTestClient>()
+
     /** Binds the shared [RestTestClient] to the running server on the given port. */
     fun configureClient(port: Int) {
-        client = RestTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+        client =
+            clientsByPort.computeIfAbsent(port) {
+                RestTestClient.bindToServer().baseUrl("http://localhost:$it").build()
+            }
     }
 
     /** The client bound to the running server, for tests that call endpoints outside the CRUD helpers. */

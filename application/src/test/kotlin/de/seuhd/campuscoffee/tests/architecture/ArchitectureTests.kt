@@ -16,7 +16,7 @@ class ArchitectureTests {
 
         // the .security package holds the application's own wiring (Spring Security, JWT, UserDetailsService)
         val applicationPackages =
-            arrayOf("de.seuhd.campuscoffee", "de.seuhd.campuscoffee.security..", "de.seuhd.campuscoffee.tests..")
+            arrayOf("de.seuhd.campuscoffee", "de.seuhd.campuscoffee.tests..")
 
         layeredArchitecture()
             .consideringAllDependencies()
