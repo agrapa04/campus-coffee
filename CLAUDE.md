@@ -298,7 +298,7 @@ private helpers) keep conventional camelCase names.
 
 ## Key Technologies
 
-- **Spring Boot 4.0.6** (Spring Framework 7).
+- **Spring Boot 4.1.0** (Spring Framework 7).
 - **Kotlin** on JDK 25; nullability is expressed with Kotlin's nullable types.
 - **MapStruct** for object mapping (DTOs <-> domain models <-> entities), run via kapt.
 - **ktlint** for Kotlin formatting and linting (the official Kotlin style; `ktlintCheck` runs as part of `check`).
@@ -317,6 +317,7 @@ private helpers) keep conventional camelCase names.
 
 Domain exceptions in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/exceptions/`:
 - `NotFoundException`: Entity not found (404).
+- `ForbiddenException`: Authenticated user is not permitted to act on the target resource, e.g. editing another user's account or changing roles without admin (403).
 - `DuplicationException`: Duplicate unique fields (409).
 - `ValidationException`: Business rule violation (400).
 - `MissingFieldException`: Required field missing (400).
@@ -340,10 +341,11 @@ MapStruct runs as a Kotlin annotation processor via kapt, applied through the `d
 The custom `campus-coffee.*` keys resolve in IntelliJ's `application.yaml` editor because the IDE reads the
 `@ConfigurationProperties` classes directly from source. Two rules keep that working:
 
-- **Every custom key has a `@ConfigurationProperties` class**, named `*Properties` and living in its module's
-  `configuration` package: `ApprovalProperties` (`domain`), `IdProperties` / `PersistenceProperties` /
-  `OsmApiProperties` (`data`), and `JwtProperties` / `FixturesProperties` (`application`). Document each
-  property with **KDoc on the class** (the IDE shows it as the key's quick-doc), never with comments in
+- **Every custom key has a `@ConfigurationProperties` class** named `*Properties`: `ApprovalProperties`
+  (`domain`), `IdProperties` / `PersistenceProperties` / `OsmApiProperties` (`data`), `JwtProperties`
+  (`api`), and `FixturesProperties` (`application`). Each lives in its module's `configuration` package,
+  except `JwtProperties`, which sits in `api.security` next to the `JwtConfig` that consumes it. Document
+  each property with **KDoc on the class** (the IDE shows it as the key's quick-doc), never with comments in
   `application.yaml`. To add a key, add it to the relevant class.
 - **The data module is a compile dependency of `application`** (`implementation(project(":data"))`, not
   `runtimeOnly`). The IDE resolves `application.yaml` against the `application` module's compile classpath, so

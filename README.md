@@ -4,11 +4,61 @@ A Spring Boot teaching application for managing points of sale (POS) — cafés,
 
 ## Authentication and authorization
 
-Every write request requires authentication, and user data (login names, emails, roles) is readable only by that user or an admin; the POS directory and reviews stay publicly readable. Authenticate with HTTP Basic (`-u login:password`)
-or a JWT bearer token from `POST /api/auth/token`. The roles `USER`, `MODERATOR`, and `ADMIN` control who
-can change what: moderators manage points of sale and moderate reviews, admins manage users, and a review can
-be edited or deleted by its author or a moderator. See `INSTRUCTOR.md` for a full walkthrough; the fixture
-credentials are listed under [Dev endpoints](#dev-endpoints-apidev).
+Reads of the POS directory and of reviews are public. Every write request needs authentication, and user
+data (login names, emails, roles) is readable only by that user or an admin. An unauthenticated write
+request is rejected with `401`; an authenticated caller who lacks the required role gets `403`.
+
+The fixture users and their passwords are listed under [Dev endpoints](#dev-endpoints-apidev), and
+`INSTRUCTOR.md` has a full walkthrough.
+
+### Authenticating
+
+Authenticate either with HTTP Basic, sending the credentials on each request:
+
+```shell
+curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/users
+```
+
+or by exchanging credentials once for a stateless JWT (valid 15 minutes) and sending it as a bearer token:
+
+```shell
+TOKEN=$(curl -s --request POST --header "Content-Type: application/json" \
+  --data '{"loginName":"maxmustermann","password":"AmLtoD3r8lVdnwoLN1Nn"}' \
+  http://localhost:8080/api/auth/token | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
+```
+
+```shell
+curl --header "Authorization: Bearer $TOKEN" http://localhost:8080/api/pos
+```
+
+A bearer token authenticates the same principal as the matching Basic credentials, so the authorization
+rules below hold identically under either mechanism.
+
+### Roles and access rules
+
+`USER` is the base role and is always retained. An admin cannot strip it, and a new account is always a
+plain `USER` regardless of any `roles` in the registration body. `MODERATOR` (content moderation) and
+`ADMIN` (user administration) are independent grants on top. The coarse rules based on the request path live
+in `SecurityConfig`; the finer rules (e.g., a review's author, or a user acting on their own account) are enforced in
+the domain services, because they depend on which row is targeted.
+
+| Request | Allowed for |
+|---|---|
+| `GET /api/pos`, `GET /api/reviews` (and their reads) | anyone (public) |
+| `POST /api/users` (registration), `POST /api/auth/token` | anyone (public) |
+| `GET /api/users` (list all) | `ADMIN` |
+| `GET /api/users/{id}` | the user themselves or `ADMIN` |
+| `POST` / `PUT` / `DELETE /api/pos` (and the OSM import) | `MODERATOR` |
+| `PUT /api/users/{id}` | the user themselves; changing roles needs `ADMIN` |
+| `DELETE /api/users/{id}` | `ADMIN` |
+| `POST /api/reviews` | any authenticated user (authored as the caller) |
+| `PUT` / `DELETE /api/reviews/{id}` | the review's author or a `MODERATOR` |
+| `PUT /api/reviews/{id}/approve` | any authenticated user except the author |
+| `/actuator/health` | anyone (public) |
+| `/actuator/metrics`, `/actuator/env` | `ADMIN` |
+
+`hasRole("MODERATOR")` admits anyone granted `MODERATOR`; an admin who is not also a moderator is not
+admitted to the moderator-only routes.
 
 ## Prerequisites
 
@@ -116,14 +166,21 @@ In the `dev` profile the application loads the fixture dataset on startup (when 
 yet), and the database persists across application restarts. Three endpoints let you inspect, replace, and
 clear the data on demand (they are not registered outside `dev`):
 
+Report the current counts (`{users, pos, reviews}`):
+
 ```shell
-# report the current counts ({users, pos, reviews})
 curl http://localhost:8080/api/dev/data
+```
 
-# replace the data with the fixture dataset (idempotent: clears first, safe to repeat)
+Replace the data with the fixture dataset (idempotent: clears first, safe to repeat):
+
+```shell
 curl --request PUT http://localhost:8080/api/dev/data
+```
 
-# clear all data
+Clear all data:
+
+```shell
 curl --request DELETE http://localhost:8080/api/dev/data
 ```
 
@@ -298,10 +355,14 @@ own review. The review below is the one `student2023` authored (of `New Vending 
 curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # student2023 is the author, so this returns 400
 ```
 
-Another user can approve it, but only once — a repeat returns `409 Conflict`:
+Another user can approve it, but only once. The first approval succeeds:
 ```shell
 curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # 200
-curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # again: 409 Conflict
+```
+
+The same user approving again is rejected as a duplicate:
+```shell
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve # 409 Conflict
 ```
 
 ## Docker
@@ -333,7 +394,7 @@ Explanation of selected options:
 `docker run ... -it`  runs a container in interactive mode with a pseudo-TTY (terminal).
 `docker run ... --rm` automatically removes the container (and its associated resources) if it exists already.
 
-Both run methods start the app in the `dev` profile. Since the application does not load data on startup, the API comes up empty — load it with `PUT /api/dev/data` (see [Dev endpoints](#dev-endpoints-apidev)).
+Both run methods start the app in the `dev` profile, which loads the fixture dataset on startup when the database has no users yet, so the API comes up populated; the [Dev endpoints](#dev-endpoints-apidev) let you inspect, reload, or clear it.
 
 #### Use Docker compose to run the app container together with the DB container
 
@@ -362,7 +423,7 @@ Stop and remove containers and networks:
 docker compose down
 ```
 
-The `db` service has no named volume, so `docker compose down` discards its data and the next `DB_HOST=db docker compose up` starts with an empty database — reload it with `PUT /api/dev/data`.
+The `db` service has no named volume, so `docker compose down` discards its data; the next `DB_HOST=db docker compose up` starts with an empty database, which the dev-profile startup loader then reseeds with the fixture dataset (the [Dev endpoints](#dev-endpoints-apidev) let you reload or clear it on demand).
 
 ## Deployment
 
@@ -393,9 +454,14 @@ builds the image and creates **one** Cloud Run service (named after the Compose 
 namespace (which is why `compose.prod.yaml` reaches the database at `localhost`):
 
 ```shell
-scripts/deploy-cloudrun.sh                  # event sourcing mode
-scripts/deploy-cloudrun.sh relational       # relational mode
+scripts/deploy-cloudrun.sh                   # event sourcing mode (the default)
+#scripts/deploy-cloudrun.sh relational        # relational mode (pick one)
 ```
+
+Before deploying, the script prints the resolved target — service, project, region, and persistence mode —
+and asks for confirmation, so a stale `gcloud config` cannot send the deploy to the wrong project. Pass
+`--project <id>` to target a project other than the active config, and `-y` (or `--yes`) to skip the prompt
+for a non-interactive run.
 
 `compose up` has no flag to set environment variables, so the JWT secret (and the persistence mode) reach
 the prod profile — which has no fallback secret — through the Compose file's `env_file: deploy.env`. The
@@ -420,9 +486,24 @@ Read the service URL (with `/api` appended for the API base path) and exercise i
 
 ```shell
 export BASE=$(gcloud run services describe campus-coffee-prod --format='value(status.url)')/api
+```
+
+A public read succeeds:
+
+```shell
 curl "$BASE/pos"                                                              # public read -> 200
+```
+
+An unauthenticated write request is rejected, and nothing is created:
+
+```shell
 curl -i --request POST --header "Content-Type: application/json" \
   --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Hello from the cloud"}' "$BASE/reviews"        # no creds -> 401
+```
+
+The same write request with valid credentials succeeds:
+
+```shell
 curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 \
   --header "Content-Type: application/json" \
   --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Hello from the cloud"}' "$BASE/reviews"        # with creds -> 201

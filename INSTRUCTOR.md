@@ -123,34 +123,36 @@ authorizeHttpRequests {
 Spring evaluates these rules top to bottom and applies the first match, so the specific matchers come
 before `anyRequest`. `hasRole("MODERATOR")` admits anyone granted `MODERATOR`; an `ADMIN` who is not also a moderator is not admitted.
 
-Creating, updating, or deleting a POS requires `MODERATOR`. A plain `USER` is forbidden, while a
-moderator succeeds:
+Creating, updating, or deleting a POS requires `MODERATOR`. A plain `USER` is forbidden:
 
 ```shell
-# student2023 (USER) -> 403 Forbidden
 curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --header "Content-Type: application/json" \
   --data '{"name":"New Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' \
-  http://localhost:8080/api/pos
-
-# maxmustermann (MODERATOR) -> 201 Created
-curl -i --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
-  --data '{"name":"New Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' \
-  http://localhost:8080/api/pos
+  http://localhost:8080/api/pos   # student2023 (USER) -> 403 Forbidden
 ```
 
-Managing other users requires `ADMIN`. Any admin (`jane_doe` or `olivia_admin`) may change another user,
-including their roles, or delete one:
+A moderator succeeds:
 
 ```shell
-# a moderator trying to edit another user (jane_doe) -> 403
+curl -i --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
+  --data '{"name":"New Cafe","description":"Demo","type":"CAFE","campus":"ALTSTADT","street":"Hauptstrasse","houseNumber":"100","postalCode":"69117","city":"Heidelberg"}' \
+  http://localhost:8080/api/pos   # maxmustermann (MODERATOR) -> 201 Created
+```
+
+Managing other users requires `ADMIN`. A moderator trying to edit another user is rejected:
+
+```shell
 curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
   --data '{"id":"ba419d35-0dfe-8af7-aee7-bbe10c45c028","loginName":"jane_doe","emailAddress":"jane.doe@uni-heidelberg.de","firstName":"Jane","lastName":"Doe","roles":["USER"]}' \
-  http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028
+  http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028   # a moderator editing another user -> 403
+```
 
-# the admin succeeds (this grants MODERATOR to student2023)
+Any admin (`jane_doe` or `olivia_admin`) may change another user, including their roles, or delete one:
+
+```shell
 curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA --header "Content-Type: application/json" \
   --data '{"id":"aa616abe-1761-0c9a-e743-67bd738597dc","loginName":"student2023","emailAddress":"student2023@study.org","firstName":"Student","lastName":"Example","roles":["USER","MODERATOR"]}' \
-  http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc
+  http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc   # the admin succeeds (grants MODERATOR to student2023)
 ```
 
 Any user may edit their *own* profile — name, email, and password; changing roles is an admin action. An
@@ -174,17 +176,25 @@ may read only their own account, and listing all users is admin-only:
 curl -i http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc
 ```
 
-A plain `USER` may read their own account, but not another's:
+A plain `USER` may read their own account:
 
 ```shell
 curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/aa616abe-1761-0c9a-e743-67bd738597dc   # own account -> 200
-curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028      # another user -> 403
+```
+
+But not another's:
+
+```shell
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users/ba419d35-0dfe-8af7-aee7-bbe10c45c028   # another user -> 403
 ```
 
 Listing all users is admin-only:
 
 ```shell
 curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/users   # a USER  -> 403
+```
+
+```shell
 curl -i -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/users      # an admin -> 200
 ```
 
@@ -206,12 +216,22 @@ The review approved below (`947c82ee-1735-c9ed-c0a4-7deecc7229ce`) is the one `s
 curl -i --request PUT -u student2023:ZwTwB8Hn8VkNLZec7bR1 http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve
 ```
 
-Three distinct non-author users approve it; the third reaches the quorum of 3:
+Three distinct non-author users approve it; the third reaches the quorum of 3. The first approval:
 
 ```shell
-curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve       # 200
-curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve  # 200
-curl -i --request PUT -u lisa_lee:lG6v9dGKZA5kfOHTFLNR http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve       # 200, this review is now approved
+curl -i --request PUT -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve   # 200
+```
+
+The second:
+
+```shell
+curl -i --request PUT -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve   # 200
+```
+
+The third reaches the quorum, so the review is now approved:
+
+```shell
+curl -i --request PUT -u lisa_lee:lG6v9dGKZA5kfOHTFLNR http://localhost:8080/api/reviews/947c82ee-1735-c9ed-c0a4-7deecc7229ce/approve   # 200, now approved
 ```
 
 Any of them approving again is rejected as a duplicate:
@@ -348,12 +368,22 @@ curl -i --request POST --header "Content-Type: application/json" \
 ```
 
 Listing users is `ADMIN`-only. The same endpoint under three identities walks the whole auth ladder
-without writing anything:
+without writing anything. Unauthenticated:
 
 ```shell
-curl -i $BASE/users                                       # unauthenticated -> 401
-curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 $BASE/users   # a USER          -> 403
-curl -i -u jane_doe:aaaMbnPdFYDqkOpS3fVA  $BASE/users     # an ADMIN        -> 200 (the user list, with emails)
+curl -i $BASE/users   # unauthenticated -> 401
+```
+
+A plain `USER`:
+
+```shell
+curl -i -u student2023:ZwTwB8Hn8VkNLZec7bR1 $BASE/users   # a USER -> 403
+```
+
+An admin:
+
+```shell
+curl -i -u jane_doe:aaaMbnPdFYDqkOpS3fVA $BASE/users   # an ADMIN -> 200 (the user list, with emails)
 ```
 
 Curating a POS needs `MODERATOR`; a plain `USER` is rejected before anything is created:
@@ -447,7 +477,9 @@ Spring Boot Actuator exposes operational endpoints under `/actuator` (its own ba
 `/api` prefix the controllers use). Which endpoints are reachable is configured in `application.yaml`
 (`management.endpoints.web.exposure.include: health, metrics, env`; the prod profile drops `env`), and access
 is enforced in `SecurityConfig` with the same role rules as the rest of the API: **health is public**, while
-**metrics requires an ADMIN**.
+**metrics and env require an ADMIN**. Exposing an endpoint in `application.yaml` only makes it reachable — it
+does not authorize anyone — so each exposed endpoint also needs an explicit rule in `SecurityConfig`; without
+one, a `GET` would fall through to the public read catch-all and be served anonymously.
 
 ### Health
 
