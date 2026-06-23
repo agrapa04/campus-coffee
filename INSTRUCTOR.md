@@ -281,7 +281,7 @@ Compose service name `db`:
 
 ```shell
 scripts/deploy-cloudrun.sh                  # event sourcing mode
-scripts/deploy-cloudrun.sh relational       # relational mode
+#scripts/deploy-cloudrun.sh relational       # relational mode
 ```
 
 `compose up` has no flag to set environment variables, so the JWT secret (and the persistence mode) reach
@@ -317,6 +317,16 @@ export BASE=$(gcloud run services describe campus-coffee-prod --format='value(st
 ```
 
 ### Run the same demo over HTTPS
+
+> **Cold start — warm it before you present.** When the service has been idle it scales to zero, so the
+> first request boots a fresh instance (the app *and* the PostgreSQL sidecar, plus Flyway and the fixture
+> load) and can take ~20–60s. Cloud Run holds the request (the startup probe allows 240s), but your `curl`
+> may appear to hang on the first call and then work. Warm it a few seconds ahead of the live demo and wait
+> for `{"status":"UP"}`:
+>
+> ```shell
+> curl "${BASE%/api}/actuator/health"   # health lives at the service root, not under /api
+> ```
 
 The prod profile loads the fixture data on startup, so go straight to the calls. Set `$BASE` first (the
 block above); in a fresh shell it is unset, and `curl` against an empty `$BASE` fails. It must end in
@@ -480,7 +490,9 @@ a tag to focus on one route or status:
 ```shell
 curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA http://localhost:8080/actuator/metrics/http.server.requests
 # -> measurements: COUNT, TOTAL_TIME, MAX; availableTags: uri, status, method, outcome, exception
+```
 
+```shell
 curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA \
   "http://localhost:8080/actuator/metrics/http.server.requests?tag=uri:/api/pos&tag=status:200"
 # -> the same meter, narrowed to successful requests to /api/pos

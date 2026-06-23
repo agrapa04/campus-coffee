@@ -66,7 +66,7 @@ to work with; the [Dev endpoints](#dev-endpoints-apidev) let you reload or clear
 
 ### Persistence mode (event sourcing by default)
 
-By default the application runs in an event-first **event sourcing** mode, where an append-only event log
+By default, the application runs in an event-first **event sourcing** mode, where an append-only event log
 is the source of truth and the relational tables are a read model projected from it. The API behaves
 identically to the plain relational mode; the difference is that every write request is also recorded in
 the `events` table. A default `dev` run therefore already records events:
@@ -430,6 +430,16 @@ curl -i --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 \
 
 Every call from the [Authentication and authorization](#authentication-and-authorization) section works
 the same way against `$BASE`, including the role checks and the JWT flow (`POST $BASE/auth/token`).
+
+> **The first request after idle is slow (a cold start).** With no minimum instances configured the service
+> scales to zero when idle, so the first request boots a fresh instance — and because the app and PostgreSQL
+> run as sidecars, that means starting Postgres, then the app (Flyway, the event-sourcing startup runners,
+> and the fixture load) before it serves, which takes roughly 20–60s. Cloud Run holds the request while the
+> instance starts (the startup probe allows 240s and the request timeout is 300s), but a client with a
+> shorter timeout may see the first call hang or fail and then succeed once an instance is warm. Hit
+> `/actuator/health` once to warm it before a demo, or set `--min-instances=1`
+> (`gcloud run services update campus-coffee-prod --min-instances=1`) to keep one instance warm — at the
+> cost of an always-on billed instance.
 
 This is a throwaway demo. Running PostgreSQL as a sidecar container next to the app is fine for a demo but
 not how you would run it in production: Cloud Run treats the container as ephemeral, so a cold start
