@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.client.returnResult
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.lang.reflect.Array as ReflectArray
 
 /**
@@ -28,6 +29,14 @@ object SystemTestUtils {
      * [configureClient] rather than at construction.
      */
     private lateinit var client: RestTestClient
+
+    // One client per server port, created once and reused for that context's lifetime. Without fork-level
+    // parallelism (-PtestForks=1) every system-test context is cached in a single JVM, each on its own
+    // random port; rebuilding the client on every test left a client (with its own connection pool) open
+    // per test, hundreds at once, whose crossed connections surfaced as wrong-port I/O errors. Keying by
+    // port hands each test the client for its own context's server and bounds the live clients to one per
+    // context.
+    private val clientsByPort = ConcurrentHashMap<Int, RestTestClient>()
 
     /**
      * The credentials a request authenticates with (HTTP Basic). The seeded fixture users below carry the
@@ -62,9 +71,12 @@ object SystemTestUtils {
      */
     var defaultCredentials: Credentials = ADMIN
 
-    /** Binds the shared [RestTestClient] to the running server on the given port. */
+    /** Selects the [RestTestClient] for the running server on the given port, creating it once per port. */
     fun configureClient(port: Int) {
-        client = RestTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+        client =
+            clientsByPort.computeIfAbsent(port) {
+                RestTestClient.bindToServer().baseUrl("http://localhost:$it").build()
+            }
         defaultCredentials = ADMIN
     }
 
