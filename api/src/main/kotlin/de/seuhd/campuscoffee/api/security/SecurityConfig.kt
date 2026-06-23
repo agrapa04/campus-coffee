@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.api.security
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
 import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
@@ -38,6 +39,7 @@ class SecurityConfig {
      * Builds the stateless filter chain that enforces the access rules described in the class KDoc.
      *
      * @param http the security builder for the chain
+     * @param environment the active environment, used to open the dev data endpoints only in the dev profile
      * @param authenticationEntryPoint renders a missing or invalid credential as a 401 JSON response
      * @param accessDeniedHandler renders an authorization denial as a 403 JSON response
      * @param jwtAuthenticationConverter maps a validated Bearer token to a principal with ROLE_* authorities
@@ -45,18 +47,23 @@ class SecurityConfig {
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
+        environment: Environment,
         authenticationEntryPoint: AuthenticationEntryPoint,
         accessDeniedHandler: AccessDeniedHandler,
         jwtAuthenticationConverter: JwtAuthenticationConverter
     ): SecurityFilterChain {
         http {
             authorizeHttpRequests {
-                // Swagger UI, the OpenAPI docs, and the dev-only data endpoints stay reachable (the dev
-                // endpoints are registered only under the dev profile, but the matcher is harmless otherwise).
+                // Swagger UI and the OpenAPI docs stay public.
                 authorize("/api/swagger-ui.html", permitAll)
                 authorize("/api/swagger-ui/**", permitAll)
                 authorize("/api/api-docs/**", permitAll)
-                authorize("/api/dev/**", permitAll)
+                // The dev data endpoints clear and reload the fixtures and are deliberately left open for
+                // convenient local testing. Added only when the dev profile is active, so /api/dev/** is
+                // never opened in a deployed profile. The dev profile must not run on a network-reachable host.
+                if (environment.matchesProfiles("dev")) {
+                    authorize("/api/dev/**", permitAll)
+                }
                 // Authenticating happens before the user exists / before a token is held: registration and
                 // the token endpoint must stay open.
                 authorize(HttpMethod.POST, "/api/users", permitAll)

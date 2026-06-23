@@ -13,6 +13,5 @@ CREATE TABLE pos (
     house_number_suffix char(1),
     postal_code int NOT NULL,
     city varchar(255) NOT NULL CHECK (city <> ''),
-    -- explicitly named so the application can map a violation to the POS name field
     CONSTRAINT uq_pos_name UNIQUE (name)
 );

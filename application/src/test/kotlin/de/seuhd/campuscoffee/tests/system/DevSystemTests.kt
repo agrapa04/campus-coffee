@@ -10,8 +10,9 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.client.returnResult
 
 /**
- * System tests for the data management endpoints, available only in the `dev` profile.
- * The shared base class clears the data before each test, so the tests start from an empty database.
+ * System tests for the data management endpoints, available (and open, no credentials) only in the `dev`
+ * profile. The shared base class clears the data before each test, so the tests start from an empty database.
+ * `DevDataNotInDeployedProfileSystemTests` covers that the endpoints are absent outside the `dev` profile.
  */
 @ActiveProfiles("dev")
 class DevSystemTests : AbstractSystemTest() {

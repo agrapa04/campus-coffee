@@ -1,0 +1,2 @@
+ALTER TABLE pos ADD COLUMN version bigint NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN version bigint NOT NULL DEFAULT 0;

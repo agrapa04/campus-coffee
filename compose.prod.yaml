@@ -1,8 +1,9 @@
 name: campus-coffee-prod
 
 # Runs the application in the prod profile: authentication is enforced, Swagger and the /api/dev
-# endpoints are off, and the JWT secret comes from the environment (no insecure fallback). The prod
-# profile loads the fixture data on startup, so the demo has content without the /api/dev endpoints.
+# endpoints are off, and the JWT secret comes from the environment (no insecure fallback). Fixture loading
+# is off by default (the seeded accounts have committed passwords); set LOAD_FIXTURES_ON_STARTUP=true in
+# deploy.env only for a throwaway demo that wants seeded content without the /api/dev endpoints.
 #
 # Local: cp deploy.env.example deploy.env (fill in JWT_SECRET) && DB_HOST=db docker compose -f compose.prod.yaml up
 # Cloud Run: see INSTRUCTOR.md, step 7 (a single `gcloud beta run compose up compose.prod.yaml`).

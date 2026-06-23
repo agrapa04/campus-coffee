@@ -28,12 +28,15 @@ abstract class PosEntityMapper : EntityMapper<Pos, PosEntity> {
     @Mapping(target = "houseNumber", expression = "java(mergeHouseNumber(source))")
     abstract override fun fromEntity(source: PosEntity): Pos
 
+    // the optimistic locking version is managed by Hibernate, not mapped from the domain
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "address", expression = "java(toAddress(source, new AddressEntity()))")
     abstract override fun toEntity(source: Pos): PosEntity
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "address", expression = "java(toAddress(source, target.getAddress()))")
     abstract override fun updateEntity(
         source: Pos,

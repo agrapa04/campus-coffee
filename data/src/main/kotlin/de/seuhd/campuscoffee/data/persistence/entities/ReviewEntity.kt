@@ -28,10 +28,13 @@ class ReviewEntity : Entity() {
     @field:Column(name = "approved")
     var approved: Boolean? = null
 
-    /** Optimistic-locking version; prevents a lost update when the same review is approved concurrently. */
+    // Optimistic locking version; the losing side of a concurrent update returns 409 instead of silently
+    // overwriting. Defaults to 0 (not null) across these entities so a detached copy built by the mapper is
+    // read as detached, not transient: a null version reads as transient and breaks a @ManyToOne to it, such
+    // as a review's reference to its POS and author.
     @field:Version
     @field:Column(name = "version")
-    var version: Long? = null
+    var version: Long? = 0
 
     companion object {
         /** Name of the unique constraint on (pos_id, author_id), declared in the Flyway migration. */

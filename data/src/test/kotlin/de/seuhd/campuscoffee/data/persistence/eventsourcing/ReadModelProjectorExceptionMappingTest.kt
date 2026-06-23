@@ -24,7 +24,7 @@ import java.util.UUID
 
 /**
  * Unit test for the [ReadModelProjector]'s exception translation, with mocked repositories so the
- * relational failures can be forced deterministically. Mirrors the relational adapter's optimistic-lock
+ * relational failures can be forced deterministically. Mirrors the relational adapter's optimistic locking
  * mapping test: a stale UPDATE event surfaces as a [ConcurrentUpdateException], the same exception the
  * relational adapter raises.
  */
@@ -51,7 +51,7 @@ class ReadModelProjectorExceptionMappingTest {
         )
 
     @Test
-    fun `a stale Review UPDATE event maps an optimistic-lock failure to ConcurrentUpdateException`() {
+    fun `a stale Review UPDATE event maps an optimistic locking failure to ConcurrentUpdateException`() {
         val pos = TestFixtures.anyPos()
         val author = TestFixtures.getUserFixtures().first()
         val reviewId = UUID.randomUUID()
@@ -61,7 +61,7 @@ class ReadModelProjectorExceptionMappingTest {
         whenever(posMapper.fromEntity(any())).thenReturn(pos)
         whenever(userMapper.fromEntity(any())).thenReturn(author)
         // the target review row exists (UPDATE path uses updateEntity, not toEntity), but the write fails
-        // the optimistic-locking check
+        // the optimistic locking check
         whenever(reviewRepository.findById(reviewId)).thenReturn(Optional.of(ReviewEntity()))
         whenever(reviewRepository.saveAndFlush(any<ReviewEntity>()))
             .thenThrow(ObjectOptimisticLockingFailureException(ReviewEntity::class.java, reviewId))

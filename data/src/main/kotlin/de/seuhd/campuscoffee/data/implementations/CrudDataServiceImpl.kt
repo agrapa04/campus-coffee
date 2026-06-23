@@ -16,6 +16,8 @@ import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
  * Base implementation of CRUD data service operations, providing common functionality reused across
@@ -69,9 +71,15 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
                 return mapper.fromEntity(repository.saveAndFlush(entity))
             }
 
-            // update existing entity (timestamps are set by the @PreUpdate callback)
+            // update existing entity
             val entity = repository.findByIdOrNull(id) ?: throw NotFoundException(domainClass, id)
             mapper.updateEntity(domain, entity)
+            // Touch updatedAt so the row is always dirty and a PUT advances it (and bumps the version),
+            // even when no business field changed. This keeps the observable update semantics identical to
+            // event sourcing mode, whose projector always writes a fresh updatedAt; without it Hibernate's
+            // dirty checking would skip a no-op PUT, so updatedAt would move only in event sourcing mode.
+            // The @PreUpdate callback then sets the final value (see Entity.onUpdate).
+            entity.updatedAt = LocalDateTime.now(UTC)
             return mapper.fromEntity(repository.saveAndFlush(entity))
         } catch (e: OptimisticLockingFailureException) {
             // the row changed between the read above and this write; surface it as a domain conflict,
@@ -131,6 +139,8 @@ abstract class CrudDataServiceImpl<DOMAIN : DomainModel<ID>, ENTITY : Entity, RE
         queryFunction()?.let { mapper.fromEntity(it) } ?: throw NotFoundException(domainClass, fieldName, fieldValue)
 
     companion object {
+        private val UTC = ZoneId.of("UTC")
+
         /**
          * Returns the name of the database constraint reported by a data integrity violation, or null
          * when the cause chain contains no Hibernate [ConstraintViolationException]. Reading the name

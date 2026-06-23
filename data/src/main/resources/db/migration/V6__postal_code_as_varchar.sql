@@ -1,9 +1,3 @@
--- German postal codes are fixed five-digit strings with significant leading zeros (e.g., 01067 in
--- Dresden); the previous int column silently dropped them. Existing values are re-padded to five digits.
-
--- Guard first: lpad() silently right-truncates values longer than five digits, so out-of-range rows
--- (impossible through the application, which has always validated the range, but writable via raw SQL)
--- must fail the migration loudly instead of being corrupted.
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pos WHERE postal_code < 0 OR postal_code > 99999) THEN

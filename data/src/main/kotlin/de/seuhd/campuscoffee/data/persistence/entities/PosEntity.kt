@@ -7,6 +7,7 @@ import jakarta.persistence.Embedded
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 
 /**
  * Database entity for a point-of-sale (POS).
@@ -27,6 +28,14 @@ class PosEntity : Entity() {
 
     @field:Embedded
     var address: AddressEntity? = null
+
+    // Optimistic locking version; the losing side of a concurrent update returns 409 instead of silently
+    // overwriting. Defaults to 0 (not null) across these entities so a detached copy built by the mapper is
+    // read as detached, not transient: a null version reads as transient and breaks a @ManyToOne to it, such
+    // as a review's reference to its POS and author.
+    @field:Version
+    @field:Column(name = "version")
+    var version: Long? = 0
 
     companion object {
         const val NAME_COLUMN = "name"

@@ -18,7 +18,12 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
 /**
- * Controller for the data management endpoints, available only in the `dev` profile.
+ * Controller for the data management endpoints, available only in the `dev` profile, so it is never
+ * registered in a deployed profile. The endpoints are deliberately left open (no authentication) for
+ * convenient local testing: clearing and reloading the fixtures should not require credentials during
+ * development. This is safe only because the `dev` profile must never run on a network-reachable host, and
+ * the deployed prod profile does not register this controller. `SecurityConfig` opens the `/api/dev` paths
+ * only when the `dev` profile is active, so the open rule cannot leak into another profile.
  */
 @Tag(name = "Dev data", description = "Dev-only endpoints to clear, load, and inspect test data in the database.")
 @Controller

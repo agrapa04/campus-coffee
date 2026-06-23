@@ -164,7 +164,8 @@ You can use `curl` in the command line to send HTTP requests to the REST API.
 
 In the `dev` profile the application loads the fixture dataset on startup (when the database has no users
 yet), and the database persists across application restarts. Three endpoints let you inspect, replace, and
-clear the data on demand (they are not registered outside `dev`):
+clear the data on demand. They need no credentials, for convenient local testing, and they are registered
+only in the `dev` profile (which must never run on a network-reachable host):
 
 Report the current counts (`{users, pos, reviews}`):
 
@@ -432,9 +433,10 @@ The `db` service has no named volume, so `docker compose down` discards its data
 We use the `gcloud` CLI (see [`mise.toml`](mise.toml)) to build CampusCoffee from source with Cloud Build
 and deploy it to Cloud Run. We deploy the **prod profile** via [`compose.prod.yaml`](compose.prod.yaml):
 authentication is enforced, Swagger and the `/api/dev` endpoints are off, and the JWT secret comes from
-the environment (no insecure fallback). The prod profile loads the fixture data on startup, so the demo
-has content without the dev endpoints, and Cloud Run terminates TLS, so the Basic credentials and the JWT
-are encrypted in transit. App-level authentication is what makes a public URL safe.
+the environment (no insecure fallback). Prod does not seed the fixtures by default (the seeded users carry
+committed passwords); set `LOAD_FIXTURES_ON_STARTUP=true` in `deploy.env` so this throwaway demo has
+content without the dev endpoints. Cloud Run terminates TLS, so the Basic credentials and the JWT are
+encrypted in transit. App-level authentication is what makes a public URL safe.
 
 Deploying from Compose is [still in preview](https://docs.cloud.google.com/run/docs/deploy-run-compose),
 so install the `beta` component first (`gcloud` prompts to install any other required components on first
@@ -524,10 +526,11 @@ the same way against `$BASE`, including the role checks and the JWT flow (`POST 
 
 This is a throwaway demo. Running PostgreSQL as a sidecar container next to the app is fine for a demo but
 not how you would run it in production: Cloud Run treats the container as ephemeral, so a cold start
-brings up an empty database that the startup loader reseeds. A real cloud deployment points the app at a
-**managed (hosted) database** — e.g., Cloud SQL — instead of a self-managed Postgres container, sets
-`campus-coffee.fixtures.load-on-startup` to `false`, and supplies `JWT_SECRET` from Secret Manager rather
-than a generated value. Delete the deployment when you are done:
+brings up an empty database that the startup loader reseeds only when the demo sets
+`LOAD_FIXTURES_ON_STARTUP=true`. A real cloud deployment points the app at a **managed (hosted) database**
+— e.g., Cloud SQL — instead of a self-managed Postgres container, leaves
+`campus-coffee.fixtures.load-on-startup` at its prod default (`false`), and supplies `JWT_SECRET` from
+Secret Manager rather than a generated value. Delete the deployment when you are done:
 
 ```shell
 gcloud run services delete campus-coffee-prod

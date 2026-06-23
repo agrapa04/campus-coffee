@@ -47,6 +47,10 @@ data class Pos(
         private val POSTAL_CODE_PATTERN = Regex("\\d{5}")
 
         // https://de.wikipedia.org/wiki/Hausnummer#Hausnummernerg%C3%A4nzungen
-        private val HOUSE_NUMBER_PATTERN = Regex("\\d+[ \\-]?[a-zA-Z]?")
+        // A number with no leading zero and an optional single letter suffix, no separator. The numeric and
+        // suffix parts are stored in separate columns, so a leading zero ("007") or a separator ("21-a")
+        // would be silently dropped on the persistence round-trip; rejecting them here keeps a stored house
+        // number identical to the one the client sent.
+        private val HOUSE_NUMBER_PATTERN = Regex("[1-9]\\d*[a-zA-Z]?")
     }
 }

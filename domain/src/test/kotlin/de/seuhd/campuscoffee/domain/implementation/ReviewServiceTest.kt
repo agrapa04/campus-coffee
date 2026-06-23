@@ -22,6 +22,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.TransactionStatus
+import org.springframework.transaction.support.SimpleTransactionStatus
 import java.util.UUID
 
 /**
@@ -48,6 +52,18 @@ class ReviewServiceTest {
 
     private lateinit var reviewService: ReviewServiceImpl
 
+    // A transaction manager that runs the callback inline (no real transaction); approve() wraps each
+    // attempt in a TransactionTemplate, and these unit tests exercise the logic, not the transaction.
+    private val transactionManager =
+        object : PlatformTransactionManager {
+            override fun getTransaction(definition: TransactionDefinition?): TransactionStatus =
+                SimpleTransactionStatus()
+
+            override fun commit(status: TransactionStatus) = Unit
+
+            override fun rollback(status: TransactionStatus) = Unit
+        }
+
     @BeforeEach
     fun beforeEach() {
         reviewService =
@@ -56,7 +72,8 @@ class ReviewServiceTest {
                 userDataService,
                 posDataService,
                 reviewApprovalDataService,
-                approvalProperties
+                approvalProperties,
+                transactionManager
             )
     }
 

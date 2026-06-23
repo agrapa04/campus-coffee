@@ -21,8 +21,8 @@ docker compose up --build
 ```
 
 The base URL is `http://localhost:8080/api`. Swagger UI is at
-`http://localhost:8080/api/swagger-ui.html`. The `/api/dev` endpoints (no credentials needed) let you
-reload or clear the fixture data; see "Reset the local demo" below.
+`http://localhost:8080/api/swagger-ui.html`. The `/api/dev` endpoints (no credentials needed, and present
+only in the dev profile) let you reload or clear the fixture data; see "Reset the local demo" below.
 
 To run without Docker, start a PostgreSQL container and use Gradle instead:
 
@@ -108,7 +108,9 @@ their own account) are enforced in the domain services, because they depend on *
 
 ```kotlin
 authorizeHttpRequests {
-    authorize("/api/dev/**", permitAll)
+    if (environment.matchesProfiles("dev")) {
+        authorize("/api/dev/**", permitAll)                         // dev-only data endpoints, open locally
+    }
     authorize(HttpMethod.POST, "/api/users", permitAll)             // open registration
     authorize("/api/auth/token", permitAll)
     authorize(HttpMethod.GET, "/api/users", hasRole("ADMIN"))       // listing users exposes PII -> admin-only
@@ -272,9 +274,10 @@ the same user as Basic credentials do, so a `USER`'s token still cannot create a
 
 The same walkthrough runs against a public deployment in the prod profile (`compose.prod.yaml`). In prod
 the application enforces authentication, Swagger and the `/api/dev` endpoints are off, and the JWT secret
-comes from the environment with no fallback. The prod profile loads the fixture data on startup, so the
-demo has content without the dev endpoints. Cloud Run serves it over HTTPS, so the Basic credentials and
-the JWT are encrypted in transit.
+comes from the environment with no fallback. Prod does not seed the fixtures by default (the seeded users
+carry committed passwords); set `LOAD_FIXTURES_ON_STARTUP=true` in `deploy.env` so this throwaway demo has
+content without the dev endpoints. Cloud Run serves it over HTTPS, so the Basic credentials and the JWT are
+encrypted in transit.
 
 > The starter has no in-app authentication, so the README tells you to deploy it privately
 > (`--no-allow-unauthenticated`) or to treat the deployment as throwaway. The solution instead grants
@@ -348,8 +351,9 @@ export BASE=$(gcloud run services describe campus-coffee-prod --format='value(st
 > curl "${BASE%/api}/actuator/health"   # health lives at the service root, not under /api
 > ```
 
-The prod profile loads the fixture data on startup, so go straight to the calls. Set `$BASE` first (the
-block above); in a fresh shell it is unset, and `curl` against an empty `$BASE` fails. It must end in
+With `LOAD_FIXTURES_ON_STARTUP=true` in `deploy.env` (step 7), the demo comes up seeded, so go straight to
+the calls. Set `$BASE` first (the block above); in a fresh shell it is unset, and `curl` against an empty
+`$BASE` fails. It must end in
 `/api`, and every endpoint lives under it: a request to the bare service host (without `/api`) returns
 `404 No endpoint found`. Run the blocks one at a time; they are reads or are rejected before anything is
 written, so the demo re-runs cleanly against the fixture data without creating duplicates.
@@ -423,7 +427,8 @@ A `USER`'s token is exactly as limited as their Basic credentials: redo the two 
 `student2023:ZwTwB8Hn8VkNLZec7bR1`, and the same `GET $BASE/users` returns `403`. The token expires after
 15 minutes; request a new one after that. A successful write request (for example `POST $BASE/reviews` with
 credentials) returns `201` and is authored by the caller, but it inserts a row, so repeating it for the
-same author and POS returns `409`. The prod database is ephemeral and reloads the fixtures on a cold start.
+same author and POS returns `409`. The prod database is ephemeral and re-seeds the demo fixtures on a cold
+start (this demo opts in with `LOAD_FIXTURES_ON_STARTUP=true`).
 Sending credentials over the public URL is safe only because Cloud Run terminates TLS.
 
 ### Notes for a real deployment
@@ -432,9 +437,10 @@ This is a throwaway demo; a real deployment differs in a few ways:
 
 - **Database.** `compose.prod.yaml` runs PostgreSQL as a sidecar container sharing the app's network
   namespace (reached at `localhost`), which Cloud Run treats as ephemeral: a cold start brings up an empty
-  database, and the startup loader reloads the fixture data. That suits a demo but keeps nothing. For
-  persistence, point the app at a managed database such as Cloud SQL and set
-  `campus-coffee.fixtures.load-on-startup` to `false`.
+  database, and the startup loader re-seeds the demo fixtures (only because this demo sets
+  `LOAD_FIXTURES_ON_STARTUP=true`). That suits a demo but keeps nothing. For a real deployment, leave
+  `campus-coffee.fixtures.load-on-startup` at its prod default (`false`, so no committed credentials are
+  seeded) and point the app at a managed database such as Cloud SQL.
 - **Secret.** The prod profile has no fallback `JWT_SECRET`, so a deploy that forgets to set it fails at
   startup rather than booting with a known key. Supply it from Secret Manager (a Cloud Run secret
   reference), not the `gcloud run services update --update-env-vars` shown above, which is fine for a demo
@@ -535,6 +541,10 @@ curl -u jane_doe:aaaMbnPdFYDqkOpS3fVA \
 
 ## Reset the local demo
 
-The dev app loads the fixture data on startup, and `PUT /api/dev/data` clears and reloads it, reassigning
-the same seeded ids, so you can rerun the local walkthrough from a clean state. The Cloud Run deployment
-loads its data on startup, so redeploy it to reset.
+The dev app loads the fixture data on startup, and `PUT /api/dev/data` (no credentials needed in the dev
+profile) clears and reloads it, reassigning the same seeded ids, so you can rerun the local walkthrough from
+a clean state. The Cloud Run deployment loads its data on startup, so redeploy it to reset.
+
+```shell
+curl --request PUT http://localhost:8080/api/dev/data
+```

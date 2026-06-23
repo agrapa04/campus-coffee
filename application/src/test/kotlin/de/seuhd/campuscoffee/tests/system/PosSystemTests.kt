@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.returnResult
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
@@ -83,6 +84,40 @@ open class PosSystemTests : AbstractSystemTest() {
         assertThat(updated.description).isEqualTo("Edited by a moderator")
         assertThat(posRequests.deleteAndReturnStatusCodes(listOf(created.id!!), MODERATOR).first())
             .isEqualTo(HttpStatus.NO_CONTENT.value())
+    }
+
+    @Test
+    fun `creating a POS with a street longer than 255 characters returns 400 Bad Request`() {
+        // the street column is varchar(255); without the DTO @Size this overflowed to a database error (500)
+        val dto =
+            posDtoMapper
+                .fromDomain(TestFixtures.getPosFixturesForInsertion().first())
+                .copy(street = "a".repeat(256))
+
+        assertThat(posRequests.createAndReturnStatusCodes(listOf(dto), MODERATOR).first())
+            .isEqualTo(HttpStatus.BAD_REQUEST.value())
+    }
+
+    @Test
+    fun `a PUT advances updatedAt even for a no-op update, identically in both persistence modes`() {
+        val created =
+            posRequests
+                .create(
+                    listOf(posDtoMapper.fromDomain(TestFixtures.getPosFixturesForInsertion().first()))
+                ).first()
+        // the timestamp column resolves to microseconds, so pause to guarantee a strictly later updatedAt
+        Thread.sleep(10)
+
+        // a no-op PUT (identical field values) must still advance updatedAt: the relational path forces it and
+        // the event-sourcing projector always writes a fresh updatedAt, so the two modes agree
+        val updated = posRequests.update(listOf(created)).first()
+
+        assertThat(updated.updatedAt!!).isAfter(created.updatedAt!!)
+        // createdAt is preserved on update. Compare at millisecond precision: the create response carries the
+        // in-memory value (nanoseconds on some platforms) while a later read is truncated to the database's
+        // microsecond precision, so an exact equality is platform-dependent.
+        assertThat(updated.createdAt!!.truncatedTo(ChronoUnit.MILLIS))
+            .isEqualTo(created.createdAt!!.truncatedTo(ChronoUnit.MILLIS))
     }
 
     @Test

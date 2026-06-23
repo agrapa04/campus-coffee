@@ -42,7 +42,11 @@ campus-coffee:
   approval:
     min-count: 3
   jwt:
-    secret: ${JWT_SECRET:dev-only-insecure-jwt-secret-change-me-in-production}
+    # No in-source fallback: the base config (which the prod profile and a no-profile run both inherit)
+    # requires JWT_SECRET, so a deployment cannot accidentally sign and verify tokens with a committed
+    # secret. The dev profile supplies an insecure local fallback below; the test suite injects its own
+    # secret via a system property (see application/build.gradle.kts).
+    secret: ${JWT_SECRET}
   fixtures:
     load-on-startup: false
 
@@ -76,6 +80,11 @@ springdoc:
     enabled: true
     path: /api/swagger-ui.html
 campus-coffee:
+  jwt:
+    # A fixed, insecure secret for local development only (the dev profile is never deployed). No env-var
+    # indirection: the base config requires JWT_SECRET with no default, so prod and no-profile runs fail
+    # fast when it is unset and are unaffected by this dev value.
+    secret: dev-only-insecure-jwt-secret-change-me-in-production
   fixtures:
     load-on-startup: true
 
@@ -85,10 +94,11 @@ spring:
     activate:
       on-profile: prod
 campus-coffee:
-  jwt:
-    secret: ${JWT_SECRET}
+  # The JWT secret is inherited from the base config (required, no fallback), so prod fails fast without it.
   fixtures:
-    load-on-startup: ${LOAD_FIXTURES_ON_STARTUP:true}
+    # Off by default: seeding the demo fixtures creates accounts whose passwords are committed in the repo
+    # (a known-credentials login). Opt in only for a throwaway demo by setting LOAD_FIXTURES_ON_STARTUP=true.
+    load-on-startup: ${LOAD_FIXTURES_ON_STARTUP:false}
 management:
   # env is not exposed in prod: even with sensitive values masked it reveals the configuration
   # structure and property-source names.

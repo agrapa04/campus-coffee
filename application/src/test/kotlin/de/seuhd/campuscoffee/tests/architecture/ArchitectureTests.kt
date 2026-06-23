@@ -16,13 +16,23 @@ class ArchitectureTests {
             ClassFileImporter()
                 .importPackages("de.seuhd.campuscoffee") // imports all sub-packages
 
-        // the application layer is the Spring Boot entry point and the startup tasks; the security
-        // configuration and its adapters now live in api.security, which is part of the api layer
+        // the application layer is the Spring Boot entry point, the startup tasks, and the application-owned
+        // configuration; the security configuration and its adapters now live in api.security, part of the
+        // api layer. The configuration package needs its own recursive matcher: the bare root identifier
+        // matches only the exact package, so without it `application.configuration` would be in no layer and
+        // mayNotBeAccessedByAnyLayer() would not protect it.
         val applicationPackages =
-            arrayOf("de.seuhd.campuscoffee", "de.seuhd.campuscoffee.tests..")
+            arrayOf(
+                "de.seuhd.campuscoffee",
+                "de.seuhd.campuscoffee.configuration..",
+                "de.seuhd.campuscoffee.tests.."
+            )
 
         layeredArchitecture()
             .consideringAllDependencies()
+            // fail if any imported production/test class is not assigned to a layer, so a new package (e.g. a
+            // future application subpackage) cannot silently escape the rules below
+            .ensureAllClassesAreContainedInArchitecture()
             .layer("api")
             .definedBy("de.seuhd.campuscoffee.api..")
             .layer("domain")

@@ -150,13 +150,34 @@ class OsmDataServiceTest {
     }
 
     @Test
-    fun `fetchNode treats a single tag as no tags and throws MissingFieldException`() {
-        // the deserializer only collects tags when they form an array, so a lone tag yields no tags
+    fun `fetchNode parses a lone tag but still throws MissingFieldException for the other required tags`() {
+        // a single <tag> deserializes as an object, not an array; it is now collected (so the lone amenity is
+        // read), but the node still lacks the other required tags, so a MissingFieldException is raised
         whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
             "<osm>\n  <node id=\"$NODE_ID\">\n    <tag k=\"amenity\" v=\"cafe\"/>\n  </node>\n</osm>\n"
         )
 
         assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(MissingFieldException::class.java)
+    }
+
+    @Test
+    fun `fetchNode throws ExternalServiceException when a tag is missing its value attribute`() {
+        // a syntactically valid tag carrying only k (no v) is a malformed OSM response, mapped to a 502
+        whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
+            "<osm>\n  <node id=\"$NODE_ID\">\n    <tag k=\"amenity\" v=\"cafe\"/>\n    <tag k=\"name\"/>\n  </node>\n</osm>\n"
+        )
+
+        assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(ExternalServiceException::class.java)
+    }
+
+    @Test
+    fun `fetchNode throws ExternalServiceException when a tag is missing its key attribute`() {
+        // symmetric to the missing-value case: a tag carrying only v (no k) is also a malformed response
+        whenever(osmClient.fetchNode(NODE_ID)).thenReturn(
+            "<osm>\n  <node id=\"$NODE_ID\">\n    <tag k=\"amenity\" v=\"cafe\"/>\n    <tag v=\"X\"/>\n  </node>\n</osm>\n"
+        )
+
+        assertThatThrownBy { service.fetchNode(NODE_ID) }.isInstanceOf(ExternalServiceException::class.java)
     }
 
     @ParameterizedTest

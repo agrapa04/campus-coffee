@@ -19,9 +19,14 @@ interface UserEntityMapper : EntityMapper<User, UserEntity> {
     @Mapping(target = "password", ignore = true)
     override fun fromEntity(source: UserEntity): User
 
+    // the optimistic locking version is managed by Hibernate, not mapped from the domain
+    @Mapping(target = "version", ignore = true)
+    override fun toEntity(source: User): UserEntity
+
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     override fun updateEntity(
         source: User,
         @MappingTarget target: UserEntity

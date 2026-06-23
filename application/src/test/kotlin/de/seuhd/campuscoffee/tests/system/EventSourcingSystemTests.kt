@@ -17,3 +17,6 @@ class EventSourcingReviewSystemTests : ReviewSystemTests()
 
 @TestPropertySource(properties = ["campus-coffee.persistence.mode=event-sourcing"])
 class EventSourcingUserSystemTests : UsersSystemTests()
+
+@TestPropertySource(properties = ["campus-coffee.persistence.mode=event-sourcing"])
+class EventSourcingReviewApprovalConcurrencyTest : ReviewApprovalConcurrencyTest()

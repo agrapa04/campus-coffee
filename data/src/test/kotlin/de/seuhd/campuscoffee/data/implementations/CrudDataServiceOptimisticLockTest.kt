@@ -16,7 +16,7 @@ import java.util.Optional
 import java.util.UUID
 
 /**
- * The repository is mocked to throw a JPA optimistic-locking failure on save; upsert should map it to a
+ * The repository is mocked to throw a JPA optimistic locking failure on save; upsert should map it to a
  * [ConcurrentUpdateException].
  */
 class CrudDataServiceOptimisticLockTest {

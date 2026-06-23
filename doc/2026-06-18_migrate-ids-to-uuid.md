@@ -66,7 +66,7 @@ identical (the one added convenience is the dev-profile startup fixture load).
   - entity FK columns `ReviewEntity.pos/author`, `ReviewApprovalEntity.reviewId/userId` become `uuid`.
 - **Stays `Long` (do NOT change):** the OSM `nodeId` everywhere (`OsmNode`, `OsmClient`, `OsmResponse`,
   `OsmDataService.fetchNode`, `PosService.importFromOsmNode`, `/pos/import/osm/{nodeId}`) — it is an
-  external OpenStreetMap id; `ReviewEntity.@Version` (optimistic-lock counter); `approvalCount`.
+  external OpenStreetMap id; `ReviewEntity.@Version` (optimistic locking counter); `approvalCount`.
 - **Migrations — rewrite V1, V2, V3, V7 in place** (teaching repo, no production data): `id bigint` → `id uuid`
   PRIMARY KEY; FK columns (`pos_id`, `author_id`, `review_id`, `user_id`) `bigint` → `uuid`; drop the
   `*_seq` sequences (incl. `review_approvals_seq`). No DB default (`gen_random_uuid()`) — the app always

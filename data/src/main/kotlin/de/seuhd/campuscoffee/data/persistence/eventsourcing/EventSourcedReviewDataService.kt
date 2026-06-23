@@ -20,7 +20,9 @@ import java.util.UUID
 @Primary
 @ConditionalOnProperty(
     name = [PersistenceProperties.MODE_PROPERTY],
-    havingValue = PersistenceProperties.EVENT_SOURCING_MODE
+    havingValue = PersistenceProperties.EVENT_SOURCING_MODE,
+    // a missing mode key activates the decorator, matching PersistenceProperties' EVENT_SOURCING default
+    matchIfMissing = true
 )
 class EventSourcedReviewDataService(
     private val delegate: ReviewDataServiceImpl,

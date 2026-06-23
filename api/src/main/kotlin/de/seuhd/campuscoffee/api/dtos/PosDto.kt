@@ -28,9 +28,14 @@ data class PosDto(
     @field:NotNull
     val campus: CampusType?,
     @field:NotBlank(message = "Street cannot be empty.")
+    @field:Size(max = 255, message = "Street must be at most 255 characters long.")
     val street: String?,
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "House number must be between 1 and 255 characters long.")
+    @field:Pattern(
+        regexp = "[1-9]\\d*[a-zA-Z]?",
+        message = "House number must be digits with no leading zero and an optional letter (e.g., \"21a\")."
+    )
     val houseNumber: String?,
     @field:NotNull
     @field:Pattern(regexp = "\\d{5}", message = "Postal code must be a five-digit string (e.g., \"69117\").")

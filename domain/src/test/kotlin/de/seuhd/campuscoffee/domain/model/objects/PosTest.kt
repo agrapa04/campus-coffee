@@ -27,13 +27,16 @@ class PosTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["1", "100", "21a", "21-a", "21 a"])
+    @ValueSource(strings = ["1", "100", "21a", "9Z"])
     fun `the Pos constructor accepts valid house numbers`(houseNumber: String) {
         assertDoesNotThrow { posWithHouseNumber(houseNumber) }
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["a", "abc", "21ab", "-"]) // no digit, no digit, two suffix letters, no digit
+    // no digit, no digit, two suffix letters, no digit, a leading zero, and separators between number and
+    // suffix: a leading zero or a separator would be silently dropped on the persistence round-trip, so the
+    // domain rejects them rather than store a value that differs from what the client sent
+    @ValueSource(strings = ["a", "abc", "21ab", "-", "007", "21-a", "21 a"])
     fun `the Pos constructor rejects invalid house numbers with ValidationException`(houseNumber: String) {
         assertThrows<ValidationException> { posWithHouseNumber(houseNumber) }
     }

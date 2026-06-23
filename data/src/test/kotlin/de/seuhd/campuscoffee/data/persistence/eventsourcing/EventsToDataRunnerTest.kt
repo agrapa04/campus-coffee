@@ -1,8 +1,10 @@
 package de.seuhd.campuscoffee.data.persistence.eventsourcing
 
+import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.tests.TestFixtures
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
@@ -59,6 +61,28 @@ class EventsToDataRunnerTest : AbstractEventSourcingDataIntegrationTest() {
 
         runner.rebuildFromLog()
 
+        assertThat(posDataService.getAll()).hasSize(1)
+        assertThat(posDataService.getById(requireNotNull(pos.id)).name).isEqualTo(pos.name)
+    }
+
+    @Test
+    fun `rebuild refuses when a read table has rows but the log has no events for that type`() {
+        // a non-empty log that does not cover every populated table (reachable after flipping persistence.mode)
+        val pos = posDataService.upsert(TestFixtures.getPosFixturesForInsertion().first())
+        userDataService.upsert(
+            TestFixtures.getUserFixturesForInsertion().first().copy(
+                passwordHash = $$"{bcrypt}$2a$10$rebuildhashvalue00000"
+            )
+        )
+        // drop only the POS events: the projected pos row remains, but the log can no longer replay it, so a
+        // rebuild that cleared the tables would silently lose the row (deleteAllInBatch manages its own
+        // transaction, unlike the derived deleteByEntityType, which would need an ambient one here)
+        val posEntityType = requireNotNull(Pos::class.simpleName)
+        eventRepository.deleteAllInBatch(eventRepository.findAll().filter { it.entityType == posEntityType })
+
+        assertThatThrownBy { runner.rebuildFromLog() }.isInstanceOf(IllegalArgumentException::class.java)
+
+        // the rebuild refused before clearing, so the read tables are intact
         assertThat(posDataService.getAll()).hasSize(1)
         assertThat(posDataService.getById(requireNotNull(pos.id)).name).isEqualTo(pos.name)
     }

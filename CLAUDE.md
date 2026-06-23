@@ -139,10 +139,13 @@ The `dev` profile:
 - Registers the dev-only `DevController` (in the `api` layer) under `/api/dev`:
   `GET /api/dev/data` reports the counts, `PUT /api/dev/data` replaces the data with the fixture
   dataset (clear + seed; idempotent, reassigning the same seeded ids), and `DELETE /api/dev/data` clears it.
+  The endpoints need no credentials, for convenient local testing. They exist only in the dev profile: the
+  controller is registered only there, and `SecurityConfig` opens `/api/dev/**` only when the dev profile is
+  active, so the dev profile must never run on a network-reachable host.
 
-The fixture load on startup happens in the `dev` and `prod` profiles (both set
-`campus-coffee.fixtures.load-on-startup`); the database persists across application restarts, and the
-loader skips when users already exist.
+The fixture load on startup is enabled in the `dev` profile and off by default in `prod` (opt in with
+`LOAD_FIXTURES_ON_STARTUP=true` for a throwaway demo, since the seeded users carry committed passwords);
+the database persists across application restarts, and the loader skips when users already exist.
 
 ### Run in relational mode (event sourcing is the default)
 
@@ -249,6 +252,10 @@ Dependencies and tools are kept current automatically:
 
 Migration files follow Flyway naming convention (e.g., `V1__create_pos_table.sql`, `V2__create_users_table.sql`).
 
+Keep comments in migration files minimal. Flyway's checksum covers the whole file, so editing even a comment
+in an already-applied migration makes `validate-on-migrate` fail on that database (it then needs a `flyway
+repair` or a recreate). Put design rationale in the code, the `doc/` notes, or the changelog, not in the SQL.
+
 `V8__create_events_table.sql` adds the `events` table for the event sourcing mode. It always runs and the
 `EventEntity` is always mapped (the table exists in both modes); in relational mode nothing writes to it.
 The table is append-only: an application-assigned `uuid` id, a database-assigned monotonic `seq` (the
@@ -321,7 +328,7 @@ Domain exceptions in `domain/src/main/kotlin/de/seuhd/campuscoffee/domain/except
 - `DuplicationException`: Duplicate unique fields (409).
 - `ValidationException`: Business rule violation (400).
 - `MissingFieldException`: Required field missing (400).
-- `ConcurrentUpdateException`: Optimistic-locking conflict (409).
+- `ConcurrentUpdateException`: Optimistic locking conflict (409).
 - `DeletionConflictException`: Deletion blocked because other data references the entity (409).
 - `ExternalServiceException`: An external service (e.g., OpenStreetMap) failed or was unreachable (502).
 
@@ -364,8 +371,8 @@ Entity ids are application-assigned `UUID`s. The domain defines an `IdGenerator`
 (`domain/.../ports/IdGenerator.kt`); the data-layer `IdGeneratorConfiguration` selects the adapter from the
 `campus-coffee.id.entity-seed` property. A numeric seed (the default) yields a `SeededUuidGenerator` whose
 deterministic sequence makes the loaded fixture ids reproducible across runs, so the README and instructor
-examples can reference them. The fixtures load on startup in the dev and prod profiles (both set
-`campus-coffee.fixtures.load-on-startup`), and the dev `PUT /api/dev/data` reloads them on demand. The dev
+examples can reference them. The fixtures load on startup in the dev profile (and in prod only when
+`LOAD_FIXTURES_ON_STARTUP=true`), and the dev `PUT /api/dev/data` reloads them on demand. The dev
 reload resets the generator first, so repeated loads reassign the same ids. The tests use the same seeded
 generator.
 Setting the seed to `random` (e.g., `CAMPUS_COFFEE_ID_ENTITY_SEED=random`) yields
@@ -406,10 +413,13 @@ Custom OpenAPI annotations in `api/src/main/kotlin/de/seuhd/campuscoffee/api/ope
     the event log on startup (clear the tables and replay the whole log). Acts only in event sourcing mode;
     logs and skips in relational mode. Off by default.
   - `campus-coffee.jwt.secret`: HMAC signing secret for the stateless JWT bearer tokens. Required and at
-    least 32 bytes; binding fails at startup otherwise. Supplied via `JWT_SECRET` (the dev profile has an
-    insecure fallback, the prod profile none).
+    least 32 bytes; binding fails at startup otherwise. Supplied via `JWT_SECRET`. Only the dev profile sets
+    a fixed insecure secret in source (a plain value, no env-var indirection); the always-applied base
+    config (which the prod and no-profile runs inherit) is `${JWT_SECRET}` with no default, so any non-dev
+    run fails fast when `JWT_SECRET` is unset.
   - `campus-coffee.fixtures.load-on-startup`: when `true` and the database has no users yet, load the
-    fixture dataset on startup (enabled in the dev and prod profiles).
+    fixture dataset on startup (enabled in the dev profile; off by default in prod, since the seeded users
+    carry committed passwords, opt in with `LOAD_FIXTURES_ON_STARTUP=true` for a throwaway demo).
 
 The design is honest about its claims: in event sourcing mode the events are the source of truth and the
 tables are a materialized read model rebuilt from the log. The `events` table retains `passwordHash` in a

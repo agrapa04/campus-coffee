@@ -1,6 +1,7 @@
 package de.seuhd.campuscoffee.domain.implementation
 
 import de.seuhd.campuscoffee.domain.configuration.ApprovalProperties
+import de.seuhd.campuscoffee.domain.exceptions.ConcurrentUpdateException
 import de.seuhd.campuscoffee.domain.exceptions.DuplicationException
 import de.seuhd.campuscoffee.domain.exceptions.ForbiddenException
 import de.seuhd.campuscoffee.domain.exceptions.ValidationException
@@ -17,7 +18,9 @@ import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
+import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import java.util.UUID
 
 /**
@@ -29,9 +32,14 @@ class ReviewServiceImpl(
     private val userDataService: UserDataService,
     private val posDataService: PosDataService,
     private val reviewApprovalDataService: ReviewApprovalDataService,
-    private val approvalProperties: ApprovalProperties
+    private val approvalProperties: ApprovalProperties,
+    transactionManager: PlatformTransactionManager
 ) : CrudServiceImpl<Review, UUID>(Review::class.java),
     ReviewService {
+    // Runs each approve attempt in its own transaction so a retry after an optimistic locking conflict
+    // starts a fresh transaction (a transactional method retrying itself would reuse the rolled-back one).
+    private val approvalTransactionTemplate = TransactionTemplate(transactionManager)
+
     override fun dataService(): CrudDataService<Review, UUID> = reviewDataService
 
     @Transactional
@@ -131,8 +139,41 @@ class ReviewServiceImpl(
         approved: Boolean
     ): List<Review> = reviewDataService.filter(posDataService.getById(posId), approved)
 
-    @Transactional
     override fun approve(
+        reviewId: UUID,
+        actingUser: User
+    ): Review {
+        // Two different users approving the same review concurrently both write the versioned review row, so
+        // one transaction loses the optimistic locking race and rolls back (including its just-recorded
+        // approval). Retry in a fresh transaction so a legitimate approval is not dropped; a repeat by the
+        // same user still fails fast on the unique constraint (a DuplicationException, not retried).
+        var attempt = 0
+        while (true) {
+            try {
+                return requireNotNull(approvalTransactionTemplate.execute { approveOnce(reviewId, actingUser) }) {
+                    "approveOnce must return the persisted review."
+                }
+            } catch (e: ConcurrentUpdateException) {
+                attempt++
+                if (attempt >= MAX_APPROVE_ATTEMPTS) {
+                    throw e
+                }
+                log.warn {
+                    "Concurrent approval conflict on review '$reviewId' " +
+                        "(attempt $attempt/$MAX_APPROVE_ATTEMPTS); retrying."
+                }
+            }
+        }
+    }
+
+    /**
+     * Records the approval and recomputes the review's approval state in a single transaction. Run by
+     * [approve] inside a retryable transaction; it is the unit that rolls back and retries on a conflict.
+     *
+     * @param reviewId the id of the review being approved
+     * @param actingUser the authenticated user approving the review
+     */
+    private fun approveOnce(
         reviewId: UUID,
         actingUser: User
     ): Review {
@@ -173,5 +214,8 @@ class ReviewServiceImpl(
 
     private companion object {
         private val log = KotlinLogging.logger {}
+
+        /** Maximum attempts for the approve transaction before a persistent optimistic locking conflict surfaces. */
+        private const val MAX_APPROVE_ATTEMPTS = 5
     }
 }
