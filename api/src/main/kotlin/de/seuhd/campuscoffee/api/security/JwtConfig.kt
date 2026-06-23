@@ -1,6 +1,5 @@
-package de.seuhd.campuscoffee.security
+package de.seuhd.campuscoffee.api.security
 import com.nimbusds.jose.jwk.source.ImmutableSecret
-import de.seuhd.campuscoffee.configuration.JwtProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.jwt.JwtDecoder
@@ -10,11 +9,11 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * JWT crypto beans built from the symmetric HMAC secret (see [JwtProperties]). The same key both signs
- * (encoder) and verifies (decoder) tokens, so signing and verification stay in sync.
+ * The JWT encoder and decoder, built from the symmetric HMAC secret (see [JwtProperties]). The same key
+ * both signs (encoder) and verifies (decoder) tokens, so signing and verification stay in sync.
  *
  * Provided in the starter so the JWT exercise (Exercise 4) is about the token endpoint, the claims, and
- * the filter-chain wiring, not the crypto setup.
+ * the filter chain wiring, not the signing key setup.
  */
 @Configuration
 class JwtConfig(

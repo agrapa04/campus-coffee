@@ -68,13 +68,16 @@ class SecurityConfig {
                 authorize(HttpMethod.GET, "/api/users", hasRole("ADMIN"))
                 authorize(HttpMethod.GET, "/api/users/**", authenticated)
                 // Actuator: health is public (it reports only an UP/DOWN status, so it is safe to
-                // expose); metrics is admin-only. These must precede the public GET catch-all below,
-                // which would otherwise make them anonymous. env carries no rule here; application.yaml
-                // controls where it is exposed.
+                // expose); metrics and env are admin-only (env dumps the configuration property sources).
+                // These must precede the public GET catch-all below, which would otherwise serve them
+                // anonymously — exposing an endpoint in application.yaml only makes it reachable, it does
+                // not gate access, so every exposed endpoint needs an explicit rule here.
                 authorize("/actuator/health", permitAll)
                 authorize("/actuator/health/**", permitAll)
                 authorize("/actuator/metrics", hasRole("ADMIN"))
                 authorize("/actuator/metrics/**", hasRole("ADMIN"))
+                authorize("/actuator/env", hasRole("ADMIN"))
+                authorize("/actuator/env/**", hasRole("ADMIN"))
                 // All other reads (the POS directory and reviews) are public.
                 authorize(HttpMethod.GET, "/**", permitAll)
                 // POS curation (create/update/delete and the OSM import) requires a moderator.

@@ -12,10 +12,12 @@ import org.springframework.stereotype.Component
  * handled right now. Spring Security keeps that principal in a request-scoped `SecurityContext`
  * ([SecurityContextHolder]), and this class reads it from there.
  *
- * This is the single bridge in the api layer between Spring Security and the domain. The principal's
- * name is the login name (the same value whether authentication arrived via HTTP Basic or a JWT bearer
- * token), and [UserService.getByLoginName] turns it into a domain [User]. Controllers pass that [User]
- * inward so the domain decides ownership and roles without ever touching a Spring `Authentication`.
+ * This bridges Spring Security and the domain while a request is being handled, once the caller is already
+ * authenticated; the counterpart that runs earlier, while credentials are verified, is
+ * [DomainUserDetailsService]. The principal's name is the login name (the same value whether authentication
+ * arrived via HTTP Basic or a JWT bearer token), and [UserService.getByLoginName] turns it into a domain
+ * [User]. Controllers pass that [User] inward so the domain decides ownership and roles without ever
+ * touching a Spring `Authentication`.
  */
 @Component
 class CurrentUserProvider(

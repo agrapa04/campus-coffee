@@ -1,4 +1,4 @@
-package de.seuhd.campuscoffee.security
+package de.seuhd.campuscoffee.api.security
 
 import de.seuhd.campuscoffee.api.exceptions.ErrorResponse
 import jakarta.servlet.http.HttpServletRequest
@@ -14,8 +14,8 @@ import java.time.LocalDateTime
 
 /**
  * Writes a filter-chain authorization rejection (an authenticated caller hitting a role-gated URL) as the
- * application's standard JSON [ErrorResponse] with 403, matching [JsonAuthenticationEntryPoint] and the
- * api layer's GlobalExceptionHandler so error bodies are uniform across the 401, 403, and domain paths.
+ * application's standard JSON [ErrorResponse] with 403, matching [JsonAuthenticationEntryPoint] and this
+ * layer's GlobalExceptionHandler so error bodies are uniform across the 401, 403, and domain paths.
  */
 @Component
 class JsonAccessDeniedHandler(

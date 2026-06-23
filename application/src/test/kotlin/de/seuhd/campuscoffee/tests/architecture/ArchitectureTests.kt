@@ -16,7 +16,8 @@ class ArchitectureTests {
             ClassFileImporter()
                 .importPackages("de.seuhd.campuscoffee") // imports all sub-packages
 
-        // the .security package holds the application's own wiring (Spring Security, JWT, UserDetailsService)
+        // the application layer is the Spring Boot entry point and the startup tasks; the security
+        // configuration and its adapters now live in api.security, which is part of the api layer
         val applicationPackages =
             arrayOf("de.seuhd.campuscoffee", "de.seuhd.campuscoffee.tests..")
 

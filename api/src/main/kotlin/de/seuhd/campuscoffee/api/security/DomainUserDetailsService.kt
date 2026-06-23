@@ -10,11 +10,12 @@ import org.springframework.stereotype.Service
 import org.springframework.security.core.userdetails.User as SpringUser
 
 /**
- * Loads a user by login name and adapts it to a Spring Security [UserDetails], with the stored password
- * hash and `ROLE_<role>` authorities derived from the user's roles. This is the bridge between the
- * domain `User` and Spring Security; the authorization rules themselves are defined in [SecurityConfig].
- *
- * Spring boilerplate provided in the starter.
+ * Bridges the domain `User` store and Spring Security while credentials are verified: implements Spring's
+ * [UserDetailsService] so the `DaoAuthenticationProvider` can load the stored credentials. Loads a user by
+ * login name via [UserService] and adapts it to a Spring Security [UserDetails], with the stored password
+ * hash and `ROLE_<role>` authorities derived from the user's roles. The counterpart that runs once a request
+ * is authenticated is [CurrentUserProvider]; the authorization rules themselves live in the application's
+ * security configuration.
  */
 @Service
 class DomainUserDetailsService(
