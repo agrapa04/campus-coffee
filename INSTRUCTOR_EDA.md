@@ -8,7 +8,7 @@ authentication and authorization demo is in [`INSTRUCTOR_AUTH.md`](INSTRUCTOR_AU
 
 Event sourcing is the default (`campus-coffee.persistence.mode = event-sourcing`). Pass
 `--campus-coffee.persistence.mode=relational` for the plain relational adapter. Both pass the same system
-tests, so the API behaves identically. Only how a write is stored differs.
+tests, so the API behaves identically. Only how the data is stored differs.
 
 ## 1. The shape: one port, two interchangeable adapters
 
@@ -52,18 +52,18 @@ whole mechanism:
 
 | File | Role |
 |------|------|
-| `EventEntity` / `EventRepository` + `V8` `events` table | the append-only log (one full-state event per write) |
+| `EventEntity` / `EventRepository` + `V8` `events` table | the append-only log (one full-state event per write request) |
 | `EventStore` | appends INSERT/UPDATE/DELETE events; owns the JSON body (drops the raw password, flattens a review's POS/author to ids) |
 | `ReadModelProjector` | applies one event to the read tables, reusing the MapStruct mappers and preserving the id and timestamps |
-| `EventSourcedWriter` | the shared event-first write: assign the id and timestamps, append the event, then project it, in one transaction |
+| `EventSourcedWriter` | the shared event-first write path: assign the id and timestamps, append the event, then project it, in one transaction |
 | `EventSourced{Pos,User,Review,ReviewApproval}DataService` | the decorators, one per port |
 | `DataToEventsRunner` / `EventsToDataRunner` | import an existing database into the log / rebuild the tables from the log |
 | `PersistenceProperties` (in `data/configuration`) | binds the `campus-coffee.persistence.*` flags |
 
 ### The decorator
 
-Each event-sourced adapter is a Decorator (the design pattern) around the relational impl. Reads and
-queries auto-delegate (`by delegate`). Only the writes are overridden. It is
+Each event-sourced adapter is a Decorator (the design pattern) around the relational adapter. Read methods and
+queries auto-delegate (`by delegate`). Only the write methods are overridden. It is
 `@Primary @ConditionalOnProperty(... "event-sourcing")`, so the domain binds to it instead of the relational
 adapter only when the mode is on:
 
@@ -97,11 +97,11 @@ class EventSourcedPosDataService(
 The relational adapter's `upsert` (inherited from `CrudDataServiceImpl`) does the opposite: it maps the
 domain object to a `PosEntity` and `save`s it directly, with no event.
 
-### Event-first write, in one transaction
+### The event-first write path
 
 `EventSourcedWriter` is where "the event is the source of truth" becomes literal. It appends the event,
 then projects it onto the read table, both inside the decorator's `@Transactional`. A constraint
-violation in the projection rolls the event back too, so the log never holds a write the read model rejected:
+violation in the projection rolls the event back too, so the log never holds an event the read model rejected:
 
 ```kotlin
 val complete = buildForInsert(idGenerator.newId(), now)  // complete event body: assigned id + timestamps
@@ -113,7 +113,7 @@ return getById(complete.id)                              // read the projected r
 The id comes from the same `IdGenerator` the relational mode uses, so the assigned entity ids are
 identical across modes (a separate generator with its own seed assigns the event ids).
 
-## 4. Run it and watch each write become an event
+## 4. Run it and watch each write request become an event
 
 Start the app and database (the dev profile loads the fixtures, and the default mode is event sourcing):
 
@@ -122,14 +122,14 @@ docker compose up --build
 ```
 
 The fixture load writes through the log, so the `events` table already holds one event per seeded row
-(5 users, 4 POS, 3 reviews). The `seq` column is the append order:
+(5 users, 4 POS, 3 reviews). The `seq` column records the order the events were appended in:
 
 ```shell
 docker exec -it db psql -U postgres -c \
   "SELECT seq, change_type, entity_type, entity_version FROM events ORDER BY seq;"
 ```
 
-Make an authenticated write, where a moderator creates a POS (the accounts are listed in `INSTRUCTOR_AUTH.md`):
+Make an authenticated write request. A moderator creates a POS (the accounts are listed in `INSTRUCTOR_AUTH.md`):
 
 ```shell
 curl -i --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
@@ -146,16 +146,16 @@ docker exec -it db psql -U postgres -c \
    FROM events WHERE entity_type='Pos' ORDER BY seq DESC LIMIT 1;"
 ```
 
-Reads still come from the table, not a replay. `GET /api/pos` serves the projected row directly:
+Read requests are answered from the table, not a replay. `GET /api/pos` serves the projected row directly:
 
 ```shell
 curl -s http://localhost:8080/api/pos | python3 -c 'import sys,json; print([p for p in json.load(sys.stdin) if p["name"]=="Event Cafe"])'
 ```
 
-### The log is authoritative: a rejected write leaves no event
+### The log is authoritative: a rejected write request leaves no event
 
-Because the append and the projection share one transaction, a constraint violation rolls both back.
-Repeat the create with a name that duplicates the row just added:
+Because the event is appended and projected in one transaction, a constraint violation rolls both back.
+Repeat the create request with a name that duplicates the row just added:
 
 ```shell
 curl -i --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-Type: application/json" \
@@ -164,11 +164,11 @@ curl -i --request POST -u maxmustermann:AmLtoD3r8lVdnwoLN1Nn --header "Content-T
 # -> 409 Conflict (duplicate name)
 ```
 
-Re-run the events query and the count is unchanged. The failed write appended nothing.
+Re-run the events query and the count is unchanged. The rejected request appended nothing.
 
 ## 5. Relational mode for comparison
 
-Restart in relational mode. The same API does the same thing, but writes go straight to the tables and
+Restart in relational mode. The same API does the same thing, but write requests go straight to the tables and
 nothing is logged:
 
 ```shell

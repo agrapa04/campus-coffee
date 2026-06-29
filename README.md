@@ -132,7 +132,7 @@ It can also run in a plain **relational** mode that writes straight to the table
 gradle :application:bootRun --args='--spring.profiles.active=dev --campus-coffee.persistence.mode=relational'
 ```
 
-Inspect the log (its `seq` column is the append order):
+Inspect the log (its `seq` column records the order the events were appended in):
 
 ```sql
 SELECT seq, change_type, entity_type FROM events ORDER BY seq;
@@ -339,7 +339,7 @@ curl 'http://localhost:8080/api/reviews/filter?pos_id=eb5910f1-26e6-bc6f-6fbd-df
 
 ##### Create reviews
 
-The author is the authenticated user, so a create needs Basic auth and the body carries no `authorId`:
+The author is the authenticated user, so creating a review needs Basic auth and the body carries no `authorId`:
 ```shell
 curl --header "Content-Type: application/json" --request POST -u student2023:ZwTwB8Hn8VkNLZec7bR1 --data '{"posId":"2d68ad16-268a-478c-9827-50f4569b5949","review":"Great place to study."}' http://localhost:8080/api/reviews # Café Botanik
 ```

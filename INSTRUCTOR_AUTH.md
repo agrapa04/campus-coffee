@@ -469,7 +469,7 @@ flag; pass `--campus-coffee.persistence.mode=relational` to opt out). The fixtur
 through the event log, so the `events` table is already populated:
 
 ```shell
-# every fixture row, plus any write request you make, is recorded as an event (seq is the append order)
+# every fixture row, plus any write request you make, is recorded as an event (seq is the order they were appended in)
 docker exec -it db psql -U postgres -c \
   "SELECT seq, change_type, entity_type FROM events ORDER BY seq;"
 ```
