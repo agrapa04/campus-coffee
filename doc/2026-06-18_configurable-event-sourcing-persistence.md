@@ -127,7 +127,7 @@ ArchUnit: the new code is in the `data` layer and imports only `domain` + Spring
   sensitivity as the `users` table) but never the raw `password`.
 - **`README.md`:** add the ES run line (`--campus-coffee.persistence.mode=event-sourcing`), the
   data-to-events → events-to-data import/rebuild flow, and (under Deployment) deploying the ES mode to Google
-  Cloud Run. **`INSTRUCTOR.md`:** a demo step that switches to ES mode and inspects the `events` table, plus
+  Cloud Run. **`INSTRUCTOR_EDA.md`:** a demo step that switches to ES mode and inspects the `events` table, plus
   the Cloud Run ES-deploy variant.
 - **PITest:** no glob change; `de.seuhd.campuscoffee.data.*` already matches `data.persistence.eventsourcing.*`.
 

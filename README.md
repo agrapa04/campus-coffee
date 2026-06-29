@@ -9,7 +9,7 @@ data (login names, emails, roles) is readable only by that user or an admin. An 
 request is rejected with `401`; an authenticated caller who lacks the required role gets `403`.
 
 The fixture users and their passwords are listed under [Dev endpoints](#dev-endpoints-apidev), and
-`INSTRUCTOR.md` has a full walkthrough.
+[`INSTRUCTOR_AUTH.md`](INSTRUCTOR_AUTH.md) has a full walkthrough.
 
 ### Authenticating
 
@@ -119,7 +119,8 @@ to work with; the [Dev endpoints](#dev-endpoints-apidev) let you reload or clear
 By default, the application runs in an event-first **event sourcing** mode, where an append-only event log
 is the source of truth and the relational tables are a read model projected from it. The API behaves
 identically to the plain relational mode; the difference is that every write request is also recorded in
-the `events` table. A default `dev` run therefore already records events:
+the `events` table. [`INSTRUCTOR_EDA.md`](INSTRUCTOR_EDA.md) walks through the implementation — the unchanged
+domain port and the event-first data adapter. A default `dev` run already records events:
 
 ```shell
 gradle :application:bootRun --args='--spring.profiles.active=dev'

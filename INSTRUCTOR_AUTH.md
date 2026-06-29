@@ -457,6 +457,9 @@ gcloud run services delete campus-coffee-prod
 
 ## Inspecting the event sourcing persistence mode
 
+> For a full walkthrough of the event sourcing implementation — the unchanged domain port, the two
+> interchangeable data adapters, and the event-first write — see [`INSTRUCTOR_EDA.md`](INSTRUCTOR_EDA.md).
+
 The application runs in an event-first **event sourcing** mode by default (`campus-coffee.persistence.mode`),
 where an append-only event log is the source of truth and the relational tables are a read model projected
 from it. The API behaves exactly the same; this step shows the events that each write request records.

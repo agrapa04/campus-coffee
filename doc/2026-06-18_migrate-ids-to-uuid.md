@@ -136,7 +136,7 @@ Most tests **round-trip** the returned id and are unaffected. The ones that chan
   Generation* section (the `IdGenerator` port, the `campus-coffee.id.seed` selection, the seeded/random
   adapters, `Persistable`, and `reset` on the dev reload); update the Database/Migrations notes and the
   dev-profile run notes (the dev app now loads the fixtures on startup).
-- **`README.md`** / **`INSTRUCTOR.md`**: the `curl` examples referenced ids by small number throughout (not
+- **`README.md`** / **`INSTRUCTOR_AUTH.md`**: the `curl` examples referenced ids by small number throughout (not
   minimal). They now use the concrete seeded fixture UUIDs (e.g. `jane_doe` = `ba419d35-…`, with a `#`
   comment naming the entity), and both note that the `dev` app loads the fixtures on startup, so the first
   manual `PUT /api/dev/data` is no longer required.
