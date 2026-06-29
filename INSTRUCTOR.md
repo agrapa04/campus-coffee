@@ -7,8 +7,7 @@ locally; the second (step 7) deploys it to Google Cloud Run and runs the same ca
 HTTPS URL.
 
 > Note: the unmodified student starter does not enforce authentication, so the `401` and `403` responses
-> below appear only after Exercises 1 to 3 are done. This file belongs to the reference solution, not the
-> student starter.
+> below appear only after Exercises 1 to 3 are done.
 
 ## 1. Build and run with Docker Compose
 
