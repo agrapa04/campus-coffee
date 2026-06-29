@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Remove a now-moot note from `INSTRUCTOR.md` that flagged the file as belonging to the reference solution rather than the student starter, a caveat from when the two lived in separate repos. The solution repo is archived and this repo is now the single source of truth.
+
 ## [0.5.4] - 2026-06-24
 
 Includes a round of hardening and correctness fixes from an adversarial review of the repository.
