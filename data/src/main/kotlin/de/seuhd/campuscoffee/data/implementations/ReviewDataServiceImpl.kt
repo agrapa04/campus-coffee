@@ -19,7 +19,7 @@ import java.util.UUID
  * database constraint is the authoritative guard for the "one review per author per POS" rule, closing
  * the race the domain-level check-then-act cannot.
  */
-@Service
+@Service(ReviewDataServiceImpl.BEAN_NAME)
 class ReviewDataServiceImpl(
     repository: ReviewRepository,
     entityMapper: ReviewEntityMapper,
@@ -55,4 +55,13 @@ class ReviewDataServiceImpl(
         repository
             .findAllByPosAndAuthor(posEntityMapper.toEntity(pos), userEntityMapper.toEntity(author))
             .map { mapper.fromEntity(it) }
+
+    companion object {
+        /**
+         * Spring bean name of this relational adapter. The event-sourcing decorator qualifies on it to wrap
+         * this bean. Without the qualifier, Spring would select the `@Primary` decorator as its own
+         * [ReviewDataService] delegate.
+         */
+        const val BEAN_NAME = "reviewDataServiceImpl"
+    }
 }

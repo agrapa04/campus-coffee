@@ -3,6 +3,7 @@ import de.seuhd.campuscoffee.data.configuration.PersistenceProperties
 import de.seuhd.campuscoffee.data.implementations.ReviewDataServiceImpl
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.ports.data.ReviewDataService
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
@@ -12,7 +13,9 @@ import java.util.UUID
 /**
  * Event-sourcing review data adapter, active only when `campus-coffee.persistence.mode` is
  * `event-sourcing`. A Decorator around the relational [ReviewDataServiceImpl] (both are adapters for the
- * same `ReviewDataService` port): the read methods and the `filter` queries delegate to it, while the
+ * same `ReviewDataService` port): the `delegate` is typed against the port and pinned to the relational bean
+ * with `@Qualifier(ReviewDataServiceImpl.BEAN_NAME)`, so the wrapper shares only the interface with the
+ * wrappee. The read methods and the `filter` queries delegate to it, while the
  * mutating methods write event-first. A review event records its POS and author as ids; the projector
  * resolves them against the read model when it applies the event.
  */
@@ -25,7 +28,7 @@ import java.util.UUID
     matchIfMissing = true
 )
 class EventSourcedReviewDataService(
-    private val delegate: ReviewDataServiceImpl,
+    @param:Qualifier(ReviewDataServiceImpl.BEAN_NAME) private val delegate: ReviewDataService,
     private val writer: EventSourcedWriter
 ) : ReviewDataService by delegate {
     @Transactional

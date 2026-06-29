@@ -17,7 +17,7 @@ import java.util.UUID
  * is unique: the database constraint is the authoritative guard for "one approval per user per review",
  * surfaced as a [de.seuhd.campuscoffee.domain.exceptions.DuplicationException].
  */
-@Service
+@Service(ReviewApprovalDataServiceImpl.BEAN_NAME)
 class ReviewApprovalDataServiceImpl(
     private val repository: ReviewApprovalRepository,
     private val mapper: ReviewApprovalEntityMapper,
@@ -53,5 +53,14 @@ class ReviewApprovalDataServiceImpl(
     override fun clear() {
         repository.deleteAllInBatch()
         repository.flush()
+    }
+
+    companion object {
+        /**
+         * Spring bean name of this relational adapter. The event-sourcing decorator qualifies on it to wrap
+         * this bean. Without the qualifier, Spring would select the `@Primary` decorator as its own
+         * [ReviewApprovalDataService] delegate.
+         */
+        const val BEAN_NAME = "reviewApprovalDataServiceImpl"
     }
 }

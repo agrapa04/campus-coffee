@@ -3,6 +3,7 @@ import de.seuhd.campuscoffee.data.configuration.PersistenceProperties
 import de.seuhd.campuscoffee.data.implementations.UserDataServiceImpl
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.ports.data.UserDataService
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
@@ -12,7 +13,9 @@ import java.util.UUID
 /**
  * Event-sourcing user data adapter, active only when `campus-coffee.persistence.mode` is `event-sourcing`.
  * A Decorator around the relational [UserDataServiceImpl] (both are adapters for the same `UserDataService`
- * port): the read methods and `getByLoginName` delegate to it, while the mutating methods write event-first. The
+ * port): the `delegate` is typed against the port and pinned to the relational bean with
+ * `@Qualifier(UserDataServiceImpl.BEAN_NAME)`, so the wrapper shares only the interface with the wrappee.
+ * The read methods and `getByLoginName` delegate to it, while the mutating methods write event-first. The
  * domain has already cleared the raw password before it reaches the data layer, and the event mapper drops
  * it in any case; a user event keeps the stored `passwordHash`, so a login still works after a rebuild from
  * the log.
@@ -26,7 +29,7 @@ import java.util.UUID
     matchIfMissing = true
 )
 class EventSourcedUserDataService(
-    private val delegate: UserDataServiceImpl,
+    @param:Qualifier(UserDataServiceImpl.BEAN_NAME) private val delegate: UserDataService,
     private val writer: EventSourcedWriter
 ) : UserDataService by delegate {
     @Transactional

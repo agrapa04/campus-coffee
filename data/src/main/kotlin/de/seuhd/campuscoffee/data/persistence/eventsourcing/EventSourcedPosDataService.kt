@@ -3,6 +3,7 @@ import de.seuhd.campuscoffee.data.configuration.PersistenceProperties
 import de.seuhd.campuscoffee.data.implementations.PosDataServiceImpl
 import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.ports.data.PosDataService
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
@@ -12,8 +13,10 @@ import java.util.UUID
 /**
  * Event-sourcing POS data adapter, active only when `campus-coffee.persistence.mode` is `event-sourcing`.
  * It is a Decorator (the design pattern) around the relational [PosDataServiceImpl]: both are adapters for
- * the same domain `PosDataService` port, and this one wraps the other. The read methods and the `getByName`
- * query delegate straight to it (`by delegate`); the mutating methods write event-first via
+ * the same domain `PosDataService` port, and this one wraps the other. The `delegate` is typed against the
+ * port and pinned to the relational bean with `@Qualifier(PosDataServiceImpl.BEAN_NAME)`, so the wrapper
+ * shares only the interface with the wrappee. The read methods and the `getByName` query delegate straight
+ * to it (`by delegate`); the mutating methods write event-first via
  * [EventSourcedWriter]. Marked `@Primary` so the domain service binds to it instead of the relational
  * adapter when both beans are present.
  */
@@ -26,7 +29,7 @@ import java.util.UUID
     matchIfMissing = true
 )
 class EventSourcedPosDataService(
-    private val delegate: PosDataServiceImpl,
+    @param:Qualifier(PosDataServiceImpl.BEAN_NAME) private val delegate: PosDataService,
     private val writer: EventSourcedWriter
 ) : PosDataService by delegate {
     @Transactional

@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-06-29
+
+- Type the event-sourcing decorators' `delegate` against the domain port instead of the concrete relational `*Impl` (e.g., `PosDataService` rather than `PosDataServiceImpl`), so a decorator and the adapter it wraps share only the interface, the relationship the Decorator pattern relies on. Each relational adapter declares an explicit `@Service(BEAN_NAME)` bean name, and the decorator pins its delegate to that bean with `@param:Qualifier(<Impl>.BEAN_NAME)`. Without the qualifier, Spring would select the `@Primary` decorator as its own delegate. Behavior and wiring are unchanged, and the relational and event-sourcing wiring tests pass in both modes.
 - Split the instructor guide into `INSTRUCTOR_AUTH.md` (the authentication and authorization demo, renamed from `INSTRUCTOR.md`) and a new `INSTRUCTOR_EDA.md` that walks through the event-sourcing implementation: the unchanged `domain` port, the two interchangeable `data` adapters (relational vs. the event-first decorator), and the one-transaction event-then-project write, with a `docker compose` and `psql` demo of the `events` table.
 - Remove a now-moot note from `INSTRUCTOR_AUTH.md` that flagged the file as belonging to the reference solution rather than the student starter, a caveat from when the two lived in separate repos. The solution repo is archived and this repo is now the single source of truth.
 

@@ -15,7 +15,7 @@ import java.util.UUID
  * Data-layer adapter implementing the POS data service port. Responsible for persistence;
  * business logic lives in the domain service layer.
  */
-@Service
+@Service(PosDataServiceImpl.BEAN_NAME)
 class PosDataServiceImpl(
     repository: PosRepository,
     entityMapper: PosEntityMapper,
@@ -35,4 +35,13 @@ class PosDataServiceImpl(
      * @throws NotFoundException if no POS exists with the given name
      */
     override fun getByName(name: String): Pos = findByFieldOrThrow({ repository.findByName(name) }, "name", name)
+
+    companion object {
+        /**
+         * Spring bean name of this relational adapter. The event-sourcing decorator qualifies on it to wrap
+         * this bean. Without the qualifier, Spring would select the `@Primary` decorator as its own
+         * [PosDataService] delegate.
+         */
+        const val BEAN_NAME = "posDataServiceImpl"
+    }
 }

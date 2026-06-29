@@ -15,7 +15,7 @@ import java.util.UUID
  * Data-layer adapter implementing the user data service port. Responsible for persistence;
  * business logic lives in the domain service layer.
  */
-@Service
+@Service(UserDataServiceImpl.BEAN_NAME)
 class UserDataServiceImpl(
     repository: UserRepository,
     entityMapper: UserEntityMapper,
@@ -43,4 +43,13 @@ class UserDataServiceImpl(
      */
     override fun getByLoginName(loginName: String): User =
         findByFieldOrThrow({ repository.findByLoginName(loginName) }, UserEntity.LOGIN_NAME_COLUMN, loginName)
+
+    companion object {
+        /**
+         * Spring bean name of this relational adapter. The event-sourcing decorator qualifies on it to wrap
+         * this bean. Without the qualifier, Spring would select the `@Primary` decorator as its own
+         * [UserDataService] delegate.
+         */
+        const val BEAN_NAME = "userDataServiceImpl"
+    }
 }
