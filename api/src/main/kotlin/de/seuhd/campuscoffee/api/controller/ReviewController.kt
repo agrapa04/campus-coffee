@@ -158,4 +158,14 @@ class ReviewController(
         ResponseEntity.ok(
             reviewDtoMapper.fromDomain(reviewService.approve(id, currentUserProvider.currentUser()))
         )
+
+    @PostMapping("/{id}/revert")
+    fun revert(
+        @Parameter(description = "Unique identifier of the review to revert.", required = true)
+        @PathVariable id: UUID,
+        @Parameter(description = "The observed version of the review to revert.", required = true)
+        @RequestParam("observed_version") observedVersion: Long
+    ): ResponseEntity<Void> {
+        reviewService.revertEntity(id, observedVersion)
+        return ResponseEntity.noContent().build()
 }

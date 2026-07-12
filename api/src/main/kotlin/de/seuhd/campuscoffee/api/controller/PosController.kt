@@ -121,4 +121,14 @@ class PosController(
         // the current request is the import URL, so the location must be built from the collection path
         return ResponseEntity.created(getLocation("/pos", createdPos.persistedId)).body(createdPos)
     }
+
+    @PostMapping("/{id}/revert")
+    fun revertPos(
+        @Parameter(description = "Unique identifier of the POS to revert.", required = true)
+        @PathVariable id: UUID,
+        @Parameter(description = "Observed version of the POS to revert.", required = true)
+        @RequestParam("observed_version") observedVersion: Long
+    ): ResponseEntity<Void> {
+        posService.revertEntity(id, observedVersion)
+        return ResponseEntity.noContent().build()
 }

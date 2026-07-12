@@ -128,4 +128,14 @@ class UserController(
         ResponseEntity.ok(
             userDtoMapper.fromDomain(userService.getByLoginName(loginName, currentUserProvider.currentUser()))
         )
+
+    @PostMapping("/{id}/revert")
+    fun revertUser(
+        @Parameter(description = "Unique identifier of the user to revert.", required = true)
+        @PathVariable id: UUID,
+        @Parameter(description = "Observed version of the user to revert.", required = true)
+        @RequestParam("observed_version") observedVersion: Long
+    ): ResponseEntity<Void> {
+        userService.revertUser(id, observedVersion, currentUserProvider.currentUser())
+        return ResponseEntity.noContent().build()
 }
