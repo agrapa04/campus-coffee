@@ -136,6 +136,6 @@ class UserController(
         @Parameter(description = "Observed version of the user to revert.", required = true)
         @RequestParam("observed_version") observedVersion: Long
     ): ResponseEntity<Void> {
-        userService.revertUser(id, observedVersion, currentUserProvider.currentUser())
+        userService.revertEntity(id, observedVersion, currentUserProvider.currentUser())
         return ResponseEntity.noContent().build()
 }
