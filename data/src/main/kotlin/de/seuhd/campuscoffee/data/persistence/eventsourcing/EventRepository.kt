@@ -24,13 +24,8 @@ interface EventRepository : JpaRepository<EventEntity, UUID> {
      */
     fun deleteByEntityType(entityType: String)
 
-    fun findTopByEntityTypeAndBodyIdOrderByCreatedAtDesc(
-        entityType: String,
-        entityId: UUID
-    ): EventEntity?
-
     /** The last N events for a specific entity, ordered by seq descending, used by the revert feature. */
-    fun findTop2ByEntityTypeAndBodyIdOrderBySeqDesc(
+    fun findTopByEntityTypeAndBodyIdOrderBySeqDesc(
         entityType: String,
         entityId: UUID
     ): List<EventEntity>

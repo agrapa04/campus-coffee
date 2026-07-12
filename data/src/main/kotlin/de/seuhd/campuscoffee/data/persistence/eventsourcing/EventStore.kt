@@ -118,5 +118,5 @@ class EventStore(
         entityType: String,
         entityId: UUID,
         count: Int
-    ): List<EventEntity> = eventRepository.findTop2ByEntityTypeAndBodyIdOrderBySeqDesc(entityType, entityId).take(count)
+    ): List<EventEntity> = eventRepository.findTopByEntityTypeAndBodyIdOrderBySeqDesc(entityType, entityId).take(count)
 }
