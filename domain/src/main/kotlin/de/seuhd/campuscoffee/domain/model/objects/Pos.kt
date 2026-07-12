@@ -15,6 +15,7 @@ data class Pos(
     override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    val version: Long? = null,
     val name: String,
     val description: String,
     val type: PosType,

@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.api.dtos
 
 import de.seuhd.campuscoffee.domain.model.enums.CampusType
 import de.seuhd.campuscoffee.domain.model.enums.PosType
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
@@ -18,6 +19,8 @@ data class PosDto(
     override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    @field:Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    val version: Long? = null,
     @field:NotBlank(message = "Name cannot be empty.")
     @field:Size(max = 255, message = "Name must be at most 255 characters long.")
     val name: String?,

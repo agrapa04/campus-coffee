@@ -16,6 +16,8 @@ import de.seuhd.campuscoffee.api.security.CurrentUserProvider
 import de.seuhd.campuscoffee.domain.model.objects.User
 import de.seuhd.campuscoffee.domain.model.objects.persistedId
 import de.seuhd.campuscoffee.domain.ports.api.CrudService
+import de.seuhd.campuscoffee.domain.ports.api.EntityType
+import de.seuhd.campuscoffee.domain.ports.api.RevertPort
 import de.seuhd.campuscoffee.domain.ports.api.UserService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -42,7 +44,8 @@ import java.util.UUID
 class UserController(
     private val userService: UserService,
     private val userDtoMapper: UserDtoMapper,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    private val revertPort: RevertPort
 ) : CrudController<User, UserDto, UUID>() {
     override fun service(): CrudService<User, UUID> = userService
 
@@ -129,13 +132,25 @@ class UserController(
             userDtoMapper.fromDomain(userService.getByLoginName(loginName, currentUserProvider.currentUser()))
         )
 
+    /**
+     * Reverts the last recorded change for a user via a compensating event.
+     * Reverting a creation (last event = INSERT) removes the entity, returning 204 No Content.
+     * Reverting an update (last event = UPDATE) restores the previous state, returning 200 OK.
+     * A stale version is rejected with 409 Conflict; an unknown entity returns 404.
+     */
+    @Operation(summary = "Revert the last change of a user by compensating event.")
     @PostMapping("/{id}/revert")
     fun revertUser(
         @Parameter(description = "Unique identifier of the user to revert.", required = true)
         @PathVariable id: UUID,
         @Parameter(description = "Observed version of the user to revert.", required = true)
         @RequestParam("observed_version") observedVersion: Long
-    ): ResponseEntity<Void> {
-        userService.revertUser(id, observedVersion, currentUserProvider.currentUser())
-        return ResponseEntity.noContent().build()
+    ): ResponseEntity<Any> {
+        val reverted = revertPort.revertEntity(EntityType.USER, id, observedVersion)
+        return if (reverted != null) {
+            ResponseEntity.ok(userDtoMapper.fromDomain(reverted as User))
+        } else {
+            ResponseEntity.noContent().build()
+        }
+    }
 }

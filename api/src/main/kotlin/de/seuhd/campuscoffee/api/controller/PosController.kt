@@ -17,7 +17,9 @@ import de.seuhd.campuscoffee.domain.model.enums.CampusType
 import de.seuhd.campuscoffee.domain.model.objects.Pos
 import de.seuhd.campuscoffee.domain.model.objects.persistedId
 import de.seuhd.campuscoffee.domain.ports.api.CrudService
+import de.seuhd.campuscoffee.domain.ports.api.EntityType
 import de.seuhd.campuscoffee.domain.ports.api.PosService
+import de.seuhd.campuscoffee.domain.ports.api.RevertPort
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -42,7 +44,8 @@ import java.util.UUID
 @RequestMapping("/pos")
 class PosController(
     private val posService: PosService,
-    private val posDtoMapper: PosDtoMapper
+    private val posDtoMapper: PosDtoMapper,
+    private val revertPort: RevertPort
 ) : CrudController<Pos, PosDto, UUID>() {
     override fun service(): CrudService<Pos, UUID> = posService
 
@@ -122,13 +125,25 @@ class PosController(
         return ResponseEntity.created(getLocation("/pos", createdPos.persistedId)).body(createdPos)
     }
 
+    /**
+     * Reverts the last recorded change for a POS via a compensating event.
+     * Reverting a creation (last event = INSERT) removes the entity, returning 204 No Content.
+     * Reverting an update (last event = UPDATE) restores the previous state, returning 200 OK.
+     * A stale version is rejected with 409 Conflict; an unknown entity returns 404.
+     */
+    @Operation(summary = "Revert the last change of a POS by compensating event.")
     @PostMapping("/{id}/revert")
     fun revertPos(
         @Parameter(description = "Unique identifier of the POS to revert.", required = true)
         @PathVariable id: UUID,
         @Parameter(description = "Observed version of the POS to revert.", required = true)
         @RequestParam("observed_version") observedVersion: Long
-    ): ResponseEntity<Void> {
-        posService.revertEntity(id, observedVersion)
-        return ResponseEntity.noContent().build()
+    ): ResponseEntity<Any> {
+        val reverted = revertPort.revertEntity(EntityType.POS, id, observedVersion)
+        return if (reverted != null) {
+            ResponseEntity.ok(posDtoMapper.fromDomain(reverted as Pos))
+        } else {
+            ResponseEntity.noContent().build()
+        }
+    }
 }

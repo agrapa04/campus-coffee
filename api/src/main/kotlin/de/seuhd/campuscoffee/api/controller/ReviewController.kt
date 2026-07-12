@@ -15,6 +15,8 @@ import de.seuhd.campuscoffee.api.security.CurrentUserProvider
 import de.seuhd.campuscoffee.domain.model.objects.Review
 import de.seuhd.campuscoffee.domain.model.objects.persistedId
 import de.seuhd.campuscoffee.domain.ports.api.CrudService
+import de.seuhd.campuscoffee.domain.ports.api.EntityType
+import de.seuhd.campuscoffee.domain.ports.api.RevertPort
 import de.seuhd.campuscoffee.domain.ports.api.ReviewService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -47,7 +49,8 @@ import java.util.UUID
 class ReviewController(
     private val reviewService: ReviewService,
     private val reviewDtoMapper: ReviewDtoMapper,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    private val revertPort: RevertPort
 ) : CrudController<Review, ReviewDto, UUID>() {
     override fun service(): CrudService<Review, UUID> = reviewService
 
@@ -159,13 +162,25 @@ class ReviewController(
             reviewDtoMapper.fromDomain(reviewService.approve(id, currentUserProvider.currentUser()))
         )
 
+    /**
+     * Reverts the last recorded change for a review via a compensating event.
+     * Reverting a creation (last event = INSERT) removes the entity, returning 204 No Content.
+     * Reverting an update (last event = UPDATE) restores the previous state, returning 200 OK.
+     * A stale version is rejected with 409 Conflict; an unknown entity returns 404.
+     */
+    @Operation(summary = "Revert the last change of a review by compensating event.")
     @PostMapping("/{id}/revert")
     fun revert(
         @Parameter(description = "Unique identifier of the review to revert.", required = true)
         @PathVariable id: UUID,
         @Parameter(description = "The observed version of the review to revert.", required = true)
         @RequestParam("observed_version") observedVersion: Long
-    ): ResponseEntity<Void> {
-        reviewService.revertEntity(id, observedVersion)
-        return ResponseEntity.noContent().build()
+    ): ResponseEntity<Any> {
+        val reverted = revertPort.revertEntity(EntityType.REVIEW, id, observedVersion)
+        return if (reverted != null) {
+            ResponseEntity.ok(reviewDtoMapper.fromDomain(reverted as Review))
+        } else {
+            ResponseEntity.noContent().build()
+        }
+    }
 }

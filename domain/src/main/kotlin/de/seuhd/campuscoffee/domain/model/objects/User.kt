@@ -15,6 +15,7 @@ data class User(
     override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    val version: Long? = null,
     val loginName: String,
     val emailAddress: String,
     val firstName: String,

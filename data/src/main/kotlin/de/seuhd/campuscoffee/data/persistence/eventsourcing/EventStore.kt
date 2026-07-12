@@ -82,7 +82,7 @@ class EventStore(
         requireNotNull(domainType.simpleName) { "A domain type used for an event must have a simple name." }
 
     /** Builds the event, assigns its own id, version, and timestamp, and flushes it before the projection. */
-    private fun append(
+    fun append(
         changeType: ChangeType,
         entityType: String,
         body: Map<String, Any?>
@@ -112,4 +112,11 @@ class EventStore(
         private val BODY_TYPE = object : TypeReference<Map<String, Any?>>() {}
         private val UTC = ZoneId.of("UTC")
     }
+
+    /** Returns the last N events for a specific entity in descending order, used by the revert feature. */
+    fun getLastEvents(
+        entityType: String,
+        entityId: UUID,
+        count: Int
+    ): List<EventEntity> = eventRepository.findTop2ByEntityTypeAndBodyIdOrderBySeqDesc(entityType, entityId).take(count)
 }

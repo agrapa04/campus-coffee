@@ -2,6 +2,7 @@ package de.seuhd.campuscoffee.api.dtos
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import de.seuhd.campuscoffee.domain.model.objects.Role
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -24,6 +25,8 @@ data class UserDto(
     override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    @field:Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    val version: Long? = null,
     @field:NotNull
     @field:Size(min = 1, max = 255, message = "Login name must be between 1 and 255 characters long.")
     @field:Pattern(regexp = "\\w+", message = "Login name can only contain word characters: [a-zA-Z_0-9]+")

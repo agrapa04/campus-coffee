@@ -11,6 +11,7 @@ data class Review(
     override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    val version: Long? = null,
     val pos: Pos,
     val author: User,
     val review: String,

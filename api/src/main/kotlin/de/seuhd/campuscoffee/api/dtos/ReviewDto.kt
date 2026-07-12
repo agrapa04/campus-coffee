@@ -27,6 +27,8 @@ data class ReviewDto(
     override val id: UUID? = null,
     val createdAt: LocalDateTime? = null,
     val updatedAt: LocalDateTime? = null,
+    @field:Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    val version: Long? = null,
     @field:NotNull(message = "POS ID cannot be null.")
     val posId: UUID?,
     @field:Schema(accessMode = Schema.AccessMode.READ_ONLY)
